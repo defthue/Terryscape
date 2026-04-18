@@ -1,0 +1,23 @@
+{
+  "publish": {
+    "Enabled": false,
+    "ProjectConfig": {
+      "Title": "Citizen 2",
+      "Type": "model",
+      "Org": "local",
+      "Ident": "citizen2",
+      "Schema": 0,
+      "IncludeSourceFiles": false,
+      "Resources": null,
+      "PackageReferences": null,
+      "EditorReferences": [
+        "chase.cylinder#57472"
+      ],
+      "Mounts": null,
+      "IsStandaloneOnly": false,
+      "Metadata": {
+        "SingleAssetSource": "models/castle _kit/fbx format/citizen2.vmdl"
+      }
+    }
+  }
+}

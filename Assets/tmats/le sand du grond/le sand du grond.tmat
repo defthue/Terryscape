@@ -1,0 +1,16 @@
+{
+  "AlbedoImage": "tmats/le sand du grond/ground102_1k-jpg_color.jpg",
+  "RoughnessImage": "tmats/le sand du grond/ground102_1k-jpg_roughness.jpg",
+  "NormalImage": "tmats/le sand du grond/ground102_1k-jpg_normalgl.jpg",
+  "HeightImage": "tmats/le sand du grond/ground102_1k-jpg_displacement.jpg",
+  "AOImage": "tmats/le sand du grond/ground102_1k-jpg_ambientocclusion.jpg",
+  "UVScale": 1,
+  "Metalness": 0,
+  "NormalStrength": 1,
+  "HeightBlendStrength": 1,
+  "DisplacementScale": 0,
+  "NoTiling": false,
+  "Surface": null,
+  "__references": [],
+  "__version": 0
+}

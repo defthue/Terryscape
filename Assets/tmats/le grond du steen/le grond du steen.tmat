@@ -1,0 +1,16 @@
+{
+  "AlbedoImage": "tmats/le grond du steen/pavingstones070_1k-jpg_color.jpg",
+  "RoughnessImage": "tmats/le grond du steen/pavingstones070_1k-jpg_roughness.jpg",
+  "NormalImage": "tmats/le grond du steen/pavingstones070_1k-jpg_normalgl.jpg",
+  "HeightImage": "tmats/le grond du steen/pavingstones070_1k-jpg_displacement.jpg",
+  "AOImage": "tmats/le grond du steen/pavingstones070_1k-jpg_ambientocclusion.jpg",
+  "UVScale": 8,
+  "Metalness": 0,
+  "NormalStrength": 1,
+  "HeightBlendStrength": 1.0281249,
+  "DisplacementScale": 0,
+  "NoTiling": false,
+  "Surface": null,
+  "__references": [],
+  "__version": 0
+}

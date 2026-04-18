@@ -1,0 +1,23 @@
+{
+  "publish": {
+    "Enabled": false,
+    "ProjectConfig": {
+      "Title": "Texture 20250901",
+      "Type": "material",
+      "Org": "local",
+      "Ident": "texture20250901",
+      "Schema": 0,
+      "IncludeSourceFiles": false,
+      "Resources": null,
+      "PackageReferences": null,
+      "EditorReferences": [
+        "duccsoft.forest_soil_tmat#60686"
+      ],
+      "Mounts": null,
+      "IsStandaloneOnly": false,
+      "Metadata": {
+        "SingleAssetSource": "models/castle _kit/fbx format/texture_20250901.vmat"
+      }
+    }
+  }
+}

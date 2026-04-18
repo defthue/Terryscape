@@ -82,7 +82,7 @@
         "UseAnimatorControls": true,
         "UseButton": "use",
         "UseCameraControls": true,
-        "UseFovFromPreferences": true,
+        "UseFovFromPreferences": false,
         "UseInputControls": true,
         "UseLookControls": true,
         "WalkSpeed": 110
@@ -231,7 +231,10 @@
         "RegenAmount": 2,
         "RegenDelay": 10,
         "RegenInterval": 3,
-        "RespawnPoint": null
+        "RespawnPoint": {
+          "_type": "gameobject",
+          "prefab": "respawn.prefab"
+        }
       },
       {
         "__type": "BankStorage",

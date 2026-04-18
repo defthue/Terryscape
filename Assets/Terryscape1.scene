@@ -155,159 +155,36 @@
     {
       "__guid": "5f251cc4-dd1a-4c2c-ab45-5aa31d0e7f29",
       "__version": 2,
-      "Flags": 0,
-      "Name": "Screen",
-      "Position": "1236.185,-1863.097,238.7003",
-      "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
-      "Tags": "",
-      "Enabled": true,
-      "NetworkMode": 2,
-      "NetworkFlags": 0,
-      "NetworkOrphaned": 0,
-      "NetworkTransmit": true,
-      "OwnerTransfer": 1,
-      "Components": [
-        {
-          "__type": "Sandbox.ScreenPanel",
-          "__guid": "2324e70e-8257-4cd3-9a6f-2fe4871c2140",
-          "__enabled": true,
-          "Flags": 0,
-          "AutoScreenScale": true,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Opacity": 1,
-          "Scale": 1,
-          "ScaleStrategy": "ConsistentHeight",
-          "TargetCamera": null,
-          "ZIndex": 100
-        },
-        {
-          "__type": "Sandbox.Huds.BankHud",
-          "__guid": "09c06321-8328-4c89-bf6e-a002faba4262",
-          "__enabled": true,
-          "Flags": 0,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null
-        },
-        {
-          "__type": "Sandbox.Huds.CraftingHud",
-          "__guid": "889ec439-5e98-4933-ba54-49184df09329",
-          "__enabled": true,
-          "Flags": 0,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null
-        },
-        {
-          "__type": "Sandbox.Huds.CrosshairHud",
-          "__guid": "6ed61c71-7878-4ede-a820-273564dde62e",
-          "__enabled": true,
-          "Flags": 0,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null
-        },
-        {
-          "__type": "Sandbox.Huds.EnchantingHud",
-          "__guid": "4c86207a-bd26-4cb4-9b02-268b98c8312c",
-          "__enabled": true,
-          "Flags": 0,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null
-        },
-        {
-          "__type": "Sandbox.Huds.InventoryHud",
-          "__guid": "9214d2ff-d7af-4389-879b-181cb1d7ebca",
-          "__enabled": true,
-          "Flags": 0,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null
-        },
-        {
-          "__type": "Sandbox.Huds.NpcChoiceHud",
-          "__guid": "5a144e01-478e-4cd6-a0dc-bd8b6d046eeb",
-          "__enabled": true,
-          "Flags": 0,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null
-        },
-        {
-          "__type": "Sandbox.Huds.NpcDialogueHud",
-          "__guid": "6eba8b7e-e557-4ed5-ae4b-414a7116905e",
-          "__enabled": true,
-          "Flags": 0,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null
-        },
-        {
-          "__type": "Sandbox.Huds.ShopHud",
-          "__guid": "6bae5efb-566f-4c14-9919-3c60a62871e9",
-          "__enabled": true,
-          "Flags": 0,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null
-        },
-        {
-          "__type": "Sandbox.Huds.TeleportHud",
-          "__guid": "f3c02233-5584-49de-ae76-aa926470999d",
-          "__enabled": true,
-          "Flags": 0,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null
-        },
-        {
-          "__type": "Sandbox.Huds.MonsterHealthBar",
-          "__guid": "ebf19920-90ec-40a7-9a67-728fe506c008",
-          "__enabled": true,
-          "Flags": 0,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null
-        }
-      ],
-      "Children": []
+      "__Prefab": "screenhuds.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "988d9a81-b4c3-4eea-b30f-b5946d38e3a4"
+            },
+            "Property": "Position",
+            "Value": "1236.185,-1863.097,238.7003"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "988d9a81-b4c3-4eea-b30f-b5946d38e3a4": "5f251cc4-dd1a-4c2c-ab45-5aa31d0e7f29",
+        "e7372f2e-f10c-412b-b1a0-134444e406e5": "2324e70e-8257-4cd3-9a6f-2fe4871c2140",
+        "8cd9c142-63ac-4c80-b689-8d962a42b79d": "09c06321-8328-4c89-bf6e-a002faba4262",
+        "7d75723f-120c-4911-a659-c52974cc3b84": "889ec439-5e98-4933-ba54-49184df09329",
+        "7650b96d-f180-4bec-8a1d-32424a0cba69": "6ed61c71-7878-4ede-a820-273564dde62e",
+        "09fde4c2-b751-4aac-a629-1ed24d5f82d2": "4c86207a-bd26-4cb4-9b02-268b98c8312c",
+        "c0f7216c-8df3-4916-b3fb-685322c9bdb3": "9214d2ff-d7af-4389-879b-181cb1d7ebca",
+        "b34cee39-077a-4325-9b74-2a01ff85a2ab": "5a144e01-478e-4cd6-a0dc-bd8b6d046eeb",
+        "22019630-1f9f-4914-bbff-5eb187223fb4": "6eba8b7e-e557-4ed5-ae4b-414a7116905e",
+        "261c2f7c-c5a3-4e07-98c8-37f6d837210c": "6bae5efb-566f-4c14-9919-3c60a62871e9",
+        "7872d218-ccf3-4774-b960-6a652b4d78da": "f3c02233-5584-49de-ae76-aa926470999d",
+        "33e8da69-8a4e-47c3-b745-cff4d9984e57": "ebf19920-90ec-40a7-9a67-728fe506c008"
+      }
     },
     {
       "__guid": "ba1d9387-f2df-4a0d-837f-613527d0bd11",
@@ -10598,58 +10475,49 @@
     {
       "__guid": "e346f362-90c9-4aa0-843c-8b60484c66e8",
       "__version": 2,
-      "Flags": 0,
-      "Name": "Respawn",
-      "Position": "1539.683,-445.5439,55.81556",
-      "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
-      "Tags": "",
-      "Enabled": true,
-      "NetworkMode": 2,
-      "NetworkFlags": 0,
-      "NetworkOrphaned": 0,
-      "NetworkTransmit": true,
-      "OwnerTransfer": 1,
-      "Components": [],
-      "Children": []
+      "__Prefab": "respawn.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "0d8d7925-08c9-4829-a719-e5ed98ea3c79"
+            },
+            "Property": "Position",
+            "Value": "1539.683,-445.5439,55.81556"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "0d8d7925-08c9-4829-a719-e5ed98ea3c79": "e346f362-90c9-4aa0-843c-8b60484c66e8"
+      }
     },
     {
       "__guid": "92ba80a4-3c3f-4ab7-8b4c-da745939e1e6",
       "__version": 2,
-      "Flags": 0,
-      "Name": "GameManager",
-      "Position": "1680.137,-260.6041,-0.001586914",
-      "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
-      "Tags": "",
-      "Enabled": true,
-      "NetworkMode": 2,
-      "NetworkFlags": 0,
-      "NetworkOrphaned": 0,
-      "NetworkTransmit": true,
-      "OwnerTransfer": 1,
-      "Components": [
-        {
-          "__type": "GameManager",
-          "__guid": "bd2f129c-daa8-4e57-8df7-43ceee09f697",
-          "__enabled": true,
-          "Flags": 0,
-          "AutoCreateLobby": true,
-          "MaxPlayers": 20,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "PlayerPrefab": {
-            "_type": "gameobject",
-            "prefab": "player controller.prefab"
-          },
-          "SpawnPoint": "1680.137,-260.604,50"
-        }
-      ],
-      "Children": []
+      "__Prefab": "gamemanager.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "2e11b8d8-895f-4ea5-af7e-7b76720d9f16"
+            },
+            "Property": "Position",
+            "Value": "1680.137,-260.6041,-0.001586914"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "2e11b8d8-895f-4ea5-af7e-7b76720d9f16": "92ba80a4-3c3f-4ab7-8b4c-da745939e1e6",
+        "6166fb76-bbb3-4e23-bb62-17a77a836fa0": "bd2f129c-daa8-4e57-8df7-43ceee09f697"
+      }
     },
     {
       "__guid": "c871a4c8-04ff-4e7d-9695-985d2b8918a6",
@@ -12479,13 +12347,13 @@
       "CustomBounds": false
     },
     "GameObjectSystems": {
-      "Sandbox.Clutter.ClutterGridSystem": {
-        "Storage": {
-          "$blob": "6d29934e-f41c-40e8-b782-b22f4696f9ae"
-        }
-      },
       "Sandbox.MovieMaker.MovieRecorderSystem": {
         "DisableClientRecording": false
+      },
+      "Sandbox.Clutter.ClutterGridSystem": {
+        "Storage": {
+          "$blob": "c7e019a9-fbeb-405a-8969-2dcc58c20eb8"
+        }
       }
     }
   },

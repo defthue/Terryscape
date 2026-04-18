@@ -1,0 +1,16 @@
+{
+  "AlbedoImage": "tmats/grass le grond/grass007_1k-jpg_color.jpg",
+  "RoughnessImage": "tmats/grass le grond/grass007_1k-jpg_roughness.jpg",
+  "NormalImage": "tmats/grass le grond/grass007_1k-jpg_normaldx.jpg",
+  "HeightImage": "tmats/grass le grond/grass007_1k-jpg_displacement.jpg",
+  "AOImage": "tmats/grass le grond/grass007_1k-jpg_ambientocclusion.jpg",
+  "UVScale": 1,
+  "Metalness": 0,
+  "NormalStrength": 1,
+  "HeightBlendStrength": 1,
+  "DisplacementScale": 0,
+  "NoTiling": false,
+  "Surface": null,
+  "__references": [],
+  "__version": 0
+}
