@@ -1,0 +1,23 @@
+{
+  "publish": {
+    "Enabled": false,
+    "ProjectConfig": {
+      "Title": "Arrowmaterialk",
+      "Type": "material",
+      "Org": "local",
+      "Ident": "arrowmaterialk",
+      "Schema": 0,
+      "IncludeSourceFiles": false,
+      "Resources": null,
+      "PackageReferences": null,
+      "EditorReferences": [
+        "duccsoft.forest_soil_tmat#60686"
+      ],
+      "Mounts": null,
+      "IsStandaloneOnly": false,
+      "Metadata": {
+        "SingleAssetSource": "arrows/arrowmaterialk.vmat"
+      }
+    }
+  }
+}

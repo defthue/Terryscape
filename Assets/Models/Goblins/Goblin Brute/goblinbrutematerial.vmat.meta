@@ -1,0 +1,23 @@
+{
+  "publish": {
+    "Enabled": false,
+    "ProjectConfig": {
+      "Title": "Goblinbrutematerial",
+      "Type": "material",
+      "Org": "local",
+      "Ident": "goblinbrutematerial",
+      "Schema": 0,
+      "IncludeSourceFiles": false,
+      "Resources": null,
+      "PackageReferences": null,
+      "EditorReferences": [
+        "duccsoft.forest_soil_tmat#60686"
+      ],
+      "Mounts": null,
+      "IsStandaloneOnly": false,
+      "Metadata": {
+        "SingleAssetSource": "models/goblins/goblin brute/goblinbrutematerial.vmat"
+      }
+    }
+  }
+}
