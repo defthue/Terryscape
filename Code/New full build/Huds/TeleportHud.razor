@@ -1,0 +1,109 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using System.Linq;
+@using System.Collections.Generic;
+@inherits PanelComponent
+
+<root>
+	@if ( IsOpen )
+	{
+		<div class="crafting-overlay">
+			<div class="crafting-popup" style="width: 400px;">
+				<div class="crafting-header">
+					<div class="crafting-title">@CurrentStoneName</div>
+					<div class="crafting-close" onclick="@(() => CloseTeleport())">✕</div>
+				</div>
+
+				<div class="teleport-gold">
+					<span style="color: #7a6a50;">Gold:</span> @PlayerGold
+				</div>
+
+				@if ( OnCooldown )
+				{
+					<div class="teleport-cooldown">
+						Teleport ready in @CooldownText
+					</div>
+				}
+
+				<div class="recipe-list" style="width: 100%; border-right: none;">
+					@if ( Destinations.Count == 0 )
+					{
+						<div class="no-recipes">No other stones discovered yet.</div>
+					}
+					@foreach ( var stone in Destinations )
+					{
+						bool isCurrent = stone.StoneId == CurrentStoneId;
+						bool canAfford = PlayerGold >= TeleportCost;
+						bool canTeleport = !isCurrent && canAfford && !OnCooldown;
+
+						<div class="recipe-row @(canTeleport ? "craftable" : "locked")"
+							 onclick="@(() => DoTeleport( stone.StoneId ))">
+							<div class="recipe-name">@stone.StoneName</div>
+							@if ( isCurrent )
+							{
+								<div class="recipe-amount" style="color: #7a6a50;">Here</div>
+							}
+							else
+							{
+								<div class="recipe-amount" style="color: #f0c040;">@TeleportCost g</div>
+							}
+						</div>
+					}
+				</div>
+			</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	bool IsOpen => TeleportStone.ActiveStone != null;
+	string CurrentStoneName => TeleportStone.ActiveStone?.StoneName ?? "Teleport Stone";
+	string CurrentStoneId => TeleportStone.ActiveStone?.StoneId ?? "";
+	int TeleportCost => TeleportStone.ActiveStone?.TeleportCost ?? 1;
+	bool OnCooldown => TeleportStone.CooldownRemaining > 0f;
+	string CooldownText => $"{TeleportStone.CooldownRemaining:F0}s";
+
+	List<TeleportStone> Destinations { get; set; } = new();
+	Inventory PlayerInventory { get; set; }
+
+	int PlayerGold => PlayerInventory != null ? PlayerInventory.GetItemCount( ItemId.GoldCoin ) : 0;
+
+	void DoTeleport( string targetStoneId )
+	{
+		if ( TeleportStone.ActiveStone == null )
+			return;
+
+		TeleportStone.ActiveStone.TryTeleport( targetStoneId );
+	}
+
+	void CloseTeleport()
+	{
+		TeleportStone.Close();
+	}
+
+	protected override int BuildHash()
+	{
+		var stone = TeleportStone.ActiveStone;
+
+		if ( stone != null )
+		{
+			Destinations = stone.GetDiscoveredStones();
+			PlayerInventory = PlayerHelper.GetLocalInventory();
+		}
+		else
+		{
+			if ( Destinations.Count > 0 )
+				Destinations.Clear();
+		}
+
+		return (
+			IsOpen,
+			CurrentStoneId,
+			Destinations.Count,
+			PlayerGold,
+			OnCooldown,
+			(int)TeleportStone.CooldownRemaining
+		).GetHashCode();
+	}
+}

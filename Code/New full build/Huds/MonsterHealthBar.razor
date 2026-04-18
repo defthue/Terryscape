@@ -1,0 +1,73 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using System.Linq;
+@inherits PanelComponent
+
+<root>
+    @foreach ( var monster in GetVisibleMonsters() )
+    {
+        @if ( IsInFrontOfCamera( monster ) )
+        {
+            var screenPos = GetScreenPosition( monster );
+            <div class="health-bar-container" style="left: @(screenPos.x.ToString("0.##"))%; top: @(screenPos.y.ToString("0.##"))%;">
+                <div class="health-bar-bg">
+                    <div class="health-bar-fill" style="width: @(GetHealthPercent( monster ))%;"></div>
+                </div>
+            </div>
+        }
+    }
+</root>
+
+@code
+{
+    System.Collections.Generic.List<Monster> GetVisibleMonsters()
+    {
+        var player = PlayerHelper.GetLocalPlayer();
+        if ( player == null )
+            return new();
+
+        var playerPos = player.WorldPosition;
+        var monsters = Game.ActiveScene?.GetAllComponents<Monster>().ToList() ?? new();
+
+        return monsters.FindAll( m =>
+            !m.IsDead &&
+            Vector3.DistanceBetween( m.GameObject.WorldPosition, playerPos ) <= 250f
+        );
+    }
+
+    Vector2 GetScreenPosition( Monster monster )
+    {
+        var worldPos = monster.GameObject.WorldPosition + Vector3.Up * 100f;
+        var normal = Scene.Camera.PointToScreenNormal( worldPos );
+        return new Vector2( normal.x * 100f, normal.y * 100f );
+    }
+
+    bool IsInFrontOfCamera( Monster monster )
+    {
+        var toMonster = monster.GameObject.WorldPosition - Scene.Camera.WorldPosition;
+        return Vector3.Dot( Scene.Camera.WorldRotation.Forward, toMonster ) > 0;
+    }
+
+    int GetHealthPercent( Monster monster )
+    {
+        if ( monster.MaxHealth <= 0 ) return 0;
+        return (int)( ( (float)monster.CurrentHealth / monster.MaxHealth ) * 100f );
+    }
+
+    protected override void OnUpdate()
+    {
+        StateHasChanged();
+    }
+
+    protected override int BuildHash()
+    {
+        var monsters = Game.ActiveScene?.GetAllComponents<Monster>().ToList() ?? new();
+        int hash = 0;
+        foreach ( var m in monsters )
+        {
+            var pos = GetScreenPosition( m );
+            hash = ( hash, m.CurrentHealth, m.IsDead, (int)pos.x, (int)pos.y ).GetHashCode();
+        }
+        return hash;
+    }
+}

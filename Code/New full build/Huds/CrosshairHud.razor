@@ -1,0 +1,86 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using System.Linq;
+@inherits PanelComponent
+
+<root>
+	<div class="crosshair-wrapper" style="opacity: @(ShowCrosshair ? "1" : "0");">
+		<div class="cross-line cross-top"></div>
+		<div class="cross-line cross-bottom"></div>
+		<div class="cross-line cross-left"></div>
+		<div class="cross-line cross-right"></div>
+		<div class="draw-bar-bg" style="opacity: @(IsDrawing || IsCasting ? "1" : "0");">
+			<div class="draw-bar-fill @(DrawReady || CastReady ? "ready" : "")" style="width: @BarPercent%;"></div>
+		</div>
+		@if ( IsCasting && CastSpellName != null )
+		{
+			<div class="cast-label">@CastSpellName</div>
+		}
+	</div>
+</root>
+
+@code
+{
+	bool ShowCrosshair { get; set; }
+	bool IsDrawing { get; set; }
+	bool DrawReady { get; set; }
+	bool IsCasting { get; set; }
+	bool CastReady { get; set; }
+	int BarPercent { get; set; }
+	string CastSpellName { get; set; }
+
+	protected override int BuildHash()
+	{
+		ShowCrosshair = false;
+		IsDrawing = false;
+		DrawReady = false;
+		IsCasting = false;
+		CastReady = false;
+		BarPercent = 0;
+		CastSpellName = null;
+
+		if ( PlayerGatherResource.UIOpen )
+		{
+			return ( false, false, false, false, false, 0, "" ).GetHashCode();
+		}
+
+		var inventory = PlayerHelper.GetLocalInventory();
+		if ( inventory != null )
+		{
+			var weaponDef = inventory.GetEquippedWeaponDef();
+			if ( weaponDef != null && ( weaponDef.Type == ItemType.RangedWeapon || weaponDef.Type == ItemType.MagicWeapon ) )
+				ShowCrosshair = true;
+		}
+
+		var shooter = PlayerHelper.GetLocalPlayer()?.Components.Get<ProjectileShooter>();
+		if ( shooter != null )
+		{
+			IsDrawing = shooter.IsDrawing;
+			DrawReady = shooter.IsDrawReady;
+			if ( IsDrawing )
+				BarPercent = (int)( shooter.DrawProgress * 100f );
+		}
+
+		var caster = PlayerHelper.GetLocalPlayer()?.Components.Get<SpellCaster>();
+		if ( caster != null )
+		{
+			IsCasting = caster.IsCasting;
+			CastReady = caster.IsCastReady;
+			if ( IsCasting )
+			{
+				BarPercent = (int)( caster.CastProgress * 100f );
+				CastSpellName = caster.ActiveSpell?.Name;
+			}
+		}
+
+		return (
+			ShowCrosshair,
+			IsDrawing,
+			DrawReady,
+			IsCasting,
+			CastReady,
+			BarPercent,
+			CastSpellName ?? ""
+		).GetHashCode();
+	}
+}

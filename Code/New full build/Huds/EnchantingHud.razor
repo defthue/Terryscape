@@ -1,0 +1,309 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using System.Linq;
+@using System.Collections.Generic;
+@inherits PanelComponent
+
+<root>
+	@if ( IsOpen )
+	{
+		<div class="crafting-overlay">
+			<div class="crafting-popup">
+				<div class="crafting-header">
+					<div class="crafting-title">@StationName</div>
+					<div class="crafting-close" onclick="@(() => CloseStation())">✕</div>
+				</div>
+
+				<div class="tab-row">
+					<div class="tab-button @(Mode == 0 ? "active" : "")" onclick="@(() => SetMode(0))">Enchant</div>
+					<div class="tab-button @(Mode == 1 ? "active" : "")" onclick="@(() => SetMode(1))">Combine</div>
+				</div>
+
+				<div class="enchant-body">
+					@if ( Mode == 0 )
+					{
+						<div class="detail-section-label">Enchantable jewelry in inventory</div>
+						<div class="enchant-essence">Rune Essence: @ArcaneDustCount</div>
+
+						@if ( EnchantableItems.Count == 0 )
+						{
+							<div class="no-recipes">No enchantable jewelry in your inventory.</div>
+						}
+
+						@foreach ( var entry in EnchantableItems )
+						{
+							var def = ItemDatabase.Get( entry.ItemId );
+							string name = def != null ? def.Name : entry.ItemId.ToString();
+							string color = GetItemColor( def );
+							int cost = Station?.GetEssenceCost( entry.ItemId ) ?? 0;
+							int levelReq = Station?.GetLevelRequired( entry.ItemId ) ?? 1;
+							bool canAfford = ArcaneDustCount >= cost;
+							bool meetsLevel = PlayerSkills != null && PlayerSkills.MeetsRequirement( SkillType.Enchanting, levelReq );
+							bool canEnchant = canAfford && meetsLevel && entry.Count > 0;
+
+							<div class="recipe-row @(canEnchant ? "craftable" : "locked")">
+								<div class="recipe-icon" style="background: @color;">
+									<img class="recipe-icon-img" src="@GetIconPath( entry.ItemId )" />
+								</div>
+								<div class="recipe-info">
+									<div class="recipe-name">@name x@entry.Count</div>
+									<div class="recipe-sub">@cost essence — Lvl @levelReq</div>
+								</div>
+								<div class="craft-button @(canEnchant ? "" : "disabled")"
+									 onclick="@(() => DoEnchant( entry.ItemId ))">
+									Enchant
+								</div>
+							</div>
+						}
+					}
+
+					@if ( Mode == 1 )
+					{
+						<div class="detail-section-label">Select two enchanted items to combine</div>
+						<div class="enchant-essence">Rune Essence: @ArcaneDustCount (cost: @CombineEssenceCost)</div>
+
+						@if ( EnchantedItems.Count < 2 )
+						{
+							<div class="no-recipes">You need at least 2 enchanted items to combine.</div>
+						}
+
+						@for ( int i = 0; i < EnchantedItems.Count; i++ )
+						{
+							var item = EnchantedItems[i];
+							var idx = item.OriginalIndex;
+							bool selectedA = CombineSlotA == idx;
+							bool selectedB = CombineSlotB == idx;
+							bool selected = selectedA || selectedB;
+
+							<div class="recipe-row @(selected ? "selected" : "craftable")"
+								 onclick="@(() => SelectCombineSlot( idx ))">
+								<div class="recipe-icon" style="background: #a080d0;">
+									<img class="recipe-icon-img" src="@GetIconPath( item.Instance.ItemId )" />
+								</div>
+								<div class="recipe-info">
+									<div class="recipe-name">@item.Instance.GetDisplayName()</div>
+									<div class="recipe-sub">@item.Instance.GetShortStat()</div>
+								</div>
+								@if ( selectedA )
+								{
+									<div class="slot-label">A</div>
+								}
+								@if ( selectedB )
+								{
+									<div class="slot-label">B</div>
+								}
+							</div>
+						}
+
+						@if ( CombineSlotA >= 0 && CombineSlotB >= 0 )
+						{
+							<div class="craft-button-area">
+								<div class="craft-button @(CanCombine ? "" : "disabled")"
+									 onclick="@(() => DoCombine())">
+									Combine
+								</div>
+							</div>
+						}
+					}
+				</div>
+			</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	bool IsOpen => EnchantingStation.ActiveStation != null;
+	string StationName => EnchantingStation.ActiveStation?.StationName ?? "Enchanting Altar";
+	EnchantingStation Station => EnchantingStation.ActiveStation;
+
+	int Mode { get; set; } = 0;
+	int CombineSlotA { get; set; } = -1;
+	int CombineSlotB { get; set; } = -1;
+
+	Inventory PlayerInventory { get; set; }
+	Skills PlayerSkills { get; set; }
+
+	int ArcaneDustCount => PlayerInventory != null ? PlayerInventory.GetItemCount( ItemId.ArcaneDust ) : 0;
+	int CombineEssenceCost => Station?.CombineEssenceCost ?? 2;
+
+	public class EnchantableEntry
+	{
+		public ItemId ItemId;
+		public int Count;
+	}
+
+	public class EnchantedEntry
+	{
+		public ItemInstance Instance;
+		public int OriginalIndex;
+	}
+
+	List<EnchantableEntry> EnchantableItems { get; set; } = new();
+	List<EnchantedEntry> EnchantedItems { get; set; } = new();
+
+	string GetIconPath( ItemId id )
+	{
+		if ( id == ItemId.None )
+			return "";
+
+		return $"/ItemIcons/{id}.png";
+	}
+
+	string GetItemColor( ItemDefinition def )
+	{
+		if ( def == null ) return "#888";
+
+		switch ( def.Type )
+		{
+			case ItemType.Ring: return "#d4aa40";
+			case ItemType.Amulet: return "#40aad4";
+			default: return "#d4aa40";
+		}
+	}
+
+	bool CanCombine
+	{
+		get
+		{
+			if ( CombineSlotA < 0 || CombineSlotB < 0 || Station == null || PlayerInventory == null )
+				return false;
+
+			var items = PlayerInventory.GetUniqueItems();
+			if ( CombineSlotA >= items.Count || CombineSlotB >= items.Count )
+				return false;
+
+			var a = items[CombineSlotA];
+			var b = items[CombineSlotB];
+
+			if ( !a.IsEnchanted || !b.IsEnchanted )
+				return false;
+
+			if ( a.ItemId != b.ItemId || a.Enchantment != b.Enchantment )
+				return false;
+
+			if ( ArcaneDustCount < CombineEssenceCost )
+				return false;
+
+			return true;
+		}
+	}
+
+	void SetMode( int mode )
+	{
+		Mode = mode;
+		CombineSlotA = -1;
+		CombineSlotB = -1;
+	}
+
+	void SelectCombineSlot( int index )
+	{
+		if ( CombineSlotA == index )
+		{
+			CombineSlotA = -1;
+			return;
+		}
+
+		if ( CombineSlotB == index )
+		{
+			CombineSlotB = -1;
+			return;
+		}
+
+		if ( CombineSlotA < 0 )
+		{
+			CombineSlotA = index;
+			return;
+		}
+
+		if ( CombineSlotB < 0 )
+		{
+			CombineSlotB = index;
+			return;
+		}
+
+		CombineSlotA = index;
+		CombineSlotB = -1;
+	}
+
+	void DoEnchant( ItemId itemId )
+	{
+		if ( Station == null )
+			return;
+
+		Station.TryEnchant( itemId );
+	}
+
+	void DoCombine()
+	{
+		if ( Station == null || CombineSlotA < 0 || CombineSlotB < 0 )
+			return;
+
+		Station.TryCombine( CombineSlotA, CombineSlotB );
+		CombineSlotA = -1;
+		CombineSlotB = -1;
+	}
+
+	void CloseStation()
+	{
+		Mode = 0;
+		CombineSlotA = -1;
+		CombineSlotB = -1;
+		EnchantingStation.Close();
+	}
+
+	protected override int BuildHash()
+	{
+		var station = EnchantingStation.ActiveStation;
+
+		if ( station != null )
+		{
+			PlayerInventory = PlayerHelper.GetLocalInventory();
+			PlayerSkills = PlayerHelper.GetSkills( PlayerHelper.GetLocalPlayer() );
+		}
+
+		EnchantableItems.Clear();
+		EnchantedItems.Clear();
+
+		if ( PlayerInventory != null && station != null )
+		{
+			var uniqueItems = PlayerInventory.GetUniqueItems();
+			var counted = new Dictionary<ItemId, int>();
+
+			for ( int i = 0; i < uniqueItems.Count; i++ )
+			{
+				var instance = uniqueItems[i];
+
+				if ( instance.IsEnchanted )
+				{
+					EnchantedItems.Add( new EnchantedEntry { Instance = instance, OriginalIndex = i } );
+				}
+				else if ( station.IsEnchantable( instance.ItemId ) )
+				{
+					if ( counted.ContainsKey( instance.ItemId ) )
+						counted[instance.ItemId]++;
+					else
+						counted[instance.ItemId] = 1;
+				}
+			}
+
+			foreach ( var kv in counted )
+				EnchantableItems.Add( new EnchantableEntry { ItemId = kv.Key, Count = kv.Value } );
+		}
+
+		int uniqueHash = 0;
+		foreach ( var e in EnchantedItems )
+			uniqueHash += (int)e.Instance.Enchantment * 1000 + (int)(e.Instance.EnchantmentPercent * 10);
+
+		return (
+			IsOpen,
+			Mode,
+			EnchantableItems.Count,
+			EnchantedItems.Count,
+			ArcaneDustCount,
+			CombineSlotA,
+			CombineSlotB,
+			uniqueHash
+		).GetHashCode();
+	}
+}

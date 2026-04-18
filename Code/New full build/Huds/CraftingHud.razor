@@ -1,0 +1,235 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using System.Linq;
+@using System.Collections.Generic;
+@inherits PanelComponent
+
+<root>
+	@if ( IsOpen )
+	{
+		<div class="crafting-overlay">
+			<div class="crafting-popup">
+				<div class="crafting-header">
+					<div class="crafting-title">@StationName</div>
+					<div class="crafting-close" onclick="@(() => CloseCrafting())">✕</div>
+				</div>
+
+				<div class="crafting-body">
+					<div class="recipe-list">
+						@if ( Recipes.Count == 0 )
+						{
+							<div class="no-recipes">No recipes available at this station.</div>
+						}
+						@foreach ( var recipe in Recipes )
+						{
+							var outDef = ItemDatabase.Get( recipe.OutputItem );
+
+							<div class="recipe-row @(SelectedRecipe == recipe ? "selected" : "") @(CanCraft( recipe ) ? "craftable" : "locked")"
+								 onclick="@(() => SelectRecipe( recipe ))">
+								<div class="recipe-icon" style="background: @GetRecipeColor( recipe );">
+									<img class="recipe-icon-img" src="@GetIconPath( recipe.OutputItem )" />
+								</div>
+								<div class="recipe-name">@recipe.Name</div>
+								@if ( recipe.OutputAmount > 1 )
+								{
+									<div class="recipe-amount">x@recipe.OutputAmount</div>
+								}
+							</div>
+						}
+					</div>
+
+					<div class="recipe-detail">
+						@if ( SelectedRecipe != null )
+						{
+							<div class="detail-header">@SelectedRecipe.Name</div>
+
+							@if ( SelectedRecipe.OutputAmount > 1 )
+							{
+								<div class="detail-output">Produces @SelectedRecipe.OutputAmount</div>
+							}
+
+							<div class="detail-section-label">Ingredients</div>
+							<div class="ingredient-list">
+								@foreach ( var ingredient in SelectedRecipe.Ingredients )
+								{
+									var def = ItemDatabase.Get( ingredient.Item );
+									string name = def != null ? def.Name : ingredient.Item.ToString();
+									int have = PlayerInventory != null ? PlayerInventory.GetItemCount( ingredient.Item ) : 0;
+									bool enough = have >= ingredient.Amount;
+
+									<div class="ingredient-row @(enough ? "have" : "need")">
+										<div class="ingredient-icon" style="background: @GetItemColor( def );">
+											<img class="recipe-icon-img" src="@GetIconPath( ingredient.Item )" />
+										</div>
+										<div class="ingredient-name">@name</div>
+										<div class="ingredient-count">@have / @ingredient.Amount</div>
+									</div>
+								}
+							</div>
+
+							<div class="detail-section-label">Requirements</div>
+							<div class="requirement-row @(MeetsSkillReq ? "met" : "unmet")">
+								@SelectedRecipe.SkillRequired Lvl @SelectedRecipe.LevelRequired
+							</div>
+
+							<div class="detail-section-label">Rewards</div>
+							<div class="reward-row">
+								+@SelectedRecipe.XpReward @SelectedRecipe.XpSkill XP
+							</div>
+
+							<div class="craft-button-area">
+								<div class="craft-button @(CanCraft( SelectedRecipe ) ? "" : "disabled")"
+									 onclick="@(() => DoCraft())">
+									Craft
+								</div>
+							</div>
+						}
+						else
+						{
+							<div class="detail-empty">Select a recipe to view details.</div>
+						}
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	bool IsOpen => CraftingStation.ActiveStation != null;
+	string StationName => CraftingStation.ActiveStation?.StationName ?? "Crafting Station";
+
+	List<RecipeDefinition> Recipes { get; set; } = new();
+	RecipeDefinition SelectedRecipe { get; set; }
+	Inventory PlayerInventory { get; set; }
+	Skills PlayerSkills { get; set; }
+
+	bool MeetsSkillReq
+	{
+		get
+		{
+			if ( SelectedRecipe == null || PlayerSkills == null )
+				return false;
+
+			return PlayerSkills.MeetsRequirement( SelectedRecipe.SkillRequired, SelectedRecipe.LevelRequired );
+		}
+	}
+
+	bool CanCraft( RecipeDefinition recipe )
+	{
+		if ( recipe == null || PlayerInventory == null || PlayerSkills == null )
+			return false;
+
+		if ( !PlayerSkills.MeetsRequirement( recipe.SkillRequired, recipe.LevelRequired ) )
+			return false;
+
+		if ( !PlayerInventory.HasIngredients( recipe ) )
+			return false;
+
+		return true;
+	}
+
+	string GetIconPath( ItemId id )
+	{
+		if ( id == ItemId.None )
+			return "";
+
+		return $"/ItemIcons/{id}.png";
+	}
+
+	void SelectRecipe( RecipeDefinition recipe )
+	{
+		SelectedRecipe = recipe;
+	}
+
+	void DoCraft()
+	{
+		if ( CraftingStation.ActiveStation == null )
+			return;
+
+		if ( SelectedRecipe == null )
+			return;
+
+		if ( !CanCraft( SelectedRecipe ) )
+			return;
+
+		CraftingStation.ActiveStation.TryCraft( SelectedRecipe.Id );
+	}
+
+	void CloseCrafting()
+	{
+		SelectedRecipe = null;
+		CraftingStation.Close();
+	}
+
+	string GetItemColor( ItemDefinition def )
+	{
+		if ( def == null ) return "#888";
+
+		switch ( def.Type )
+		{
+			case ItemType.Tool: return "#8B6914";
+			case ItemType.MeleeWeapon: return "#c0c0c0";
+			case ItemType.RangedWeapon: return "#7a5230";
+			case ItemType.MagicWeapon: return "#7a5aaa";
+			case ItemType.Arrow: return "#9a7a5a";
+			case ItemType.Shield: return "#6a7a8a";
+			case ItemType.HeavyArmor: return "#8a8a9a";
+			case ItemType.MediumArmor: return "#7a8a6a";
+			case ItemType.LightArmor: return "#6a6a8a";
+			case ItemType.Bar: return "#d4a030";
+			case ItemType.Herb: return "#4a8a4a";
+			case ItemType.Potion: return "#d44a4a";
+			case ItemType.Resource: return "#6a8a6a";
+			case ItemType.Ring: return "#d4aa40";
+			case ItemType.Amulet: return "#40aad4";
+			case ItemType.Misc: return "#8a8a6a";
+			default: return "#888";
+		}
+	}
+
+	string GetRecipeColor( RecipeDefinition recipe )
+	{
+		var def = ItemDatabase.Get( recipe.OutputItem );
+		return GetItemColor( def );
+	}
+
+	protected override int BuildHash()
+	{
+		var station = CraftingStation.ActiveStation;
+
+		if ( station != null )
+		{
+			Recipes = station.GetAvailableRecipes();
+			PlayerInventory = PlayerHelper.GetLocalInventory();
+			PlayerSkills = PlayerHelper.GetSkills( PlayerHelper.GetLocalPlayer() );
+
+			if ( SelectedRecipe != null && !Recipes.Contains( SelectedRecipe ) )
+				SelectedRecipe = null;
+		}
+		else
+		{
+			if ( Recipes.Count > 0 )
+				Recipes.Clear();
+
+			SelectedRecipe = null;
+		}
+
+		int ingredientHash = 0;
+		if ( SelectedRecipe != null && PlayerInventory != null )
+		{
+			foreach ( var ing in SelectedRecipe.Ingredients )
+				ingredientHash += PlayerInventory.GetItemCount( ing.Item );
+		}
+
+		return (
+			IsOpen,
+			StationName,
+			Recipes.Count,
+			SelectedRecipe?.Id ?? "",
+			ingredientHash,
+			MeetsSkillReq
+		).GetHashCode();
+	}
+}

@@ -1,0 +1,365 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using System.Linq;
+@using System.Collections.Generic;
+@inherits PanelComponent
+
+<root>
+	@if ( IsOpen )
+	{
+		<div class="crafting-overlay">
+			<div class="crafting-popup">
+				<div class="crafting-header">
+					<div class="crafting-title">@ShopName</div>
+					<div class="crafting-close" onclick="@(() => CloseShop())">✕</div>
+				</div>
+
+				<div class="crafting-body">
+					<div class="recipe-list">
+						<div class="detail-section-label" style="padding: 8px 12px;">Shop</div>
+						@foreach ( var entry in BuyEntries )
+						{
+							var def = ItemDatabase.Get( entry.Item );
+							string name = def != null ? def.Name : entry.Item.ToString();
+
+							<div class="recipe-row @(SelectedEntry == entry && !SelectedIsUnique ? "selected" : "") @(CanBuy( entry ) ? "craftable" : "locked")"
+								 onclick="@(() => SelectEntry( entry, true ))">
+								<div class="recipe-icon" style="background: @GetItemColor( def );">
+									<img class="recipe-icon-img" src="@GetIconPath( entry.Item )" />
+								</div>
+								<div class="recipe-name">@name</div>
+								<div class="recipe-amount gold">@entry.BuyPrice g</div>
+							</div>
+						}
+
+						<div class="detail-section-label" style="padding: 8px 12px; margin-top: 8px;">Your Items</div>
+						@if ( SellEntries.Count == 0 && SellableUnique.Count == 0 )
+						{
+							<div class="no-recipes">Nothing to sell here.</div>
+						}
+						@foreach ( var entry in SellEntries )
+						{
+							var def = ItemDatabase.Get( entry.Item );
+							string name = def != null ? def.Name : entry.Item.ToString();
+							int count = PlayerInventory != null ? PlayerInventory.GetItemCount( entry.Item ) : 0;
+
+							<div class="recipe-row @(SelectedEntry == entry && !SelectedIsUnique ? "selected" : "") @(count > 0 ? "craftable" : "locked")"
+								 onclick="@(() => SelectEntry( entry, false ))">
+								<div class="recipe-icon" style="background: @GetItemColor( def );">
+									<img class="recipe-icon-img" src="@GetIconPath( entry.Item )" />
+								</div>
+								<div class="recipe-name">@name</div>
+								<div class="recipe-amount">@count</div>
+							</div>
+						}
+						@foreach ( var entry in SellableUnique )
+						{
+							var def = ItemDatabase.Get( entry.Instance.ItemId );
+							string color = GetItemColor( def );
+
+							<div class="recipe-row @(SelectedIsUnique && SelectedUniqueIndex == entry.OriginalIndex ? "selected" : "") craftable"
+								 onclick="@(() => SelectUnique( entry.OriginalIndex ))">
+								<div class="recipe-icon" style="background: @color;">
+									<img class="recipe-icon-img" src="@GetIconPath( entry.Instance.ItemId )" />
+								</div>
+								<div class="recipe-name">@entry.Instance.GetDisplayName()</div>
+								<div class="recipe-amount">1</div>
+							</div>
+						}
+					</div>
+
+					<div class="recipe-detail">
+						@if ( SelectedIsUnique && SelectedUniqueIndex >= 0 )
+						{
+							var items = PlayerInventory?.GetUniqueItems();
+							@if ( items != null && SelectedUniqueIndex < items.Count )
+							{
+								var instance = items[SelectedUniqueIndex];
+								var def = ItemDatabase.Get( instance.ItemId );
+								var shop = ShopStation.ActiveShop?.GetShopDefinition();
+								var shopEntry = shop?.GetEntry( instance.ItemId );
+								int sellPrice = shopEntry?.SellPrice ?? 0;
+
+								<div class="detail-header">@instance.GetDisplayName()</div>
+
+								@if ( sellPrice > 0 )
+								{
+									<div class="detail-section-label">Sell Value</div>
+									<div class="ingredient-row have">
+										<div class="ingredient-name">You receive</div>
+										<div class="ingredient-count">@sellPrice gold</div>
+									</div>
+
+									<div class="craft-button-area">
+										<div class="craft-button" onclick="@(() => DoSellUnique())">Sell</div>
+									</div>
+								}
+							}
+						}
+						else if ( SelectedEntry != null )
+						{
+							var def = ItemDatabase.Get( SelectedEntry.Item );
+							string name = def != null ? def.Name : SelectedEntry.Item.ToString();
+
+							<div class="detail-header">@name</div>
+
+							@if ( def != null )
+							{
+								<div class="detail-section-label">Info</div>
+								<div class="requirement-row met">Type: @def.Type</div>
+								@if ( def.Tier > 0 )
+								{
+									<div class="requirement-row met">Tier: @def.Tier</div>
+								}
+							}
+
+							@if ( IsBuyMode && SelectedEntry.BuyPrice > 0 )
+							{
+								<div class="detail-section-label">Cost</div>
+								<div class="ingredient-row @(HasEnoughGold( SelectedEntry.BuyPrice ) ? "have" : "need")">
+									<div class="ingredient-name">Gold</div>
+									<div class="ingredient-count">@PlayerGold / @SelectedEntry.BuyPrice</div>
+								</div>
+
+								<div class="craft-button-area">
+									<div class="craft-button @(CanBuy( SelectedEntry ) ? "" : "disabled")"
+										 onclick="@(() => DoBuy())">
+										Buy
+									</div>
+								</div>
+							}
+
+							@if ( !IsBuyMode && SelectedEntry.SellPrice > 0 )
+							{
+								var sellCount = PlayerInventory != null ? PlayerInventory.GetItemCount( SelectedEntry.Item ) : 0;
+
+								<div class="detail-section-label">Sell Value</div>
+								<div class="ingredient-row have">
+									<div class="ingredient-name">You receive</div>
+									<div class="ingredient-count">@SelectedEntry.SellPrice gold</div>
+								</div>
+								<div class="ingredient-row @(sellCount > 0 ? "have" : "need")">
+									<div class="ingredient-name">In inventory</div>
+									<div class="ingredient-count">@sellCount</div>
+								</div>
+
+								<div class="craft-button-area">
+									<div class="craft-button @(sellCount > 0 ? "" : "disabled")"
+										 onclick="@(() => DoSell())">
+										Sell
+									</div>
+								</div>
+							}
+						}
+						else
+						{
+							<div class="detail-empty">Select an item to buy or sell.</div>
+						}
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	bool IsOpen => ShopStation.ActiveShop != null;
+	string ShopName => ShopStation.ActiveShop?.GetShopDefinition()?.Name ?? "Shop";
+
+	ShopEntry SelectedEntry { get; set; }
+	bool IsBuyMode { get; set; }
+	bool SelectedIsUnique { get; set; }
+	int SelectedUniqueIndex { get; set; } = -1;
+	Inventory PlayerInventory { get; set; }
+
+	List<ShopEntry> BuyEntries { get; set; } = new();
+	List<ShopEntry> SellEntries { get; set; } = new();
+
+	public class SellableUniqueEntry
+	{
+		public ItemInstance Instance;
+		public int OriginalIndex;
+	}
+
+	List<SellableUniqueEntry> SellableUnique { get; set; } = new();
+
+	int PlayerGold => PlayerInventory != null ? PlayerInventory.GetItemCount( ItemId.GoldCoin ) : 0;
+
+	string GetIconPath( ItemId id )
+	{
+		if ( id == ItemId.None )
+			return "";
+
+		return $"/ItemIcons/{id}.png";
+	}
+
+	bool HasEnoughGold( int price )
+	{
+		return PlayerGold >= price;
+	}
+
+	bool CanBuy( ShopEntry entry )
+	{
+		if ( entry == null || entry.BuyPrice <= 0 )
+			return false;
+
+		return HasEnoughGold( entry.BuyPrice );
+	}
+
+	void SelectEntry( ShopEntry entry, bool buyMode )
+	{
+		SelectedEntry = entry;
+		IsBuyMode = buyMode;
+		SelectedIsUnique = false;
+		SelectedUniqueIndex = -1;
+	}
+
+	void SelectUnique( int index )
+	{
+		SelectedEntry = null;
+		IsBuyMode = false;
+		SelectedIsUnique = true;
+		SelectedUniqueIndex = index;
+	}
+
+	void DoBuy()
+	{
+		if ( ShopStation.ActiveShop == null || SelectedEntry == null )
+			return;
+
+		ShopStation.ActiveShop.TryBuy( SelectedEntry.Item );
+	}
+
+	void DoSell()
+	{
+		if ( ShopStation.ActiveShop == null || SelectedEntry == null )
+			return;
+
+		ShopStation.ActiveShop.TrySell( SelectedEntry.Item );
+	}
+
+	void DoSellUnique()
+	{
+		if ( ShopStation.ActiveShop == null || SelectedUniqueIndex < 0 )
+			return;
+
+		ShopStation.ActiveShop.TrySellUnique( SelectedUniqueIndex );
+		SelectedIsUnique = false;
+		SelectedUniqueIndex = -1;
+	}
+
+	void CloseShop()
+	{
+		SelectedEntry = null;
+		SelectedIsUnique = false;
+		SelectedUniqueIndex = -1;
+		ShopStation.CloseShop();
+	}
+
+	string GetItemColor( ItemDefinition def )
+	{
+		if ( def == null ) return "#888";
+
+		switch ( def.Type )
+		{
+			case ItemType.Tool: return "#8B6914";
+			case ItemType.MeleeWeapon: return "#c0c0c0";
+			case ItemType.RangedWeapon: return "#7a5230";
+			case ItemType.MagicWeapon: return "#7a5aaa";
+			case ItemType.Arrow: return "#9a7a5a";
+			case ItemType.Shield: return "#6a7a8a";
+			case ItemType.HeavyArmor: return "#8a8a9a";
+			case ItemType.MediumArmor: return "#7a8a6a";
+			case ItemType.LightArmor: return "#6a6a8a";
+			case ItemType.Bar: return "#d4a030";
+			case ItemType.Herb: return "#4a8a4a";
+			case ItemType.Potion: return "#d44a4a";
+			case ItemType.Resource: return "#6a8a6a";
+			case ItemType.Ring: return "#d4aa40";
+			case ItemType.Amulet: return "#40aad4";
+			case ItemType.Misc: return "#8a8a6a";
+			default: return "#888";
+		}
+	}
+
+	protected override int BuildHash()
+	{
+		var shop = ShopStation.ActiveShop;
+
+		if ( shop != null )
+		{
+			var shopDef = shop.GetShopDefinition();
+			PlayerInventory = PlayerHelper.GetLocalInventory();
+
+			BuyEntries.Clear();
+			SellEntries.Clear();
+			SellableUnique.Clear();
+
+			if ( shopDef != null )
+			{
+				foreach ( var entry in shopDef.Entries )
+				{
+					if ( entry.BuyPrice > 0 )
+						BuyEntries.Add( entry );
+
+					if ( entry.SellPrice > 0 )
+						SellEntries.Add( entry );
+				}
+			}
+
+			if ( PlayerInventory != null && shopDef != null )
+			{
+				var uniqueItems = PlayerInventory.GetUniqueItems();
+				for ( int i = 0; i < uniqueItems.Count; i++ )
+				{
+					var instance = uniqueItems[i];
+					if ( instance.IsEnchanted )
+						continue;
+
+					var shopEntry = shopDef.GetEntry( instance.ItemId );
+					if ( shopEntry != null && shopEntry.SellPrice > 0 )
+						SellableUnique.Add( new SellableUniqueEntry { Instance = instance, OriginalIndex = i } );
+				}
+			}
+
+			if ( SelectedEntry != null && !SelectedIsUnique )
+			{
+				bool stillValid = BuyEntries.Contains( SelectedEntry ) || SellEntries.Contains( SelectedEntry );
+				if ( !stillValid )
+					SelectedEntry = null;
+			}
+		}
+		else
+		{
+			BuyEntries.Clear();
+			SellEntries.Clear();
+			SellableUnique.Clear();
+			SelectedEntry = null;
+			SelectedIsUnique = false;
+			SelectedUniqueIndex = -1;
+		}
+
+		int invHash = 0;
+		if ( PlayerInventory != null )
+		{
+			invHash = PlayerGold;
+			if ( SelectedEntry != null )
+				invHash += PlayerInventory.GetItemCount( SelectedEntry.Item ) * 1000;
+			invHash += PlayerInventory.GetUniqueItemCount() * 10000;
+		}
+
+		return (
+			IsOpen,
+			ShopName,
+			BuyEntries.Count,
+			SellEntries.Count,
+			SellableUnique.Count,
+			SelectedEntry?.Item ?? ItemId.None,
+			IsBuyMode,
+			SelectedIsUnique,
+			SelectedUniqueIndex,
+			invHash
+		).GetHashCode();
+	}
+}

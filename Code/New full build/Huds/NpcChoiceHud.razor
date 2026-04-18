@@ -1,0 +1,71 @@
+@using Sandbox;
+@using Sandbox.UI;
+@inherits PanelComponent
+
+<root>
+	@if ( IsOpen )
+	{
+		<div class="crafting-overlay">
+			<div class="crafting-popup" style="width: 280px; min-height: 0;">
+				<div class="crafting-header">
+					<div class="crafting-title">@NpcName</div>
+					<div class="crafting-close" onclick="@(() => Close())">✕</div>
+				</div>
+
+				<div class="crafting-body" style="flex-direction: column; gap: 8px; padding: 12px;">
+					<div class="craft-button" onclick="@(() => ChooseQuest())">Accept Quest</div>
+					<div class="craft-button" onclick="@(() => ChooseTrade())">Trade</div>
+				</div>
+			</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	bool IsOpen => ShopStation.ShowingChoice;
+
+	string NpcName
+	{
+		get
+		{
+			var shop = ShopStation.ChoosingShop;
+			if ( shop == null )
+				return "NPC";
+
+			var npc = shop.Components.Get<NpcInteract>();
+			if ( npc != null )
+				return npc.NpcName;
+
+			return "NPC";
+		}
+	}
+
+	void ChooseQuest()
+	{
+		var shop = ShopStation.ChoosingShop;
+		if ( shop == null )
+			return;
+
+		shop.OpenQuest();
+	}
+
+	void ChooseTrade()
+	{
+		var shop = ShopStation.ChoosingShop;
+		if ( shop == null )
+			return;
+
+		shop.OpenShop();
+	}
+
+	void Close()
+	{
+		ShopStation.CloseAll();
+	}
+
+	protected override int BuildHash()
+	{
+		return ( IsOpen, NpcName ).GetHashCode();
+	}
+}

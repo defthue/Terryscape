@@ -1,0 +1,71 @@
+{
+  "RootObject": {
+    "__guid": "b74ca669-d694-45e3-aad1-4f74bc4ebefc",
+    "__version": 2,
+    "Flags": 0,
+    "Name": "arrow",
+    "Position": "0,0,0",
+    "Rotation": "0,0,0,1",
+    "Scale": "0.8,0.6,0.6",
+    "Tags": "",
+    "Enabled": true,
+    "NetworkMode": 2,
+    "NetworkFlags": 0,
+    "NetworkOrphaned": 0,
+    "NetworkTransmit": true,
+    "OwnerTransfer": 1,
+    "Components": [
+      {
+        "__type": "Sandbox.ModelRenderer",
+        "__guid": "fe1fd30c-0c01-4e4b-ab90-36366aba1795",
+        "__enabled": true,
+        "Flags": 0,
+        "BodyGroups": 18446744073709551615,
+        "CreateAttachments": false,
+        "LodOverride": null,
+        "MaterialGroup": null,
+        "MaterialOverride": null,
+        "Materials": null,
+        "Model": "arrows/arrow.vmdl",
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "RenderOptions": {
+          "GameLayer": true,
+          "OverlayLayer": false,
+          "BloomLayer": false,
+          "AfterUILayer": false
+        },
+        "RenderType": "On",
+        "Tint": "1,1,1,1"
+      },
+      {
+        "__type": "ArrowProjectile",
+        "__guid": "b5c6c1c7-3ba3-4f44-9a44-c37db66f8118",
+        "__enabled": true,
+        "Flags": 0,
+        "Gravity": 600,
+        "MaxLifetime": 2,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "StickDuration": 2,
+        "TraceRadius": 3
+      }
+    ],
+    "Children": []
+  },
+  "ResourceVersion": 2,
+  "ShowInMenu": false,
+  "MenuPath": null,
+  "MenuIcon": null,
+  "DontBreakAsTemplate": false,
+  "__references": [],
+  "__version": 2
+}

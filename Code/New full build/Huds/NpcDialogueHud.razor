@@ -1,0 +1,158 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using System.Linq;
+@using System.Collections.Generic;
+@inherits PanelComponent
+
+<root>
+	@if ( IsOpen )
+	{
+		<div class="crafting-overlay">
+			<div class="dialogue-popup">
+				<div class="crafting-header">
+					<div class="crafting-title">@NpcName</div>
+					<div class="crafting-close" onclick="@(() => CloseDialogue())">✕</div>
+				</div>
+
+				<div class="dialogue-body">
+					<div class="dialogue-text">@DialogueText</div>
+
+					@if ( RequiredItems.Count > 0 && !IsCompleted )
+					{
+						<div class="detail-section-label">Required Items</div>
+						@foreach ( var req in RequiredItems )
+						{
+							var name = GetItemName( req.Item );
+							var have = GetPlayerItemCount( req.Item );
+							bool met = have >= req.Amount;
+
+							<div class="requirement-row @(met ? "met" : "unmet")">
+								<div class="req-name">@name</div>
+								<div class="req-count">@have / @req.Amount</div>
+							</div>
+						}
+					}
+
+					@if ( RequiredKills.Count > 0 && !IsCompleted )
+					{
+						<div class="detail-section-label">Required Kills</div>
+						@foreach ( var req in RequiredKills )
+						{
+							var have = GetPlayerKillCount( req.MonsterType );
+							bool met = have >= req.Amount;
+
+							<div class="requirement-row @(met ? "met" : "unmet")">
+								<div class="req-name">@req.MonsterType</div>
+								<div class="req-count">@have / @req.Amount</div>
+							</div>
+						}
+					}
+
+					@if ( RewardItems.Count > 0 && !IsCompleted )
+					{
+						<div class="detail-section-label">Rewards</div>
+						@foreach ( var reward in RewardItems )
+						{
+							var name = GetItemName( reward.Item );
+
+							<div class="reward-row">
+								@reward.Amount x @name
+							</div>
+						}
+					}
+
+					@if ( CanComplete )
+					{
+						<div class="craft-button-area">
+							<div class="craft-button" onclick="@(() => Complete())">
+								Complete
+							</div>
+						</div>
+					}
+
+					<div class="craft-button-area">
+						<div class="craft-button close-button" onclick="@(() => CloseDialogue())">
+							Close
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	bool IsOpen => NpcInteract.ActiveNpc != null;
+	string NpcName => NpcInteract.ActiveNpc?.NpcName ?? "NPC";
+	string DialogueText => NpcInteract.ActiveNpc?.GetDialogueText() ?? "";
+	bool CanComplete => NpcInteract.ActiveNpc != null && NpcInteract.ActiveNpc.CanComplete();
+	bool IsCompleted => NpcInteract.ActiveNpc != null &&
+		( NpcInteract.ActiveNpc.State == NpcInteract.QuestState.Completed ||
+		  NpcInteract.ActiveNpc.State == NpcInteract.QuestState.OnCooldown );
+
+	Inventory PlayerInventory { get; set; }
+
+	List<NpcInteract.QuestItem> RequiredItems =>
+		NpcInteract.ActiveNpc?.GetRequiredItems() ?? new List<NpcInteract.QuestItem>();
+
+	List<NpcInteract.QuestKill> RequiredKills =>
+		NpcInteract.ActiveNpc?.GetRequiredKills() ?? new List<NpcInteract.QuestKill>();
+
+	List<NpcInteract.QuestItem> RewardItems =>
+		NpcInteract.ActiveNpc?.GetRewardItems() ?? new List<NpcInteract.QuestItem>();
+
+	int GetPlayerItemCount( ItemId id )
+	{
+		return PlayerInventory != null ? PlayerInventory.GetItemCount( id ) : 0;
+	}
+
+	int GetPlayerKillCount( string monsterType )
+	{
+		return PlayerInventory != null ? PlayerInventory.GetKillCount( monsterType ) : 0;
+	}
+
+	string GetItemName( ItemId id )
+	{
+		var def = ItemDatabase.Get( id );
+		return def != null ? def.Name : id.ToString();
+	}
+
+	void Complete()
+	{
+		NpcInteract.ActiveNpc?.CompleteQuest();
+	}
+
+	void CloseDialogue()
+	{
+		NpcInteract.ActiveNpc?.CloseDialogue();
+	}
+
+	protected override int BuildHash()
+	{
+		var npc = NpcInteract.ActiveNpc;
+
+		if ( npc != null )
+		{
+			PlayerInventory = PlayerHelper.GetLocalInventory();
+		}
+
+		int reqHash = 0;
+		if ( PlayerInventory != null && npc != null )
+		{
+			foreach ( var req in RequiredItems )
+				reqHash += PlayerInventory.GetItemCount( req.Item ) * (int)req.Item;
+
+			foreach ( var req in RequiredKills )
+				reqHash += PlayerInventory.GetKillCount( req.MonsterType ) * 1000;
+		}
+
+		return (
+			IsOpen,
+			NpcName,
+			CanComplete,
+			IsCompleted,
+			reqHash
+		).GetHashCode();
+	}
+}

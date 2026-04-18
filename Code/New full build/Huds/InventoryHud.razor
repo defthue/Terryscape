@@ -1,0 +1,700 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using System.Linq;
+@using System.Collections.Generic;
+@inherits PanelComponent
+
+<root>
+	<div class="log-panel @(IsUIOpen ? "ui-open" : "") @(IsChatOpen ? "chat-open" : "")">
+		<div class="log-tabs">
+			<div class="log-tab @(LogTab == 0 ? "active" : "")" onclick="@(() => LogTab = 0)">Log</div>
+			<div class="log-tab @(LogTab == 1 ? "active" : "")" onclick="@(() => LogTab = 1)">Chat</div>
+		</div>
+
+		@if ( LogTab == 0 )
+		{
+			<div class="chat-entries">
+				@foreach ( var msg in GetVisibleMessages().AsEnumerable().Reverse() )
+				{
+					<div class="chat-entry" style="color: @msg.Color;">@msg.Text</div>
+				}
+			</div>
+		}
+
+		@if ( LogTab == 1 )
+		{
+			<div class="chat-entries">
+				@foreach ( var msg in GetChatMessages().AsEnumerable().Reverse() )
+				{
+					<div class="chat-entry">
+						<span style="color: #6db8f0; font-weight: bold;">@msg.Sender:</span>
+						<span style="color: #e8e8e8;"> @msg.Text</span>
+					</div>
+				}
+			</div>
+
+			@if ( IsChatOpen )
+			{
+				<div class="chat-input-row">
+					<TextEntry class="chat-input-field" @ref="ChatInputRef" Value:bind="@ChatText" onsubmit="@OnChatSubmit"></TextEntry>
+				</div>
+			}
+		}
+	</div>
+
+	<div class="side-panel @(IsUIOpen ? "ui-open" : "")">
+
+		<div class="health-section">
+			<div class="health-bar-container">
+				<div class="health-bar-fill" style="width: @HealthPercent%;"></div>
+				<div class="health-bar-text">@CurrentHealth / @MaxHealth HP</div>
+			</div>
+			<div class="mana-bar-container">
+				<div class="mana-bar-fill" style="width: @ManaPercent%;"></div>
+				<div class="mana-bar-text">@CurrentMana / @MaxMana MP @(IsDrinking ? "— Drinking..." : "")</div>
+			</div>
+			@if ( ActiveBuffs.Count > 0 )
+			{
+				<div class="buff-row">
+					@foreach ( var buff in ActiveBuffs )
+					{
+						<div class="buff-icon" style="background: @GetBuffColor( buff.Type );">
+							<div class="buff-timer">@((int)buff.Remaining)s</div>
+							<div class="buff-tooltip">@buff.Type +@((int)buff.Percent)%</div>
+						</div>
+					}
+				</div>
+			}
+			@if ( IsHealTicking )
+			{
+				<div class="healing-indicator">Healing...</div>
+			}
+		</div>
+
+		<div class="tabs">
+			<div class="tab @(ActiveTab == 0 ? "active" : "")" onclick="@(() => ActiveTab = 0)">Gear</div>
+			<div class="tab @(ActiveTab == 1 ? "active" : "")" onclick="@(() => ActiveTab = 1)">Items</div>
+			<div class="tab @(ActiveTab == 2 ? "active" : "")" onclick="@(() => ActiveTab = 2)">Skills</div>
+		</div>
+
+		<div class="panel-content">
+
+			@if ( ActiveTab == 1 )
+			{
+				<div class="inventory-grid">
+					@for ( int i = 0; i < TotalSlots; i++ )
+					{
+						var unique = GetUniqueAtSlot( i );
+						var item = GetItemAtSlot( i );
+
+						@if ( unique != null )
+						{
+							var def = ItemDatabase.Get( unique.Instance.ItemId );
+							string color = unique.Instance.IsEnchanted ? "#a080d0" : GetItemColor( unique.Instance.ItemId, def );
+
+							<div class="item-slot filled equippable"
+								 onclick="@(() => OnUniqueSlotClick( unique ))">
+								<div class="item-icon" style="background: @color;">
+									<img class="item-icon-img" src="@GetIconPath( unique.Instance.ItemId )" />
+								</div>
+								@if ( unique.Instance.IsEnchanted )
+								{
+									<div class="item-enchant">@unique.Instance.GetShortStat()</div>
+								}
+								<div class="item-tooltip">
+									@unique.Instance.GetDisplayName()
+									<div class="tooltip-hint">Click to equip</div>
+								</div>
+							</div>
+						}
+						else if ( item != null )
+						{
+							bool isPotion = item.ItemId != ItemId.None && ItemDatabase.Get( item.ItemId )?.Type == ItemType.Potion;
+
+							<div class="item-slot filled @(isPotion ? "potion-slot" : "")"
+								 onclick="@(() => OnInventorySlotClick( item ))">
+								<div class="item-icon" style="background: @item.Color;">
+									<img class="item-icon-img" src="@GetIconPath( item.ItemId )" />
+								</div>
+								@if ( item.Count > 1 )
+								{
+									<div class="item-count">@item.Count</div>
+								}
+								<div class="item-tooltip">
+									@item.Name x@item.Count
+									@if ( isPotion )
+									{
+										<div class="tooltip-hint">Click to drink</div>
+									}
+								</div>
+							</div>
+						}
+						else
+						{
+							<div class="item-slot"></div>
+						}
+					}
+				</div>
+			}
+
+			@if ( ActiveTab == 2 )
+			{
+				<div class="skills-list">
+					@foreach ( var skill in SkillEntries )
+					{
+						<div class="skill-row">
+							<div class="skill-level">@skill.Level</div>
+							<div class="skill-icon-box">@skill.Icon</div>
+							<div class="skill-name">@skill.Name</div>
+							<div class="xp-bar">
+								<div class="xp-fill @(skill.CssClass)-fill" style="width: @skill.XpPercent%;"></div>
+							</div>
+						</div>
+					}
+				</div>
+			}
+
+			@if ( ActiveTab == 0 )
+			{
+				<div class="equipped-panel">
+					@foreach ( var slot in EquipmentSlots )
+					{
+						<div class="equip-slot-row" onclick="@(() => OnEquipSlotClick( slot ))">
+							<div class="equip-label">@slot.Label</div>
+							@if ( slot.ItemName != null )
+							{
+								<div class="equip-slot filled clickable">
+									<div class="item-icon" style="background: @slot.Color;">
+										<img class="item-icon-img" src="@GetIconPath( slot.ItemId )" />
+									</div>
+									<div class="equip-name">@slot.ItemName</div>
+									@if ( !string.IsNullOrEmpty( slot.EnchantStat ) )
+									{
+										<div class="equip-enchant">@slot.EnchantStat</div>
+									}
+								</div>
+							}
+							else
+							{
+								<div class="equip-slot">
+									<div class="equip-name empty">— empty —</div>
+								</div>
+							}
+						</div>
+					}
+				</div>
+			}
+
+		</div>
+	</div>
+</root>
+
+@code
+{
+	int ActiveTab { get; set; } = 1;
+	int LogTab { get; set; } = 0;
+	bool _hasInitialized = false;
+
+	bool IsUIOpen => PlayerGatherResource.UIOpen;
+
+	TextEntry ChatInputRef { get; set; }
+	string ChatText { get; set; } = "";
+
+	bool IsChatOpen
+	{
+		get
+		{
+			var gm = GameManager.Instance;
+			return gm != null && gm.ChatOpen;
+		}
+	}
+
+	System.Collections.Generic.List<GameManager.ChatMessage> GetChatMessages()
+	{
+		var gm = GameManager.Instance;
+		if ( gm == null )
+			return new();
+
+		return gm.ChatMessages;
+	}
+
+	void OnChatSubmit()
+	{
+		var gm = GameManager.Instance;
+		if ( gm == null )
+			return;
+
+		if ( !string.IsNullOrWhiteSpace( ChatText ) )
+			gm.SendChat( ChatText );
+
+		ChatText = "";
+		gm.CloseChat();
+	}
+
+	int CurrentHealth { get; set; }
+	int MaxHealth { get; set; } = 100;
+	int HealthPercent { get; set; } = 100;
+	int CurrentMana { get; set; }
+	int MaxMana { get; set; }
+	int ManaPercent { get; set; }
+	bool IsDrinking { get; set; }
+	bool IsHealTicking { get; set; }
+	List<ActiveBuff> ActiveBuffs { get; set; } = new();
+
+	List<ItemSlotDisplay> CachedItems { get; set; } = new();
+	List<UniqueSlotDisplay> CachedUnique { get; set; } = new();
+	List<SkillDisplay> SkillEntries { get; set; } = new();
+	List<EquipSlotDisplay> EquipmentSlots { get; set; } = new();
+
+	int TotalSlots => 20;
+
+	public class ItemSlotDisplay
+	{
+		public string Name;
+		public string Color;
+		public int Count;
+		public bool Equippable;
+		public ItemId ItemId;
+	}
+
+	public class UniqueSlotDisplay
+	{
+		public ItemInstance Instance;
+		public int OriginalIndex;
+	}
+
+	public class SkillDisplay
+	{
+		public string Name;
+		public string Icon;
+		public string CssClass;
+		public int Level;
+		public int Xp;
+		public int XpRequired;
+		public int XpPercent;
+	}
+
+	public class EquipSlotDisplay
+	{
+		public string Label;
+		public string ItemName;
+		public string Color;
+		public EquipSlot Slot;
+		public string EnchantStat;
+		public ItemId ItemId;
+	}
+
+	string GetIconPath( ItemId id )
+	{
+		if ( id == ItemId.None )
+			return "";
+
+		return $"/ItemIcons/{id}.png";
+	}
+
+	void OnInventorySlotClick( ItemSlotDisplay item )
+	{
+		if ( item == null )
+			return;
+
+		var def = ItemDatabase.Get( item.ItemId );
+		if ( def != null && def.Type == ItemType.Potion )
+		{
+			var potionSystem = PlayerHelper.GetLocalPlayer()?.Components.Get<PotionSystem>();
+			if ( potionSystem != null )
+				potionSystem.TryDrinkPotion( item.ItemId );
+			return;
+		}
+
+		if ( def != null && def.Type == ItemType.Arrow )
+		{
+			var inventory = PlayerHelper.GetLocalInventory();
+			if ( inventory != null )
+				inventory.EquipAmmo( item.ItemId );
+			return;
+		}
+	}
+
+	void OnUniqueSlotClick( UniqueSlotDisplay unique )
+	{
+		if ( unique == null )
+			return;
+
+		var inventory = PlayerHelper.GetLocalInventory();
+		if ( inventory == null )
+			return;
+
+		inventory.EquipUnique( unique.OriginalIndex );
+	}
+
+	void OnEquipSlotClick( EquipSlotDisplay slot )
+	{
+		if ( slot == null || slot.ItemName == null )
+			return;
+
+		var inventory = PlayerHelper.GetLocalInventory();
+		if ( inventory == null )
+			return;
+
+		inventory.Unequip( slot.Slot );
+	}
+
+	string GetBuffColor( BuffType type )
+	{
+		switch ( type )
+		{
+			case BuffType.Attack: return "#c83030";
+			case BuffType.Defence: return "#3060c8";
+			case BuffType.Archery: return "#6a9830";
+			case BuffType.Magic: return "#7830c8";
+			case BuffType.AllDamage: return "#c9a84c";
+			default: return "#888";
+		}
+	}
+
+	List<GameLog.LogMessage> GetVisibleMessages()
+	{
+		GameLog.Prune();
+		return GameLog.Messages;
+	}
+
+	ItemSlotDisplay GetItemAtSlot( int index )
+	{
+		int uniqueCount = CachedUnique.Count;
+		int adjustedIndex = index - uniqueCount;
+
+		if ( index < uniqueCount )
+			return null;
+
+		return adjustedIndex < CachedItems.Count ? CachedItems[adjustedIndex] : null;
+	}
+
+	UniqueSlotDisplay GetUniqueAtSlot( int index )
+	{
+		return index < CachedUnique.Count ? CachedUnique[index] : null;
+	}
+
+	string GetItemColor( ItemId id, ItemDefinition def )
+	{
+		if ( def == null ) return "#888";
+
+		switch ( def.Type )
+		{
+			case ItemType.Resource:
+				if ( def.Name.Contains( "Log" ) ) return "#8B5E3C";
+				if ( def.Name.Contains( "Ore" ) ) return "#b87333";
+				if ( def.Name.Contains( "Stick" ) ) return "#a08050";
+				if ( def.Name.Contains( "Rock" ) ) return "#7a7a8a";
+				if ( def.Name.Contains( "Coal" ) ) return "#444";
+				if ( def.Name.Contains( "Gem" ) ) return "#8ae";
+				if ( def.Name.Contains( "Rune" ) ) return "#a080d0";
+				return "#9a8";
+			case ItemType.Bar: return "#d4a030";
+			case ItemType.Herb: return "#5a9e4a";
+			case ItemType.Tool: return "#8B6914";
+			case ItemType.MeleeWeapon: return "#c0c0c0";
+			case ItemType.RangedWeapon: return "#7a5230";
+			case ItemType.MagicWeapon: return "#7a5aaa";
+			case ItemType.Arrow: return "#9a7a5a";
+			case ItemType.Shield: return "#6a7a8a";
+			case ItemType.HeavyArmor: return "#8a8a9a";
+			case ItemType.MediumArmor: return "#8a7a6a";
+			case ItemType.LightArmor: return "#6a5a8a";
+			case ItemType.Ring: return "#d4aa40";
+			case ItemType.Amulet: return "#40aad4";
+			case ItemType.Potion: return "#d44a4a";
+			case ItemType.Misc:
+				if ( id == ItemId.GoldCoin ) return "#f0c040";
+				if ( id == ItemId.Nugget ) return "#f0c040";
+				return "#888";
+			default: return "#888";
+		}
+	}
+
+	string GetSkillIcon( SkillType skill )
+	{
+		switch ( skill )
+		{
+			case SkillType.Woodcutting: return "🪓";
+			case SkillType.Mining: return "⛏";
+			case SkillType.Enchanting: return "🔮";
+			case SkillType.Smithing: return "🔨";
+			case SkillType.Crafting: return "🧵";
+			case SkillType.Attack: return "⚔️";
+			case SkillType.Defence: return "🛡";
+			case SkillType.Archery: return "🏹";
+			case SkillType.Magic: return "✨";
+			default: return "?";
+		}
+	}
+
+	string GetSkillCss( SkillType skill )
+	{
+		switch ( skill )
+		{
+			case SkillType.Woodcutting: return "wood";
+			case SkillType.Mining: return "mine";
+			case SkillType.Enchanting: return "enchant";
+			case SkillType.Smithing: return "smith";
+			case SkillType.Crafting: return "craft";
+			case SkillType.Attack: return "attack";
+			case SkillType.Defence: return "defence";
+			case SkillType.Archery: return "archery";
+			case SkillType.Magic: return "magic";
+			default: return "combat";
+		}
+	}
+
+	string GetSlotLabel( EquipSlot slot )
+	{
+		switch ( slot )
+		{
+			case EquipSlot.Weapon: return "Weapon";
+			case EquipSlot.Shield: return "Shield";
+			case EquipSlot.Head: return "Head";
+			case EquipSlot.Chest: return "Chest";
+			case EquipSlot.Legs: return "Legs";
+			case EquipSlot.Ring: return "Ring";
+			case EquipSlot.Amulet: return "Amulet";
+			case EquipSlot.Ammo: return "Ammo";
+			default: return "?";
+		}
+	}
+
+	void RefreshData()
+	{
+		CachedItems.Clear();
+		CachedUnique.Clear();
+		SkillEntries.Clear();
+		EquipmentSlots.Clear();
+		ActiveBuffs.Clear();
+
+		var inventory = PlayerHelper.GetLocalInventory();
+		var skills = PlayerHelper.GetSkills( PlayerHelper.GetLocalPlayer() );
+		var health = PlayerHelper.GetLocalPlayer()?.Components.Get<PlayerHealth>();
+		var potions = PlayerHelper.GetLocalPlayer()?.Components.Get<PotionSystem>();
+		var mana = PlayerHelper.GetLocalPlayer()?.Components.Get<ManaSystem>();
+
+		if ( health != null )
+		{
+			CurrentHealth = health.CurrentHealth;
+			MaxHealth = health.MaxHealth;
+			HealthPercent = MaxHealth > 0 ? (int)( ( (float)CurrentHealth / MaxHealth ) * 100f ) : 0;
+		}
+
+		if ( mana != null )
+		{
+			CurrentMana = mana.CurrentMana;
+			MaxMana = mana.MaxMana;
+			ManaPercent = MaxMana > 0 ? (int)( ( (float)CurrentMana / MaxMana ) * 100f ) : 0;
+		}
+		else
+		{
+			CurrentMana = 0;
+			MaxMana = 0;
+			ManaPercent = 0;
+		}
+
+		if ( potions != null )
+		{
+			IsDrinking = potions.IsDrinking;
+			IsHealTicking = potions.IsHealTicking;
+
+			foreach ( var buff in potions.GetActiveBuffs() )
+				ActiveBuffs.Add( buff );
+		}
+		else
+		{
+			IsDrinking = false;
+			IsHealTicking = false;
+		}
+
+		if ( inventory != null )
+		{
+			var uniqueItems = inventory.GetUniqueItems();
+			for ( int i = 0; i < uniqueItems.Count; i++ )
+			{
+				CachedUnique.Add( new UniqueSlotDisplay
+				{
+					Instance = uniqueItems[i],
+					OriginalIndex = i
+				} );
+			}
+
+			foreach ( var kvp in inventory.GetAllItems() )
+			{
+				if ( kvp.Value <= 0 ) continue;
+
+				var def = ItemDatabase.Get( kvp.Key );
+				string name = def != null ? def.Name : kvp.Key.ToString();
+
+				CachedItems.Add( new ItemSlotDisplay
+				{
+					Name = name,
+					Color = GetItemColor( kvp.Key, def ),
+					Count = kvp.Value,
+					Equippable = false,
+					ItemId = kvp.Key
+				} );
+			}
+
+			EquipSlot[] slots = { EquipSlot.Weapon, EquipSlot.Shield, EquipSlot.Head, EquipSlot.Chest, EquipSlot.Legs, EquipSlot.Ring, EquipSlot.Amulet, EquipSlot.Ammo };
+			foreach ( var slot in slots )
+			{
+				if ( slot == EquipSlot.Ammo )
+				{
+					var ammoId = inventory.GetEquippedAmmoId();
+					if ( ammoId != ItemId.None )
+					{
+						var ammoDef = ItemDatabase.Get( ammoId );
+						int ammoCount = inventory.GetEquippedAmmoCount();
+						EquipmentSlots.Add( new EquipSlotDisplay
+						{
+							Label = GetSlotLabel( slot ),
+							ItemName = ammoDef != null ? $"{ammoDef.Name} x{ammoCount}" : ammoId.ToString(),
+							Color = GetItemColor( ammoId, ammoDef ),
+							Slot = slot,
+							EnchantStat = "",
+							ItemId = ammoId
+						} );
+					}
+					else
+					{
+						EquipmentSlots.Add( new EquipSlotDisplay
+						{
+							Label = GetSlotLabel( slot ),
+							ItemName = null,
+							Color = null,
+							Slot = slot,
+							EnchantStat = "",
+							ItemId = ItemId.None
+						} );
+					}
+					continue;
+				}
+
+				var equippedUnique = inventory.GetEquippedUnique( slot );
+				if ( equippedUnique != null )
+				{
+					var uDef = ItemDatabase.Get( equippedUnique.ItemId );
+					string color = equippedUnique.IsEnchanted ? "#a080d0" : GetItemColor( equippedUnique.ItemId, uDef );
+
+					EquipmentSlots.Add( new EquipSlotDisplay
+					{
+						Label = GetSlotLabel( slot ),
+						ItemName = equippedUnique.GetDisplayName(),
+						Color = color,
+						Slot = slot,
+						EnchantStat = equippedUnique.GetShortStat(),
+						ItemId = equippedUnique.ItemId
+					} );
+					continue;
+				}
+
+				EquipmentSlots.Add( new EquipSlotDisplay
+				{
+					Label = GetSlotLabel( slot ),
+					ItemName = null,
+					Color = null,
+					Slot = slot,
+					EnchantStat = "",
+					ItemId = ItemId.None
+				} );
+			}
+		}
+
+		if ( skills != null )
+		{
+			SkillType[] allSkills = { SkillType.Woodcutting, SkillType.Mining, SkillType.Enchanting, SkillType.Smithing, SkillType.Crafting, SkillType.Attack, SkillType.Defence, SkillType.Archery, SkillType.Magic };
+
+			foreach ( var skill in allSkills )
+			{
+				int level = skills.GetLevel( skill );
+				int xp = skills.GetXp( skill );
+				int required = skills.GetXpRequired( skill );
+				int percent = required > 0 ? (int)( ( (float)xp / required ) * 100f ) : 0;
+
+				SkillEntries.Add( new SkillDisplay
+				{
+					Name = skill.ToString(),
+					Icon = GetSkillIcon( skill ),
+					CssClass = GetSkillCss( skill ),
+					Level = level,
+					Xp = xp,
+					XpRequired = required,
+					XpPercent = percent
+				} );
+			}
+		}
+	}
+
+	protected override void OnUpdate()
+	{
+		if ( IsChatOpen && ChatInputRef != null )
+			ChatInputRef.Focus();
+
+		if ( IsChatOpen && ( Input.Pressed( "menu" ) || Input.Pressed( "attack1" ) ) )
+		{
+			var gm = GameManager.Instance;
+			if ( gm != null )
+				gm.CloseChat();
+			return;
+		}
+
+		if ( Input.Pressed( "Chat" ) && LogTab != 1 )
+			LogTab = 1;
+	}
+
+	protected override int BuildHash()
+	{
+		RefreshData();
+
+		if ( !_hasInitialized )
+		{
+			var player = PlayerHelper.GetLocalPlayer();
+			if ( player != null && CurrentHealth > 0 )
+				_hasInitialized = true;
+			else
+				return ( Time.Now, _hasInitialized ).GetHashCode();
+		}
+
+		int skillHash = 0;
+		foreach ( var s in SkillEntries )
+			skillHash += s.Level * 1000 + s.Xp;
+
+		int uniqueHash = 0;
+		foreach ( var u in CachedUnique )
+			uniqueHash += (int)u.Instance.ItemId * 100 + (int)(u.Instance.EnchantmentPercent * 10);
+
+		int buffHash = 0;
+		foreach ( var b in ActiveBuffs )
+			buffHash += (int)b.Type * 100 + (int)b.Remaining;
+
+		int itemHash = 0;
+		foreach ( var item in CachedItems )
+			itemHash += (int)item.ItemId * 1000 + item.Count;
+
+		int chatCount = GameManager.Instance != null ? GameManager.Instance.ChatMessages.Count : 0;
+
+		return (
+			CachedItems.Count,
+			CachedUnique.Count,
+			skillHash,
+			uniqueHash,
+			buffHash,
+			itemHash,
+			CurrentHealth,
+			MaxHealth,
+			CurrentMana,
+			MaxMana,
+			IsDrinking,
+			IsHealTicking,
+			EquipmentSlots.Count > 0 ? EquipmentSlots[0].ItemName ?? "" : "",
+			PlayerGatherResource.UIOpen,
+			GameLog.Messages.Count,
+			chatCount,
+			LogTab,
+			IsChatOpen
+		).GetHashCode();
+	}
+}

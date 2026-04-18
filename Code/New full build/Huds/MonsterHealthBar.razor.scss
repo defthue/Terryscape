@@ -1,0 +1,34 @@
+root {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	pointer-events: none;
+	font-family: Almendra;
+	font-smooth: auto;
+}
+
+.health-bar-container {
+	position: absolute;
+	transform: translateX( -50% );
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+.health-bar-bg {
+	width: 130px;
+	height: 14px;
+	background: #1a150e;
+	border: 1px solid #5a4a30;
+	border-radius: 3px;
+	overflow: hidden;
+	box-shadow: 0 2px 8px #00000088;
+}
+
+.health-bar-fill {
+	height: 100%;
+	background: linear-gradient(90deg, #6a2a2a, #9a3a3a);
+	border-radius: 2px;
+}
