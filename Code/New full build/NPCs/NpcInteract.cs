@@ -9,10 +9,9 @@ public sealed class NpcInteract : Component
 	[Property] public string PreviousQuestId { get; set; } = "";
 
 	[Property, TextArea] public string DialogueOffer { get; set; } = "Can you help me out?";
-	[Property, TextArea] public string DialogueProgress { get; set; } = "You're not done yet.";
 	[Property, TextArea] public string DialogueReady { get; set; } = "Thank you! Here is your reward.";
-	[Property, TextArea] public string DialogueDone { get; set; } = "Thanks again for your help.";
-	[Property, TextArea] public string DialogueLocked { get; set; } = "I don't have anything for you yet.";
+	[Property, TextArea] public string DialogueDone { get; set; } = "";
+	[Property, TextArea] public string DialogueLocked { get; set; } = "";
 
 	[Property] public List<ItemId> RequiredItemIds { get; set; } = new();
 	[Property] public List<int> RequiredItemAmounts { get; set; } = new();
@@ -25,6 +24,7 @@ public sealed class NpcInteract : Component
 
 	[Property] public string UnlocksRecipe { get; set; } = "";
 	[Property] public bool Repeatable { get; set; } = false;
+	[Property] public bool ConsumeRequiredItems { get; set; } = true;
 	[Property] public float CooldownDuration { get; set; } = 60f;
 	[Property] public float InteractDistance { get; set; } = 150f;
 
@@ -58,7 +58,7 @@ public sealed class NpcInteract : Component
 
 		UpdateState();
 
-		if ( !IsActiveQuest() )
+		if ( !IsActiveOnThisNpc() )
 			return;
 
 		if ( ActiveNpc != null )
@@ -103,16 +103,16 @@ public sealed class NpcInteract : Component
 		}
 	}
 
-	bool IsActiveQuest()
+	bool IsActiveOnThisNpc()
 	{
-		var allQuests = Components.GetAll<NpcInteract>();
+		var allQuests = GameObject.Components.GetAll<NpcInteract>();
 
 		foreach ( var quest in allQuests )
 		{
-			if ( quest.State == QuestState.Completed && !quest.Repeatable )
+			if ( quest.State == QuestState.Locked )
 				continue;
 
-			if ( quest.State == QuestState.Locked )
+			if ( quest.State == QuestState.Completed && !quest.Repeatable )
 				continue;
 
 			return quest == this;
@@ -128,7 +128,17 @@ public sealed class NpcInteract : Component
 		if ( lastCompleted != null )
 			return lastCompleted == this;
 
-		return false;
+		NpcInteract firstLocked = null;
+		foreach ( var quest in allQuests )
+		{
+			if ( quest.State == QuestState.Locked )
+			{
+				firstLocked = quest;
+				break;
+			}
+		}
+
+		return firstLocked == this;
 	}
 
 	void UpdateState()
@@ -156,10 +166,10 @@ public sealed class NpcInteract : Component
 
 		foreach ( var quest in allQuests )
 		{
-			if ( quest.State == QuestState.Completed && !quest.Repeatable )
+			if ( quest.State == QuestState.Locked )
 				continue;
 
-			if ( quest.State == QuestState.Locked )
+			if ( quest.State == QuestState.Completed && !quest.Repeatable )
 				continue;
 
 			return quest;
@@ -172,7 +182,16 @@ public sealed class NpcInteract : Component
 				lastCompleted = quest;
 		}
 
-		return lastCompleted;
+		if ( lastCompleted != null )
+			return lastCompleted;
+
+		foreach ( var quest in allQuests )
+		{
+			if ( quest.State == QuestState.Locked )
+				return quest;
+		}
+
+		return null;
 	}
 
 	public void OpenDialogue()
@@ -195,35 +214,36 @@ public sealed class NpcInteract : Component
 		if ( State == QuestState.Locked )
 			return DialogueLocked;
 
-		if ( State == QuestState.OnCooldown || State == QuestState.Completed )
+		if ( State == QuestState.OnCooldown )
 			return DialogueDone;
+
+		if ( State == QuestState.Completed )
+		{
+			if ( HasFollowUpOnThisNpc() )
+				return DialogueOffer;
+
+			return DialogueDone;
+		}
 
 		if ( CanComplete() )
 			return DialogueReady;
 
-		if ( HasAnyProgress() )
-			return DialogueProgress;
-
 		return DialogueOffer;
 	}
 
-	bool HasAnyProgress()
+	bool HasFollowUpOnThisNpc()
 	{
-		var inventory = GetPlayerInventory();
-		if ( inventory == null )
+		if ( string.IsNullOrEmpty( QuestId ) )
 			return false;
 
-		int count = Math.Min( RequiredItemIds.Count, RequiredItemAmounts.Count );
-		for ( int i = 0; i < count; i++ )
-		{
-			if ( inventory.GetItemCount( RequiredItemIds[i] ) > 0 )
-				return true;
-		}
+		var allQuests = GameObject.Components.GetAll<NpcInteract>();
 
-		int killCount = Math.Min( RequiredKillTypes.Count, RequiredKillAmounts.Count );
-		for ( int i = 0; i < killCount; i++ )
+		foreach ( var quest in allQuests )
 		{
-			if ( inventory.GetKillCount( RequiredKillTypes[i] ) > 0 )
+			if ( quest == this )
+				continue;
+
+			if ( quest.PreviousQuestId == QuestId )
 				return true;
 		}
 
@@ -265,9 +285,12 @@ public sealed class NpcInteract : Component
 		if ( inventory == null )
 			return;
 
-		int reqCount = Math.Min( RequiredItemIds.Count, RequiredItemAmounts.Count );
-		for ( int i = 0; i < reqCount; i++ )
-			inventory.RemoveItem( RequiredItemIds[i], RequiredItemAmounts[i] );
+		if ( ConsumeRequiredItems )
+		{
+			int reqCount = Math.Min( RequiredItemIds.Count, RequiredItemAmounts.Count );
+			for ( int i = 0; i < reqCount; i++ )
+				inventory.RemoveItem( RequiredItemIds[i], RequiredItemAmounts[i] );
+		}
 
 		int rewCount = Math.Min( RewardItemIds.Count, RewardItemAmounts.Count );
 		for ( int i = 0; i < rewCount; i++ )
