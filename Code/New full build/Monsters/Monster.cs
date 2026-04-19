@@ -29,6 +29,8 @@ public sealed class Monster : Component
 	[Property, Group( "Ranged" )] public float ProjectileSpawnHeight { get; set; } = 50f;
 	[Property, Group( "Ranged" )] public float ProjectileCastDelay { get; set; } = 0.3f;
 	[Property, Group( "Ranged" )] public float ProjectileDamageDelay { get; set; } = 0.5f;
+	[Property, Group( "Ranged" )] public string ProjectileSpawnBone { get; set; } = "RightHand";
+	[Property, Group( "Ranged" )] public float ProjectileForwardOffset { get; set; } = 20f;
 
 	[Property, Group( "Respawn" )] public float RespawnMin { get; set; } = 5f;
 	[Property, Group( "Respawn" )] public float RespawnMax { get; set; } = 20f;
@@ -554,16 +556,16 @@ public sealed class Monster : Component
 
 		Vector3 spawnPos = WorldPosition + Vector3.Up * ProjectileSpawnHeight;
 
-		if ( ModelRenderer != null && ModelRenderer.SceneModel != null )
+		if ( !string.IsNullOrEmpty( ProjectileSpawnBone ) && ModelRenderer != null && ModelRenderer.SceneModel != null )
 		{
-			var handTransform = ModelRenderer.SceneModel.GetBoneWorldTransform( "RightHand" );
-			if ( handTransform.Position.Length > 0.01f )
-				spawnPos = handTransform.Position;
+			var boneTransform = ModelRenderer.SceneModel.GetBoneWorldTransform( ProjectileSpawnBone );
+			if ( boneTransform.Position.Length > 0.01f )
+				spawnPos = boneTransform.Position;
 		}
 
 		Vector3 targetPos = targetObj.WorldPosition + Vector3.Up * 40f;
 		Vector3 direction = ( targetPos - spawnPos ).Normal;
-		spawnPos += direction * 20f;
+		spawnPos += direction * ProjectileForwardOffset;
 
 		var projectile = ProjectilePrefab.Clone( spawnPos );
 		if ( projectile == null )

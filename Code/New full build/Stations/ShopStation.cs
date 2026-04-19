@@ -5,6 +5,9 @@ public sealed class ShopStation : Component
 	[Property] public ShopId Shop { get; set; } = ShopId.None;
 	[Property] public float InteractDistance { get; set; } = 150f;
 
+	[Property, Group( "Marker" )] public float MarkerHeight { get; set; } = 90f;
+	[Property, Group( "Marker" )] public float MarkerVisibilityRange { get; set; } = 1000f;
+
 	public static ShopStation ActiveShop { get; private set; }
 	public static ShopStation ChoosingShop { get; set; }
 	public static bool ShowingChoice { get; set; }
@@ -196,5 +199,38 @@ public sealed class ShopStation : Component
 	Inventory GetPlayerInventory()
 	{
 		return PlayerHelper.GetLocalInventory();
+	}
+
+	public bool ShouldShowMarker()
+	{
+		if ( Shop == ShopId.None )
+			return false;
+
+		var quests = GameObject.Components.GetAll<NpcInteract>();
+		foreach ( var quest in quests )
+		{
+			if ( quest.ShouldShowMarker() )
+				return false;
+		}
+
+		var player = PlayerHelper.GetLocalPlayer();
+		if ( player == null )
+			return false;
+
+		var distance = Vector3.DistanceBetween( WorldPosition, player.WorldPosition );
+		if ( distance > MarkerVisibilityRange )
+			return false;
+
+		return true;
+	}
+
+	public string GetMarkerColor()
+	{
+		return "#4db8c9";
+	}
+
+	public Vector3 GetMarkerWorldPosition()
+	{
+		return WorldPosition + Vector3.Up * MarkerHeight;
 	}
 }
