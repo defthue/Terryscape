@@ -30,6 +30,24 @@
 	{
 		var list = new System.Collections.Generic.List<MarkerDraw>();
 
+		if ( NpcInteract.ActiveNpc != null )
+			return list;
+
+		if ( ShopStation.ActiveShop != null || ShopStation.ShowingChoice )
+			return list;
+
+		if ( CraftingStation.ActiveStation != null )
+			return list;
+
+		if ( BankStation.ActiveBank != null )
+			return list;
+
+		if ( TeleportStone.ActiveStone != null )
+			return list;
+
+		if ( EnchantingStation.ActiveStation != null )
+			return list;
+
 		var player = PlayerHelper.GetLocalPlayer();
 		if ( player == null )
 			return list;

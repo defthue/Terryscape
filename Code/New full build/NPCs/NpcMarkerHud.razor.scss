@@ -5,7 +5,6 @@
 	font-weight: bold;
 	transform: translate( -50%, -50% );
 	pointer-events: none;
-	z-index: 1;
 
 	&.pulse {
 		animation: marker-pulse 0.7s ease-in-out infinite;
