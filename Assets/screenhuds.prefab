@@ -154,8 +154,8 @@
         "OnComponentUpdate": null
       },
       {
-        "__type": "Sandbox.Huds.Npcmarkerhud",
-        "__guid": "d9776cb3-15e3-4ae5-ad6e-da142392aad5",
+        "__type": "Sandbox.NPCs.NpcMarkerHud",
+        "__guid": "7702c936-a2a6-4c04-a8f3-6138a60869a1",
         "__enabled": true,
         "Flags": 0,
         "OnComponentDestroy": null,
@@ -183,6 +183,7 @@
         "AgentMaxSlope": 40,
         "ExcludedBodies": "",
         "IncludedBodies": "",
+        "DeferGeneration": false,
         "CustomBounds": false
       }
     },

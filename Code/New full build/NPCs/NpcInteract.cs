@@ -28,9 +28,6 @@ public sealed class NpcInteract : Component
 	[Property] public float CooldownDuration { get; set; } = 60f;
 	[Property] public float InteractDistance { get; set; } = 150f;
 
-	[Property, Group( "Marker" )] public float MarkerHeight { get; set; } = 90f;
-	[Property, Group( "Marker" )] public float MarkerVisibilityRange { get; set; } = 1000f;
-
 	public static NpcInteract ActiveNpc { get; private set; }
 
 	public enum QuestState { Locked, Available, OnCooldown, Completed }
@@ -378,26 +375,6 @@ public sealed class NpcInteract : Component
 
 	public bool ShouldShowMarker()
 	{
-		if ( !IsActiveOnThisNpc() )
-			return false;
-
-		if ( State == QuestState.Locked )
-			return false;
-
-		if ( State == QuestState.OnCooldown )
-			return false;
-
-		if ( State == QuestState.Completed )
-			return HasFollowUpOnThisNpc();
-
-		var player = PlayerHelper.GetLocalPlayer();
-		if ( player == null )
-			return false;
-
-		var distance = Vector3.DistanceBetween( WorldPosition, player.WorldPosition );
-		if ( distance > MarkerVisibilityRange )
-			return false;
-
 		return true;
 	}
 
@@ -412,10 +389,5 @@ public sealed class NpcInteract : Component
 			return "#ffe88a";
 
 		return "#f0c040";
-	}
-
-	public Vector3 GetMarkerWorldPosition()
-	{
-		return WorldPosition + Vector3.Up * MarkerHeight;
 	}
 }

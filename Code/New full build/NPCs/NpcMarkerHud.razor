@@ -1,0 +1,134 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using System.Linq;
+@inherits PanelComponent
+
+<root>
+	@foreach ( var marker in GetVisibleMarkers() )
+	{
+		<div class="marker @( marker.Pulse ? "pulse" : "" )"
+			 style="left: @(marker.X.ToString("0.##"))%; top: @(marker.Y.ToString("0.##"))%; color: @(marker.Color); text-shadow: 0 0 8px @(marker.Color), 0 0 3px rgba(0,0,0,0.9);">
+			!
+		</div>
+	}
+</root>
+
+@code
+{
+	struct MarkerDraw
+	{
+		public float X;
+		public float Y;
+		public string Color;
+		public bool Pulse;
+	}
+
+	const float VisibilityRange = 1000f;
+	const float MarkerHeight = 90f;
+
+	System.Collections.Generic.List<MarkerDraw> GetVisibleMarkers()
+	{
+		var list = new System.Collections.Generic.List<MarkerDraw>();
+
+		var player = PlayerHelper.GetLocalPlayer();
+		if ( player == null )
+			return list;
+
+		var camera = Scene.Camera;
+		if ( camera == null )
+			return list;
+
+		var playerPos = player.WorldPosition;
+		var handledNpcs = new System.Collections.Generic.HashSet<GameObject>();
+
+		foreach ( var quest in Scene.GetAllComponents<NpcInteract>() )
+		{
+			if ( !quest.ShouldShowMarker() )
+				continue;
+
+			if ( handledNpcs.Contains( quest.GameObject ) )
+				continue;
+
+			if ( !TryGetMarker( quest.GameObject, playerPos, camera, out var x, out var y ) )
+				continue;
+
+			list.Add( new MarkerDraw
+			{
+				X = x,
+				Y = y,
+				Color = quest.GetMarkerColor(),
+				Pulse = quest.IsMarkerPulsing()
+			} );
+
+			handledNpcs.Add( quest.GameObject );
+		}
+
+		foreach ( var shop in Scene.GetAllComponents<ShopStation>() )
+		{
+			if ( !shop.ShouldShowMarker() )
+				continue;
+
+			if ( handledNpcs.Contains( shop.GameObject ) )
+				continue;
+
+			if ( !TryGetMarker( shop.GameObject, playerPos, camera, out var x, out var y ) )
+				continue;
+
+			list.Add( new MarkerDraw
+			{
+				X = x,
+				Y = y,
+				Color = shop.GetMarkerColor(),
+				Pulse = false
+			} );
+
+			handledNpcs.Add( shop.GameObject );
+		}
+
+		return list;
+	}
+
+	bool TryGetMarker( GameObject npc, Vector3 playerPos, CameraComponent camera, out float x, out float y )
+	{
+		x = 0;
+		y = 0;
+
+		var npcPos = npc.WorldPosition;
+		if ( Vector3.DistanceBetween( npcPos, playerPos ) > VisibilityRange )
+			return false;
+
+		var markerWorldPos = npcPos + Vector3.Up * MarkerHeight;
+
+		var toMarker = markerWorldPos - camera.WorldPosition;
+		if ( Vector3.Dot( camera.WorldRotation.Forward, toMarker ) <= 0f )
+			return false;
+
+		var trace = Scene.Trace
+			.Ray( camera.WorldPosition, markerWorldPos )
+			.IgnoreGameObjectHierarchy( npc )
+			.WithoutTags( "player", "monster" )
+			.Run();
+
+		if ( trace.Hit )
+			return false;
+
+		var normal = camera.PointToScreenNormal( markerWorldPos );
+		x = normal.x * 100f;
+		y = normal.y * 100f;
+		return true;
+	}
+
+	protected override void OnUpdate()
+	{
+		StateHasChanged();
+	}
+
+	protected override int BuildHash()
+	{
+		var markers = GetVisibleMarkers();
+		int hash = markers.Count;
+		foreach ( var m in markers )
+			hash = ( hash, (int)m.X, (int)m.Y, m.Color, m.Pulse ).GetHashCode();
+		return hash;
+	}
+}
