@@ -81,6 +81,18 @@ public sealed class SpellProjectile : Component
 			return;
 		}
 
+		var boss = trace.GameObject.Components.Get<Boss>();
+		if ( boss != null )
+		{
+			float triangleMult = CombatTriangle.GetDealMultiplier( CombatStyle.Magic, boss.CombatStyle );
+			int finalDamage = (int)( Damage * triangleMult );
+			if ( finalDamage < 1 ) finalDamage = 1;
+
+			boss.TakeDamage( finalDamage, Shooter );
+			GameObject.Destroy();
+			return;
+		}
+
 		GameObject.Destroy();
 	}
 }

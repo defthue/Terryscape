@@ -1,0 +1,88 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using System.Linq;
+@inherits PanelComponent
+
+<root>
+	@{
+		var boss = GetActiveBoss();
+	}
+	@if ( boss != null && !boss.IsDead )
+	{
+		<div class="boss-bar-container">
+			<div class="boss-name">@(boss.BossName)</div>
+			<div class="boss-bar-bg">
+				<div class="boss-bar-fill" style="width: @(GetHealthPercent(boss))%;"></div>
+				<div class="boss-bar-text">@(boss.CurrentHealth) / @(boss.MaxHealth)</div>
+			</div>
+			@if ( HasProtectedPillar(boss) )
+			{
+				<div class="boss-protected">✦ PROTECTED ✦</div>
+			}
+		</div>
+	}
+</root>
+
+@code
+{
+	const float VisibilityRange = 1500f;
+
+	Boss GetActiveBoss()
+	{
+		var player = PlayerHelper.GetLocalPlayer();
+		if ( player == null )
+			return null;
+
+		var playerPos = player.WorldPosition;
+		Boss closest = null;
+		float bestDistSq = VisibilityRange * VisibilityRange;
+
+		foreach ( var boss in Scene.GetAllComponents<Boss>() )
+		{
+			if ( boss == null || boss.IsDead )
+				continue;
+
+			float distSq = ( boss.WorldPosition - playerPos ).LengthSquared;
+			if ( distSq < bestDistSq )
+			{
+				bestDistSq = distSq;
+				closest = boss;
+			}
+		}
+
+		return closest;
+	}
+
+	int GetHealthPercent( Boss boss )
+	{
+		if ( boss.MaxHealth <= 0 ) return 0;
+		return (int)( ( (float)boss.CurrentHealth / boss.MaxHealth ) * 100f );
+	}
+
+	bool HasProtectedPillar( Boss boss )
+	{
+		if ( boss.Pillars == null )
+			return false;
+
+		foreach ( var pillar in boss.Pillars )
+		{
+			if ( pillar != null && pillar.IsAlive )
+				return true;
+		}
+		return false;
+	}
+
+	protected override void OnUpdate()
+	{
+		StateHasChanged();
+	}
+
+	protected override int BuildHash()
+	{
+		var boss = GetActiveBoss();
+		if ( boss == null )
+			return 0;
+
+		return ( boss.CurrentHealth, boss.MaxHealth, boss.IsDead, HasProtectedPillar( boss ), boss.BossName ).GetHashCode();
+	}
+}

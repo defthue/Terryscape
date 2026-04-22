@@ -62,7 +62,6 @@ public sealed class ArrowProjectile : Component
 			return;
 
 		var monster = trace.GameObject.Components.Get<Monster>();
-
 		if ( monster != null )
 		{
 			float triangleMult = CombatTriangle.GetDealMultiplier( Style, monster.CombatStyle );
@@ -70,6 +69,18 @@ public sealed class ArrowProjectile : Component
 			if ( finalDamage < 1 ) finalDamage = 1;
 
 			monster.TakeDamage( finalDamage, Shooter );
+			GameObject.Destroy();
+			return;
+		}
+
+		var boss = trace.GameObject.Components.Get<Boss>();
+		if ( boss != null )
+		{
+			float triangleMult = CombatTriangle.GetDealMultiplier( Style, boss.CombatStyle );
+			int finalDamage = (int)( Damage * triangleMult );
+			if ( finalDamage < 1 ) finalDamage = 1;
+
+			boss.TakeDamage( finalDamage, Shooter );
 			GameObject.Destroy();
 			return;
 		}

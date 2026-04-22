@@ -424,6 +424,19 @@
         "SwingCooldown": 0.5,
         "TraceDistance": 5,
         "TraceRadius": 20
+      },
+      {
+        "__type": "KnockbackReceiver",
+        "__guid": "455b2e30-e60a-453a-84f7-733779e096f8",
+        "__enabled": true,
+        "Flags": 0,
+        "FrictionPerSecond": 6,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null
       }
     ],
     "Children": [
@@ -564,7 +577,7 @@
             "OnTriggerExit": null,
             "Radius": 11.313708,
             "RollingResistance": null,
-            "Start": "0,0,60.68629",
+            "Start": "0,0,60.6862907",
             "Static": false,
             "Surface": null,
             "SurfaceVelocity": "0,0,0"
@@ -684,12 +697,6 @@
                 "RotationOffset": "0,90,0"
               },
               {
-                "ItemId": "AshwoodBow",
-                "Model": "models/tools/bows/ashwoodbow.vmdl",
-                "PositionOffset": "8.5,0,-25",
-                "RotationOffset": "0,90,0"
-              },
-              {
                 "ItemId": "WorldrootBow",
                 "Model": "models/tools/bows/worldrootbow.vmdl",
                 "PositionOffset": "6.5,0,-22",
@@ -717,8 +724,8 @@
         "__version": 2,
         "Flags": 0,
         "Name": "Main Camera",
-        "Position": "-113.7159,-1626.586,219.845",
-        "Rotation": "-0.1918868,0.1665709,0.5255729,0.8119155",
+        "Position": "-113.715897,-1626.58606,219.845001",
+        "Rotation": "-0.191886798,0.166570902,0.525572896,0.811915517",
         "Scale": "1,1,1",
         "Tags": "",
         "Enabled": true,
@@ -777,6 +784,7 @@
         "AgentMaxSlope": 40,
         "ExcludedBodies": "",
         "IncludedBodies": "",
+        "DeferGeneration": false,
         "CustomBounds": false
       }
     },

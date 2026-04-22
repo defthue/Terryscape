@@ -192,8 +192,9 @@ public sealed class PlayerGatherResource : Component
 
 		var node = trace.GameObject.Components.Get<ResourceNode>();
 		var monster = trace.GameObject.Components.Get<Monster>();
+		var boss = trace.GameObject.Components.Get<Boss>();
 
-		if ( node == null && monster == null )
+		if ( node == null && monster == null && boss == null )
 		{
 			var retryTrace = Scene.Trace
 				.Ray( start, end )
@@ -207,9 +208,10 @@ public sealed class PlayerGatherResource : Component
 			{
 				node = retryTrace.GameObject.Components.Get<ResourceNode>();
 				monster = retryTrace.GameObject.Components.Get<Monster>();
+				boss = retryTrace.GameObject.Components.Get<Boss>();
 			}
 
-			if ( node == null && monster == null )
+			if ( node == null && monster == null && boss == null )
 			{
 				TriggerSwingAnimation( false );
 				GameLog.Add( "You swing but hit nothing.", "#6a6a6a" );
@@ -222,6 +224,13 @@ public sealed class PlayerGatherResource : Component
 
 		if ( inventory == null || skills == null )
 			return;
+
+		if ( boss != null )
+		{
+			TriggerSwingAnimation( false );
+			HandleBossHit( boss, inventory, skills );
+			return;
+		}
 
 		if ( monster != null )
 		{
@@ -272,6 +281,43 @@ public sealed class PlayerGatherResource : Component
 		GameLog.Add( $"You hit {monster.MonsterName} for {damage} damage. ({monster.CurrentHealth}/{monster.MaxHealth} HP left)", "#a8c8a8" );
 
 		monster.TakeDamage( damage, GameObject );
+	}
+
+	void HandleBossHit( Boss boss, Inventory inventory, Skills skills )
+	{
+		var weaponDef = inventory.GetEquippedWeaponDef();
+		CombatStyle playerStyle = CombatTriangle.GetStyleFromWeapon( weaponDef );
+
+		SkillType combatSkill = SkillType.Attack;
+		float weaponPower = 1f;
+
+		if ( weaponDef != null )
+		{
+			weaponPower = weaponDef.WeaponPower;
+
+			if ( weaponDef.Type == ItemType.MagicWeapon )
+				combatSkill = SkillType.Magic;
+		}
+
+		float skillBonus = skills.GetCombatPower( combatSkill );
+		float triangleMult = CombatTriangle.GetDealMultiplier( playerStyle, boss.CombatStyle );
+
+		float buffMult = 1f;
+		var potionSystem = GameObject.Components.Get<PotionSystem>();
+		if ( potionSystem != null )
+		{
+			if ( combatSkill == SkillType.Attack )
+				buffMult = potionSystem.GetBuffMultiplier( BuffType.Attack );
+			else if ( combatSkill == SkillType.Magic )
+				buffMult = potionSystem.GetBuffMultiplier( BuffType.Magic );
+		}
+
+		int damage = (int)( weaponPower * skillBonus * triangleMult * buffMult );
+		if ( damage < 1 ) damage = 1;
+
+		GameLog.Add( $"You hit {boss.BossName} for {damage} damage. ({boss.CurrentHealth}/{boss.MaxHealth} HP left)", "#a8c8a8" );
+
+		boss.TakeDamage( damage, GameObject );
 	}
 
 	void HandleResourceHit( ResourceNode node, Inventory inventory, Skills skills )
