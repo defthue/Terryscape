@@ -91,16 +91,71 @@ public sealed class NpcInteract : Component
 			return;
 
 		var shop = Components.Get<ShopStation>();
-		if ( shop != null )
+		bool questAvailable = HasAvailableQuestOnNpc();
+
+		if ( shop != null && questAvailable )
 		{
 			ShopStation.ShowingChoice = true;
 			ShopStation.ChoosingShop = shop;
 			Mouse.Visibility = MouseVisibility.Visible;
 		}
-		else
+		else if ( shop != null )
+		{
+			shop.OpenShop();
+		}
+		else if ( questAvailable )
 		{
 			OpenDialogue();
 		}
+	}
+
+	bool HasAvailableQuestOnNpc()
+	{
+		var allQuests = GameObject.Components.GetAll<NpcInteract>();
+
+		foreach ( var quest in allQuests )
+		{
+			if ( quest.State == QuestState.Locked )
+				continue;
+
+			if ( quest.State == QuestState.Completed && !quest.Repeatable )
+			{
+				if ( !quest.HasFollowUpOnThisNpc() )
+					continue;
+
+				return true;
+			}
+
+			return true;
+		}
+
+		return false;
+	}
+
+	public static bool NpcHasAvailableQuest( GameObject npcObject )
+	{
+		if ( npcObject == null )
+			return false;
+
+		var allQuests = npcObject.Components.GetAll<NpcInteract>();
+
+		foreach ( var quest in allQuests )
+		{
+			if ( quest.State == QuestState.Locked )
+				continue;
+
+			if ( quest.State == QuestState.Completed && !quest.Repeatable )
+			{
+				if ( !quest.HasFollowUpOnThisNpc() )
+					continue;
+
+				return true;
+			}
+
+			return true;
+		}
+
+		return false;
 	}
 
 	bool IsActiveOnThisNpc()
@@ -231,7 +286,7 @@ public sealed class NpcInteract : Component
 		return DialogueOffer;
 	}
 
-	bool HasFollowUpOnThisNpc()
+	public bool HasFollowUpOnThisNpc()
 	{
 		if ( string.IsNullOrEmpty( QuestId ) )
 			return false;
@@ -375,6 +430,15 @@ public sealed class NpcInteract : Component
 
 	public bool ShouldShowMarker()
 	{
+		if ( State == QuestState.Locked )
+			return false;
+
+		if ( State == QuestState.OnCooldown )
+			return false;
+
+		if ( State == QuestState.Completed )
+			return HasFollowUpOnThisNpc();
+
 		return true;
 	}
 
