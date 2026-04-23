@@ -143,10 +143,14 @@
 									<div class="ingredient-count">@sellCount</div>
 								</div>
 
-								<div class="craft-button-area">
+								<div class="craft-button-area" style="gap: 10px;">
 									<div class="craft-button @(sellCount > 0 ? "" : "disabled")"
 										 onclick="@(() => DoSell())">
 										Sell
+									</div>
+									<div class="craft-button @(sellCount > 0 ? "" : "disabled")"
+										 onclick="@(() => DoSellAllRequest())">
+										Sell All
 									</div>
 								</div>
 							}
@@ -158,6 +162,24 @@
 					</div>
 				</div>
 			</div>
+
+			@if ( ShopStation.PendingSellAllItem != ItemId.None )
+			{
+				<div class="confirm-overlay">
+					<div class="confirm-popup">
+						<div class="confirm-title">Sell All?</div>
+						<div class="confirm-message">
+							Are you sure you want to sell <span class="confirm-amount">@ShopStation.PendingSellAllAmount</span>x
+							<span class="confirm-item">@GetItemName( ShopStation.PendingSellAllItem )</span>
+							for <span class="confirm-gold">@ShopStation.PendingSellAllTotalGold gold</span>?
+						</div>
+						<div class="confirm-buttons">
+							<div class="craft-button" onclick="@(() => CancelSellAll())">Cancel</div>
+							<div class="craft-button confirm-yes" onclick="@(() => ConfirmSellAll())">Sell All</div>
+						</div>
+					</div>
+				</div>
+			}
 		</div>
 	}
 </root>
@@ -192,6 +214,12 @@
 			return "";
 
 		return $"/ItemIcons/{id}.png";
+	}
+
+	string GetItemName( ItemId id )
+	{
+		var def = ItemDatabase.Get( id );
+		return def != null ? def.Name : id.ToString();
 	}
 
 	bool HasEnoughGold( int price )
@@ -239,6 +267,27 @@
 		ShopStation.ActiveShop.TrySell( SelectedEntry.Item );
 	}
 
+	void DoSellAllRequest()
+	{
+		if ( ShopStation.ActiveShop == null || SelectedEntry == null )
+			return;
+
+		ShopStation.ActiveShop.RequestSellAll( SelectedEntry.Item );
+	}
+
+	void ConfirmSellAll()
+	{
+		if ( ShopStation.ActiveShop == null )
+			return;
+
+		ShopStation.ActiveShop.ConfirmSellAll();
+	}
+
+	void CancelSellAll()
+	{
+		ShopStation.ClearPendingSellAll();
+	}
+
 	void DoSellUnique()
 	{
 		if ( ShopStation.ActiveShop == null || SelectedUniqueIndex < 0 )
@@ -281,6 +330,11 @@
 			case ItemType.Misc: return "#8a8a6a";
 			default: return "#888";
 		}
+	}
+
+	protected override void OnUpdate()
+	{
+		StateHasChanged();
 	}
 
 	protected override int BuildHash()
@@ -359,7 +413,9 @@
 			IsBuyMode,
 			SelectedIsUnique,
 			SelectedUniqueIndex,
-			invHash
+			invHash,
+			ShopStation.PendingSellAllItem,
+			ShopStation.PendingSellAllAmount
 		).GetHashCode();
 	}
 }

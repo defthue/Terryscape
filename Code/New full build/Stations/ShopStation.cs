@@ -9,6 +9,10 @@ public sealed class ShopStation : Component
 	public static ShopStation ChoosingShop { get; set; }
 	public static bool ShowingChoice { get; set; }
 
+	public static ItemId PendingSellAllItem { get; set; } = ItemId.None;
+	public static int PendingSellAllAmount { get; set; }
+	public static int PendingSellAllTotalGold { get; set; }
+
 	bool HasQuest => Components.Get<NpcInteract>() != null;
 
 	protected override void OnUpdate()
@@ -77,12 +81,14 @@ public sealed class ShopStation : Component
 		ShowingChoice = false;
 		ChoosingShop = null;
 		ActiveShop = null;
+		ClearPendingSellAll();
 		Mouse.Visibility = MouseVisibility.Hidden;
 	}
 
 	public static void CloseShop()
 	{
 		ActiveShop = null;
+		ClearPendingSellAll();
 		Mouse.Visibility = MouseVisibility.Hidden;
 	}
 
@@ -153,6 +159,84 @@ public sealed class ShopStation : Component
 		string name = def != null ? def.Name : item.ToString();
 		GameLog.Add( $"Sold {name} for {entry.SellPrice} gold.", "#f0c040" );
 		return true;
+	}
+
+	public bool RequestSellAll( ItemId item )
+	{
+		var shop = GetShopDefinition();
+		if ( shop == null )
+			return false;
+
+		var entry = shop.GetEntry( item );
+		if ( entry == null || entry.SellPrice <= 0 )
+			return false;
+
+		var inventory = GetPlayerInventory();
+		if ( inventory == null )
+			return false;
+
+		int amount = inventory.GetItemCount( item );
+		if ( amount <= 0 )
+			return false;
+
+		PendingSellAllItem = item;
+		PendingSellAllAmount = amount;
+		PendingSellAllTotalGold = amount * entry.SellPrice;
+		return true;
+	}
+
+	public bool ConfirmSellAll()
+	{
+		if ( PendingSellAllItem == ItemId.None || PendingSellAllAmount <= 0 )
+			return false;
+
+		var shop = GetShopDefinition();
+		if ( shop == null )
+		{
+			ClearPendingSellAll();
+			return false;
+		}
+
+		var entry = shop.GetEntry( PendingSellAllItem );
+		if ( entry == null || entry.SellPrice <= 0 )
+		{
+			ClearPendingSellAll();
+			return false;
+		}
+
+		var inventory = GetPlayerInventory();
+		if ( inventory == null )
+		{
+			ClearPendingSellAll();
+			return false;
+		}
+
+		int actualAmount = inventory.GetItemCount( PendingSellAllItem );
+		if ( actualAmount <= 0 )
+		{
+			ClearPendingSellAll();
+			return false;
+		}
+
+		int amountToSell = System.Math.Min( actualAmount, PendingSellAllAmount );
+		int totalGold = amountToSell * entry.SellPrice;
+
+		inventory.RemoveItem( PendingSellAllItem, amountToSell );
+		inventory.AddItem( ItemId.GoldCoin, totalGold );
+
+		var def = ItemDatabase.Get( PendingSellAllItem );
+		string name = def != null ? def.Name : PendingSellAllItem.ToString();
+		GameLog.Add( $"Sold {amountToSell}x {name} for {totalGold} gold.", "#f0c040" );
+
+		ClearPendingSellAll();
+		return true;
+	}
+
+	public static void ClearPendingSellAll()
+	{
+		PendingSellAllItem = ItemId.None;
+		PendingSellAllAmount = 0;
+		PendingSellAllTotalGold = 0;
 	}
 
 	public bool TrySellUnique( int uniqueIndex )
