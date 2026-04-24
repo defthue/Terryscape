@@ -26,16 +26,6 @@ public sealed class Inventory : Component
 		_killCounts.Clear();
 		_equippedAmmoId = ItemId.None;
 		_equippedAmmoCount = 0;
-		AddItem( ItemId.AbyssiumHeavyHelm, 1 );
-		AddItem( ItemId.AbyssiumHeavyChestplate, 1 );
-		AddItem( ItemId.AbyssiumHeavyLegs, 1 );
-		AddItem( ItemId.AbyssiumHatchet, 1 );
-		AddItem( ItemId.AbyssiumPickaxe, 1 );
-		AddItem( ItemId.WorldrootStaff, 1 );
-		AddItem( ItemId.WorldrootBow, 1 );
-		AddItem( ItemId.CoppiteArrow, 50 );
-		AddItem( ItemId.ManaPotion, 10 );
-		AddItem( ItemId.AbyssiumSword, 1 );
 		}
 
 	public static bool IsEquipmentItem( ItemId id )

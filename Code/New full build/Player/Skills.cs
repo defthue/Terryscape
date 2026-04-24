@@ -38,15 +38,6 @@ public sealed class Skills : Component
 		var skills = GameObject.Components.Get<Skills>();
 		if ( skills != null )
 		{
-			skills.AddXp( SkillType.Woodcutting, 200000 );
-			skills.AddXp( SkillType.Mining, 200000 );
-			skills.AddXp( SkillType.Enchanting, 200000 );
-			skills.AddXp( SkillType.Smithing, 200000 );
-			skills.AddXp( SkillType.Crafting, 200000 );
-			skills.AddXp( SkillType.Attack, 200000 );
-			skills.AddXp( SkillType.Defence, 200000 );
-			skills.AddXp( SkillType.Archery, 200000 );
-			skills.AddXp( SkillType.Magic, 200000 );
 		}
 	}
 
