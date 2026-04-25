@@ -47,6 +47,43 @@ public sealed class NpcInteract : Component
 		public int Amount;
 	}
 
+	protected override void OnStart()
+	{
+		// Sync NPC state with what the player's inventory remembers from their cloud save.
+		// Note: the cloud save loads async, so this might run before the inventory is populated.
+		// PlayerPersistence calls RefreshFromPersistedState() on every NPC after the load finishes.
+		CheckPersistedCompletion();
+	}
+
+	/// <summary>
+	/// Public hook for PlayerPersistence to call once the cloud save has been loaded
+	/// and applied to the player's inventory. Re-checks completion state.
+	/// </summary>
+	public void RefreshFromPersistedState()
+	{
+		CheckPersistedCompletion();
+	}
+
+	void CheckPersistedCompletion()
+	{
+		if ( string.IsNullOrEmpty( QuestId ) )
+			return;
+
+		var inventory = GetPlayerInventory();
+		if ( inventory == null )
+			return;
+
+		if ( !inventory.IsQuestCompleted( QuestId ) )
+			return;
+
+		// Repeatable quests stay Available — "you've done it before, you can do it again."
+		// We don't persist cooldowns, so a freshly loaded repeatable quest is always ready to redo.
+		if ( Repeatable )
+			return;
+
+		State = QuestState.Completed;
+	}
+
 	protected override void OnUpdate()
 	{
 		if ( _cooldownRemaining > 0f )

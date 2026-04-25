@@ -13,6 +13,14 @@ public class ItemInstance
 	public EnchantmentType Enchantment;
 	public float EnchantmentPercent;
 
+	// Parameterless constructor for deserialization. Do not remove.
+	public ItemInstance()
+	{
+		ItemId = ItemId.None;
+		Enchantment = EnchantmentType.None;
+		EnchantmentPercent = 0f;
+	}
+
 	public ItemInstance( ItemId itemId )
 	{
 		ItemId = itemId;

@@ -17,6 +17,11 @@ public sealed class Inventory : Component
 
 	protected override void OnStart()
 	{
+		InitializeDefaults();
+	}
+
+	void InitializeDefaults()
+	{
 		_items.Clear();
 		_uniqueItems.Clear();
 		_equippedUnique.Clear();
@@ -26,7 +31,11 @@ public sealed class Inventory : Component
 		_killCounts.Clear();
 		_equippedAmmoId = ItemId.None;
 		_equippedAmmoCount = 0;
-		}
+	}
+
+	public void GrantStarterKit()
+	{
+	}
 
 	public static bool IsEquipmentItem( ItemId id )
 	{
@@ -73,6 +82,8 @@ public sealed class Inventory : Component
 		{
 			for ( int i = 0; i < amount; i++ )
 				_uniqueItems.Add( new ItemInstance( id ) );
+
+			PlayerPersistence.Local?.RequestSaveNow();
 			return true;
 		}
 
@@ -126,6 +137,7 @@ public sealed class Inventory : Component
 	public void AddUniqueItem( ItemInstance instance )
 	{
 		_uniqueItems.Add( instance );
+		PlayerPersistence.Local?.RequestSaveNow();
 	}
 
 	public void RemoveUniqueItem( int index )
@@ -346,7 +358,11 @@ public sealed class Inventory : Component
 
 	public void UnlockRecipe( string recipeId )
 	{
-		_unlockedRecipes.Add( recipeId );
+		if ( _unlockedRecipes.Add( recipeId ) )
+		{
+			Log.Info( $"[Inventory] Recipe unlocked: {recipeId}" );
+			PlayerPersistence.Local?.RequestSaveNow();
+		}
 	}
 
 	public ItemDefinition GetEquippedWeaponDef()
@@ -511,7 +527,11 @@ public sealed class Inventory : Component
 
 	public void CompleteQuest( string questId )
 	{
-		_completedQuests.Add( questId );
+		if ( _completedQuests.Add( questId ) )
+		{
+			Log.Info( $"[Inventory] Quest completed: {questId}" );
+			PlayerPersistence.Local?.RequestSaveNow();
+		}
 	}
 
 	public HashSet<string> GetCompletedQuests()
@@ -538,5 +558,108 @@ public sealed class Inventory : Component
 	public Dictionary<string, int> GetAllKillCounts()
 	{
 		return _killCounts;
+	}
+
+	public PlayerSaveData ToSaveData( PlayerSaveData data )
+	{
+		data.Stackables = new Dictionary<string, int>();
+		foreach ( var kv in _items )
+			data.Stackables[kv.Key.ToString()] = kv.Value;
+
+		data.UniqueItems = new List<PlayerSaveData.UniqueItemEntry>();
+		foreach ( var item in _uniqueItems )
+		{
+			data.UniqueItems.Add( new PlayerSaveData.UniqueItemEntry
+			{
+				ItemId = item.ItemId.ToString(),
+				Enchantment = item.Enchantment.ToString(),
+				EnchantmentPercent = item.EnchantmentPercent
+			} );
+		}
+
+		data.Equipped = new Dictionary<string, PlayerSaveData.UniqueItemEntry>();
+		foreach ( var kv in _equippedUnique )
+		{
+			data.Equipped[kv.Key.ToString()] = new PlayerSaveData.UniqueItemEntry
+			{
+				ItemId = kv.Value.ItemId.ToString(),
+				Enchantment = kv.Value.Enchantment.ToString(),
+				EnchantmentPercent = kv.Value.EnchantmentPercent
+			};
+		}
+
+		data.EquippedAmmoId = _equippedAmmoId.ToString();
+		data.EquippedAmmoQty = _equippedAmmoCount;
+
+		data.Recipes = new List<string>( _unlockedRecipes );
+		data.Stones = new List<string>( _discoveredStones );
+		data.Quests = new List<string>( _completedQuests );
+		data.Kills = new Dictionary<string, int>( _killCounts );
+
+		return data;
+	}
+
+	public void ApplySaveData( PlayerSaveData data )
+	{
+		InitializeDefaults();
+
+		if ( data == null )
+			return;
+
+		foreach ( var kv in data.Stackables )
+		{
+			if ( !System.Enum.TryParse<ItemId>( kv.Key, out var id ) )
+				continue;
+			if ( id == ItemId.None )
+				continue;
+
+			_items[id] = kv.Value;
+		}
+
+		foreach ( var entry in data.UniqueItems )
+		{
+			if ( !System.Enum.TryParse<ItemId>( entry.ItemId, out var id ) )
+				continue;
+			if ( id == ItemId.None )
+				continue;
+
+			var enchant = EnchantmentType.None;
+			System.Enum.TryParse<EnchantmentType>( entry.Enchantment, out enchant );
+
+			_uniqueItems.Add( new ItemInstance( id, enchant, entry.EnchantmentPercent ) );
+		}
+
+		foreach ( var kv in data.Equipped )
+		{
+			if ( !System.Enum.TryParse<EquipSlot>( kv.Key, out var slot ) )
+				continue;
+			if ( !System.Enum.TryParse<ItemId>( kv.Value.ItemId, out var id ) )
+				continue;
+			if ( id == ItemId.None )
+				continue;
+
+			var enchant = EnchantmentType.None;
+			System.Enum.TryParse<EnchantmentType>( kv.Value.Enchantment, out enchant );
+
+			_equippedUnique[slot] = new ItemInstance( id, enchant, kv.Value.EnchantmentPercent );
+		}
+
+		if ( System.Enum.TryParse<ItemId>( data.EquippedAmmoId, out var ammoId ) )
+		{
+			_equippedAmmoId = ammoId;
+			_equippedAmmoCount = data.EquippedAmmoQty;
+		}
+
+		foreach ( var r in data.Recipes )
+			_unlockedRecipes.Add( r );
+
+		foreach ( var s in data.Stones )
+			_discoveredStones.Add( s );
+
+		foreach ( var q in data.Quests )
+			_completedQuests.Add( q );
+
+		foreach ( var kv in data.Kills )
+			_killCounts[kv.Key] = kv.Value;
 	}
 }

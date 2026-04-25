@@ -27,17 +27,18 @@ public sealed class Skills : Component
 
 	protected override void OnStart()
 	{
+		InitializeDefaults();
+	}
+
+	void InitializeDefaults()
+	{
+		_skills.Clear();
 		foreach ( SkillType skill in System.Enum.GetValues( typeof( SkillType ) ) )
 		{
 			if ( skill == SkillType.None )
 				continue;
 
 			_skills[skill] = new SkillData();
-		}
-
-		var skills = GameObject.Components.Get<Skills>();
-		if ( skills != null )
-		{
 		}
 	}
 
@@ -82,16 +83,22 @@ public sealed class Skills : Component
 
 		int required = GetXpRequired( data.Level );
 
+		bool leveledUp = false;
+
 		while ( data.Xp >= required && required > 0 )
 		{
 			data.Xp -= required;
 			data.Level++;
+			leveledUp = true;
 
 			string skillName = skill.ToString();
 			GameLog.Add( $"{skillName} leveled up to {data.Level}!", "#f0c040" );
 
 			required = GetXpRequired( data.Level );
 		}
+
+		if ( leveledUp )
+			PlayerPersistence.Local?.RequestSaveNow();
 	}
 
 	public void AddCombatXp( SkillType combatStyle, int amount )
@@ -135,5 +142,40 @@ public sealed class Skills : Component
 	{
 		int level = GetLevel( SkillType.Defence );
 		return 1.0f + (level - 1) * 0.02f;
+	}
+
+	public Dictionary<string, PlayerSaveData.SkillEntry> ToSaveData()
+	{
+		var result = new Dictionary<string, PlayerSaveData.SkillEntry>();
+		foreach ( var kv in _skills )
+		{
+			result[kv.Key.ToString()] = new PlayerSaveData.SkillEntry
+			{
+				Level = kv.Value.Level,
+				Xp = kv.Value.Xp
+			};
+		}
+		return result;
+	}
+
+	public void ApplySaveData( Dictionary<string, PlayerSaveData.SkillEntry> data )
+	{
+		InitializeDefaults();
+
+		if ( data == null )
+			return;
+
+		foreach ( var kv in data )
+		{
+			if ( !System.Enum.TryParse<SkillType>( kv.Key, out var skill ) )
+				continue;
+			if ( skill == SkillType.None )
+				continue;
+			if ( !_skills.ContainsKey( skill ) )
+				_skills[skill] = new SkillData();
+
+			_skills[skill].Level = kv.Value.Level;
+			_skills[skill].Xp = kv.Value.Xp;
+		}
 	}
 }

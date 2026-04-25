@@ -437,6 +437,19 @@
         "OnComponentFixedUpdate": null,
         "OnComponentStart": null,
         "OnComponentUpdate": null
+      },
+      {
+        "__type": "PlayerPersistence",
+        "__guid": "53c0742f-1843-47a2-8f6d-55b60c9b9d18",
+        "__enabled": true,
+        "Flags": 0,
+        "AutoSaveIntervalSeconds": 30,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null
       }
     ],
     "Children": [

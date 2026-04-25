@@ -28,6 +28,9 @@ public sealed class GameManager : Component, Component.INetworkListener
 	{
 		Instance = this;
 
+		// Initialize Network Storage as early as possible so any player that joins immediately has it ready.
+		NetworkStorageConfig.EnsureInitialized();
+
 		if ( !AutoCreateLobby )
 			return;
 
