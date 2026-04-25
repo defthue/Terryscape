@@ -1,0 +1,22 @@
+{
+  "publish": {
+    "Enabled": false,
+    "ProjectConfig": {
+      "Title": "Tha Gima 2",
+      "Type": "map",
+      "Org": "local",
+      "Ident": "thagima2",
+      "Schema": 0,
+      "IncludeSourceFiles": false,
+      "Resources": null,
+      "PackageReferences": null,
+      "EditorReferences": null,
+      "Mounts": null,
+      "IsStandaloneOnly": false,
+      "Metadata": {
+        "SingleAssetSource": "scenes/tha gima2.scene",
+        "ParentPackage": "defthue.terrysquest"
+      }
+    }
+  }
+}

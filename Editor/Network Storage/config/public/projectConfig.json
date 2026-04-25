@@ -1,0 +1,10 @@
+{
+  "projectId": "your-project-id-here",
+  "publicKey": "sbox_ns_your_public_key_here",
+  "baseUrl": "https://api.sboxcool.com",
+  "cdnUrl": "",
+  "apiVersion": "v3",
+  "dataFolder": "Network Storage",
+  "dataSource": "api_then_json",
+  "proxyEnabled": true
+}

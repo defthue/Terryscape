@@ -1,8 +1,8 @@
 {
-  "Title": "TerryScape",
+  "Title": "Terry's Quest",
   "Type": "game",
-  "Org": "fern",
-  "Ident": "terryscape",
+  "Org": "defthue",
+  "Ident": "terrysquest1",
   "Schema": 1,
   "IncludeSourceFiles": false,
   "Resources": null,
@@ -23,12 +23,14 @@
     "PerMapRanking": false,
     "LeaderboardType": "None",
     "CsProjName": "",
-    "StartupScene": "terryscape1.scene",
+    "StartupScene": "scenes/tha gima2.scene",
     "ControlModes": {
       "Keyboard": false,
       "VR": false,
       "Gamepad": false
     },
-    "LaunchMode": "Normal"
+    "LaunchMode": "QuickPlay",
+    "ParentPackage": null,
+    "DedicatedServerStartupScene": "scenes/tha gima2.scene"
   }
 }
