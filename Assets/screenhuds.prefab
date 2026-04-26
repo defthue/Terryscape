@@ -167,7 +167,7 @@
       },
       {
         "__type": "Sandbox.Player.WelcomeHud",
-        "__guid": "9dc9304f-cceb-4730-baf4-e6b8b8e21113",
+        "__guid": "c0675c0f-be69-4fde-b229-a7405ebb285a",
         "__enabled": true,
         "Flags": 0,
         "OnComponentDestroy": null,

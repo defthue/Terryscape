@@ -1,0 +1,25 @@
+@using Sandbox;
+@using Sandbox.UI;
+@inherits PanelComponent
+
+<root>
+	@if ( Bubble != null && Bubble.IsVisible && !string.IsNullOrEmpty( Bubble.CurrentMessage ) )
+	{
+		<div class="speech-bubble">
+			<div class="speech-text">@Bubble.CurrentMessage</div>
+			<div class="speech-tail"></div>
+		</div>
+	}
+</root>
+
+@code
+{
+	[Property] public PlayerSpeechBubble Bubble { get; set; }
+
+	protected override int BuildHash()
+	{
+		if ( Bubble == null )
+			return 0;
+		return ( Bubble.IsVisible, Bubble.CurrentMessage ).GetHashCode();
+	}
+}

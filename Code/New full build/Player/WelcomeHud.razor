@@ -42,6 +42,10 @@
 									<div class="welcome-action">Open Chat</div>
 								</div>
 								<div class="welcome-control-row">
+									<div class="welcome-key">C</div>
+									<div class="welcome-action">Switch First / Third Person View</div>
+								</div>
+								<div class="welcome-control-row">
 									<div class="welcome-key">WASD</div>
 									<div class="welcome-action">Move</div>
 								</div>
@@ -158,6 +162,33 @@
 								<div class="welcome-tip">Your inventory, skills, completed quests, unlocked recipes, and discovered teleport stones follow you across any Terry's Quest server.</div>
 								<div class="welcome-tip">Log out anytime — your stuff comes with you.</div>
 							</div>
+						</div>
+					}
+
+					@if ( CurrentPage == 3 )
+					{
+						<div class="welcome-section">
+							<div class="welcome-heading">Join the Community</div>
+							<div class="welcome-subheading">Connect with other adventurers</div>
+							<div class="welcome-text">
+								Terry's Quest has an active Discord community. Join us to chat with other players, get help, share builds and screenshots, find people to play with, report bugs, and stay up to date on what's coming next.
+							</div>
+
+							<div class="welcome-discord-block" onclick="@(() => OnDiscordClick())">
+								<div class="welcome-discord-icon">💬</div>
+								<div class="welcome-discord-text">
+									<div class="welcome-discord-title">@DiscordButtonText</div>
+									<div class="welcome-discord-url">discord.gg/sBFvneAt</div>
+								</div>
+							</div>
+
+							<div class="welcome-tip-block">
+								<div class="welcome-tip-title">Why join?</div>
+								<div class="welcome-tip">Get help from experienced players when you're stuck</div>
+								<div class="welcome-tip">Find groups for quests, dungeons, and bosses</div>
+								<div class="welcome-tip">Report bugs directly to the developers</div>
+								<div class="welcome-tip">See what's coming in the next update</div>
+							</div>
 
 							<div class="welcome-final">Have fun, adventurer.</div>
 						</div>
@@ -182,13 +213,17 @@
 
 @code
 {
-	const int TotalPages = 3;
+	const int TotalPages = 4;
+	const string DiscordUrl = "https://discord.gg/sBFvneAt";
 
 	int CurrentPage { get; set; } = 0;
 	int FurthestPageReached { get; set; } = 0;
 	bool IsOpen { get; set; } = true;
+	bool CopiedToClipboard { get; set; } = false;
 
 	bool CanClose => FurthestPageReached >= TotalPages - 1;
+
+	string DiscordButtonText => CopiedToClipboard ? "Copied! Paste in your browser" : "Click to copy invite link";
 
 	protected override void OnStart()
 	{
@@ -202,6 +237,7 @@
 			case 0: return "Getting Started";
 			case 1: return "Gathering & Skills";
 			case 2: return "Quests, Crafting & Travel";
+			case 3: return "Community";
 			default: return "";
 		}
 	}
@@ -233,8 +269,14 @@
 		Mouse.Visibility = MouseVisibility.Hidden;
 	}
 
+	void OnDiscordClick()
+	{
+		Clipboard.SetText( DiscordUrl );
+		CopiedToClipboard = true;
+	}
+
 	protected override int BuildHash()
 	{
-		return ( CurrentPage, FurthestPageReached, IsOpen ).GetHashCode();
+		return ( CurrentPage, FurthestPageReached, IsOpen, CopiedToClipboard ).GetHashCode();
 	}
 }

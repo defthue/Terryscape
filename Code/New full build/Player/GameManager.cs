@@ -20,9 +20,10 @@ public sealed class GameManager : Component, Component.INetworkListener
 	}
 
 	public List<ChatMessage> ChatMessages { get; private set; } = new();
-	public float ChatLifetime { get; set; } = 60f;
 	public bool ChatOpen { get; set; }
 	public string ChatInput { get; set; } = "";
+
+	const int MaxChatMessages = 100;
 
 	protected override async void OnStart()
 	{
@@ -47,8 +48,6 @@ public sealed class GameManager : Component, Component.INetworkListener
 
 	protected override void OnUpdate()
 	{
-		ChatMessages.RemoveAll( m => m.Created > ChatLifetime );
-
 		if ( Input.Pressed( "Chat" ) && !ChatOpen )
 		{
 			ChatOpen = true;
@@ -63,19 +62,23 @@ public sealed class GameManager : Component, Component.INetworkListener
 
 		var player = PlayerHelper.GetLocalPlayer();
 		string name = "Player";
+		ulong steamId = 0;
 
 		if ( player != null )
 		{
 			var pc = player.Components.Get<PlayerController>();
 			if ( pc != null )
+			{
 				name = pc.Network.Owner?.DisplayName ?? "Player";
+				steamId = pc.Network.Owner?.SteamId ?? 0;
+			}
 		}
 
-		BroadcastChat( name, text );
+		BroadcastChat( name, text, steamId );
 	}
 
 	[Rpc.Broadcast]
-	void BroadcastChat( string sender, string text )
+	void BroadcastChat( string sender, string text, ulong speakerSteamId )
 	{
 		ChatMessages.Add( new ChatMessage
 		{
@@ -84,8 +87,28 @@ public sealed class GameManager : Component, Component.INetworkListener
 			Created = 0
 		} );
 
-		if ( ChatMessages.Count > 100 )
+		if ( ChatMessages.Count > MaxChatMessages )
 			ChatMessages.RemoveAt( 0 );
+
+		// Trigger the speech bubble for the speaking player, if we can find them.
+		// steamId == 0 means it's a server message ("X has joined") — no bubble for those.
+		if ( speakerSteamId != 0 )
+		{
+			var bubble = FindBubbleForSteamId( speakerSteamId );
+			if ( bubble != null )
+				bubble.ShowMessage( text );
+		}
+	}
+
+	PlayerSpeechBubble FindBubbleForSteamId( ulong steamId )
+	{
+		foreach ( var bubble in Scene.GetAllComponents<PlayerSpeechBubble>() )
+		{
+			var ownerId = bubble.Network.Owner?.SteamId ?? 0;
+			if ( ownerId == steamId )
+				return bubble;
+		}
+		return null;
 	}
 
 	public void CloseChat()
@@ -109,14 +132,15 @@ public sealed class GameManager : Component, Component.INetworkListener
 
 		Log.Info( $"Player spawned: {connection.DisplayName}" );
 
-		BroadcastChat( "Server", $"{connection.DisplayName} has joined." );
+		// Server messages have steamId 0 — no bubble.
+		BroadcastChat( "Server", $"{connection.DisplayName} has joined.", 0 );
 	}
 
 	public void OnDisconnected( Connection connection )
 	{
 		Log.Info( $"Player disconnected: {connection.DisplayName}" );
 
-		BroadcastChat( "Server", $"{connection.DisplayName} has left." );
+		BroadcastChat( "Server", $"{connection.DisplayName} has left.", 0 );
 	}
 
 	public void OnBecameHost( Connection previousHost )

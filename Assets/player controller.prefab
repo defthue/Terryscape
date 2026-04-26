@@ -456,6 +456,18 @@
         "OnComponentFixedUpdate": null,
         "OnComponentStart": null,
         "OnComponentUpdate": null
+      },
+      {
+        "__type": "PlayerSpeechBubble",
+        "__guid": "63a8a4fc-7887-418d-9813-13e65d3e7fe0",
+        "__enabled": true,
+        "Flags": 0,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null
       }
     ],
     "Children": [
@@ -469,7 +481,7 @@
         "Scale": "1,1,1",
         "Tags": "",
         "Enabled": true,
-        "NetworkMode": 0,
+        "NetworkMode": 1,
         "NetworkFlags": 0,
         "NetworkOrphaned": 0,
         "NetworkTransmit": true,
@@ -876,6 +888,18 @@
                 "Model": "models/tools/bows/ashwoodbow.vmdl",
                 "PositionOffset": "6.5,0,-22",
                 "RotationOffset": "0,90,0"
+              },
+              {
+                "ItemId": "PrimitiveHatchet",
+                "Model": "models/tools/hatchets/primitivehatchetfbx.vmdl",
+                "PositionOffset": "0,0,-12",
+                "RotationOffset": "0,80,0"
+              },
+              {
+                "ItemId": "None",
+                "Model": "models/tools/pickaxes/primitivepickaxe.vmdl",
+                "PositionOffset": "0,0,-11",
+                "RotationOffset": "0,90,0"
               }
             ],
             "ToolRenderer": {
@@ -898,7 +922,7 @@
         "Scale": "1,1,1",
         "Tags": "",
         "Enabled": true,
-        "NetworkMode": 0,
+        "NetworkMode": 1,
         "NetworkFlags": 0,
         "NetworkOrphaned": 0,
         "NetworkTransmit": true,
@@ -932,6 +956,67 @@
             "Viewport": "0,0,1,1",
             "ZFar": 10000,
             "ZNear": 10
+          }
+        ],
+        "Children": []
+      },
+      {
+        "__guid": "41031b9c-b8d5-4b1e-bae0-a0f275263f33",
+        "__version": 2,
+        "Flags": 0,
+        "Name": "SpeechBubbleAnchor",
+        "Position": "0,0,120",
+        "Rotation": "0,0,0,1",
+        "Scale": "1,1,1",
+        "Tags": "",
+        "Enabled": true,
+        "NetworkMode": 1,
+        "NetworkFlags": 0,
+        "NetworkOrphaned": 0,
+        "NetworkTransmit": true,
+        "OwnerTransfer": 1,
+        "Components": [
+          {
+            "__type": "Sandbox.WorldPanel",
+            "__guid": "3cba9cff-3224-402a-9621-2c93528bebf4",
+            "__enabled": true,
+            "Flags": 0,
+            "HorizontalAlign": "Center",
+            "InteractionRange": 1000,
+            "LookAtCamera": true,
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "PanelSize": "1200,1200",
+            "RenderOptions": {
+              "GameLayer": true,
+              "OverlayLayer": false,
+              "BloomLayer": false,
+              "AfterUILayer": false
+            },
+            "RenderScale": 1,
+            "VerticalAlign": "Center"
+          },
+          {
+            "__type": "Sandbox.Player.PlayerSpeechBubblePanel",
+            "__guid": "2d53b48f-cd04-4bae-bb78-52d22a4858b9",
+            "__enabled": true,
+            "Flags": 0,
+            "Bubble": {
+              "_type": "component",
+              "component_id": "63a8a4fc-7887-418d-9813-13e65d3e7fe0",
+              "go": "43dc9686-8264-42d7-9f3e-17be6bb1f957",
+              "component_type": "PlayerSpeechBubble"
+            },
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null
           }
         ],
         "Children": []

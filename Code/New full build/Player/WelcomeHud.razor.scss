@@ -100,7 +100,6 @@
 }
 
 .welcome-heading {
-	display: block;
 	font-size: 32px;
 	color: #c9a84c;
 	font-weight: 600;
@@ -111,7 +110,6 @@
 }
 
 .welcome-subheading {
-	display: block;
 	font-size: 18px;
 	color: #a89060;
 	font-style: italic;
@@ -121,7 +119,6 @@
 }
 
 .welcome-text {
-	display: block;
 	font-size: 18px;
 	color: #d4cfc0;
 	line-height: 22px;
@@ -143,7 +140,6 @@
 }
 
 .welcome-controls-title {
-	display: block;
 	font-size: 18px;
 	color: #c9a84c;
 	font-weight: 600;
@@ -178,7 +174,6 @@
 }
 
 .welcome-action {
-	display: block;
 	font-size: 17px;
 	color: #d4cfc0;
 	flex: 1;
@@ -198,7 +193,6 @@
 }
 
 .welcome-tip-title {
-	display: block;
 	font-size: 17px;
 	color: #c9a84c;
 	font-weight: 600;
@@ -208,7 +202,6 @@
 }
 
 .welcome-tip {
-	display: block;
 	font-size: 16px;
 	color: #d4cfc0;
 	line-height: 20px;
@@ -219,7 +212,6 @@
 }
 
 .welcome-tip-emphasis {
-	display: block;
 	font-size: 16px;
 	color: #ffe88a;
 	font-weight: 600;
@@ -231,7 +223,6 @@
 }
 
 .welcome-list-title {
-	display: block;
 	font-size: 18px;
 	color: #c9a84c;
 	font-weight: 600;
@@ -265,7 +256,6 @@
 }
 
 .welcome-skill-name {
-	display: block;
 	font-size: 17px;
 	color: #c9a84c;
 	font-weight: 600;
@@ -274,15 +264,59 @@
 }
 
 .welcome-skill-desc {
-	display: block;
 	font-size: 16px;
 	color: #d4cfc0;
 	flex: 1;
-	word-wrap: break-word;
+	word-break: break-word;
+}
+
+.welcome-discord-block {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	gap: 18px;
+	padding: 18px 22px;
+	margin-bottom: 18px;
+	background: linear-gradient(135deg, #5865f2cc, #404eed99);
+	border: 2px solid #7983f5;
+	border-radius: 8px;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	flex-shrink: 0;
+
+	&:hover {
+		background: linear-gradient(135deg, #7983f5dd, #5865f2bb);
+		border-color: #ffe88a;
+		box-shadow: 0 0 20px #5865f266;
+	}
+}
+
+.welcome-discord-icon {
+	font-size: 42px;
+	flex-shrink: 0;
+}
+
+.welcome-discord-text {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+}
+
+.welcome-discord-title {
+	font-size: 22px;
+	color: #ffffff;
+	font-weight: 600;
+	margin-bottom: 4px;
+	letter-spacing: 0.3px;
+}
+
+.welcome-discord-url {
+	font-size: 15px;
+	color: #d8dafe;
+	font-style: italic;
 }
 
 .welcome-final {
-	display: block;
 	margin-top: 18px;
 	margin-bottom: 8px;
 	font-size: 22px;

@@ -7,11 +7,32 @@
 <root>
 	<div class="log-panel @(IsUIOpen ? "ui-open" : "") @(IsChatOpen ? "chat-open" : "")">
 		<div class="log-tabs">
-			<div class="log-tab @(LogTab == 0 ? "active" : "")" onclick="@(() => LogTab = 0)">Log</div>
-			<div class="log-tab @(LogTab == 1 ? "active" : "")" onclick="@(() => LogTab = 1)">Chat</div>
+			<div class="log-tab @(LogTab == 0 ? "active" : "")" onclick="@(() => LogTab = 0)">All</div>
+			<div class="log-tab @(LogTab == 1 ? "active" : "")" onclick="@(() => LogTab = 1)">Log</div>
+			<div class="log-tab @(LogTab == 2 ? "active" : "")" onclick="@(() => LogTab = 2)">Chat</div>
 		</div>
 
 		@if ( LogTab == 0 )
+		{
+			<div class="chat-entries">
+				@foreach ( var entry in GetCombinedFeed().AsEnumerable().Reverse() )
+				{
+					@if ( entry.IsChat )
+					{
+						<div class="chat-entry">
+							<span style="color: #6db8f0; font-weight: bold;">@entry.Sender:</span>
+							<span style="color: #e8e8e8;"> @entry.Text</span>
+						</div>
+					}
+					else
+					{
+						<div class="chat-entry" style="color: @entry.Color;">@entry.Text</div>
+					}
+				}
+			</div>
+		}
+
+		@if ( LogTab == 1 )
 		{
 			<div class="chat-entries">
 				@foreach ( var msg in GetVisibleMessages().AsEnumerable().Reverse() )
@@ -21,7 +42,7 @@
 			</div>
 		}
 
-		@if ( LogTab == 1 )
+		@if ( LogTab == 2 )
 		{
 			<div class="chat-entries">
 				@foreach ( var msg in GetChatMessages().AsEnumerable().Reverse() )
@@ -32,13 +53,13 @@
 					</div>
 				}
 			</div>
+		}
 
-			@if ( IsChatOpen )
-			{
-				<div class="chat-input-row">
-					<TextEntry class="chat-input-field" @ref="ChatInputRef" Value:bind="@ChatText" onsubmit="@OnChatSubmit"></TextEntry>
-				</div>
-			}
+		@if ( IsChatOpen )
+		{
+			<div class="chat-input-row">
+				<TextEntry class="chat-input-field" @ref="ChatInputRef" Value:bind="@ChatText" onsubmit="@OnChatSubmit"></TextEntry>
+			</div>
 		}
 	</div>
 
@@ -192,7 +213,7 @@
 @code
 {
 	int ActiveTab { get; set; } = 1;
-	int LogTab { get; set; } = 0;
+	int LogTab { get; set; } = 0; // 0=All, 1=Log, 2=Chat
 	bool _hasInitialized = false;
 
 	bool IsUIOpen => PlayerGatherResource.UIOpen;
@@ -216,6 +237,55 @@
 			return new();
 
 		return gm.ChatMessages;
+	}
+
+	// Combined feed for the "All" tab.
+	// Sorted by Created (RealTimeSince) so log + chat messages interleave by arrival order.
+	// Older messages first, newest at the end (.Reverse() in the razor flips it for column-reverse layout).
+	public class FeedEntry
+	{
+		public bool IsChat;
+		public string Text;
+		public string Color;
+		public string Sender;
+		public float CreatedValue; // RealTimeSince exposed as float for sorting
+	}
+
+	List<FeedEntry> GetCombinedFeed()
+	{
+		var feed = new List<FeedEntry>();
+
+		foreach ( var msg in GameLog.Messages )
+		{
+			feed.Add( new FeedEntry
+			{
+				IsChat = false,
+				Text = msg.Text,
+				Color = msg.Color,
+				Sender = null,
+				CreatedValue = (float)msg.Created
+			} );
+		}
+
+		var chats = GetChatMessages();
+		foreach ( var msg in chats )
+		{
+			feed.Add( new FeedEntry
+			{
+				IsChat = true,
+				Text = msg.Text,
+				Color = null,
+				Sender = msg.Sender,
+				CreatedValue = (float)msg.Created
+			} );
+		}
+
+		// RealTimeSince counts up from when the message was added.
+		// Older messages have a HIGHER Created value (more time has passed since they were created).
+		// We want oldest first in the list, so sort descending by Created.
+		feed.Sort( ( a, b ) => b.CreatedValue.CompareTo( a.CreatedValue ) );
+
+		return feed;
 	}
 
 	void OnChatSubmit()
@@ -354,7 +424,6 @@
 
 	List<GameLog.LogMessage> GetVisibleMessages()
 	{
-		GameLog.Prune();
 		return GameLog.Messages;
 	}
 
@@ -641,8 +710,9 @@
 			return;
 		}
 
-		if ( Input.Pressed( "Chat" ) && LogTab != 1 )
-			LogTab = 1;
+		// Auto-switch to Chat tab when player presses chat key
+		if ( Input.Pressed( "Chat" ) && LogTab != 2 )
+			LogTab = 2;
 	}
 
 	protected override int BuildHash()
