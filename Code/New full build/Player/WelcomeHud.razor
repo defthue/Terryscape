@@ -1,0 +1,240 @@
+@using Sandbox;
+@using Sandbox.UI;
+@inherits PanelComponent
+
+<root>
+	@if ( IsOpen )
+	{
+		<div class="welcome-overlay">
+			<div class="welcome-panel">
+				<div class="welcome-header">
+					<div class="welcome-title">@GetPageTitle()</div>
+					<div class="welcome-page-indicator">Page @(CurrentPage + 1) of @TotalPages</div>
+					<div class="welcome-close @(CanClose ? "enabled" : "disabled")" onclick="@(() => OnCloseClick())">✕</div>
+				</div>
+
+				<div class="welcome-body">
+					@if ( CurrentPage == 0 )
+					{
+						<div class="welcome-section">
+							<div class="welcome-heading">Welcome to Terry's Quest</div>
+							<div class="welcome-subheading">A Resource-Gathering MMO</div>
+							<div class="welcome-text">
+								Thank you for playing our game! Terry's Quest is a multiplayer RPG where you'll gather, craft, fight, and explore a fantasy world with friends.
+							</div>
+
+							<div class="welcome-controls-block">
+								<div class="welcome-controls-title">Basic Controls</div>
+								<div class="welcome-control-row">
+									<div class="welcome-key">Q</div>
+									<div class="welcome-action">Open Inventory</div>
+								</div>
+								<div class="welcome-control-row">
+									<div class="welcome-key">E</div>
+									<div class="welcome-action">Interact</div>
+								</div>
+								<div class="welcome-control-row">
+									<div class="welcome-key">LEFT CLICK</div>
+									<div class="welcome-action">Attack / Gather</div>
+								</div>
+								<div class="welcome-control-row">
+									<div class="welcome-key">T</div>
+									<div class="welcome-action">Open Chat</div>
+								</div>
+								<div class="welcome-control-row">
+									<div class="welcome-key">WASD</div>
+									<div class="welcome-action">Move</div>
+								</div>
+								<div class="welcome-control-row">
+									<div class="welcome-key">SPACE</div>
+									<div class="welcome-action">Jump</div>
+								</div>
+							</div>
+						</div>
+					}
+
+					@if ( CurrentPage == 1 )
+					{
+						<div class="welcome-section">
+							<div class="welcome-text">
+								Walk up to a resource node — trees, rocks, ore veins, herbs — and left click to start gathering. Items are added to your inventory automatically.
+							</div>
+
+							<div class="welcome-tip-block">
+								<div class="welcome-tip-title">Important to know</div>
+								<div class="welcome-tip">Different nodes need different tools — chop trees with a hatchet, mine rocks with a pickaxe.</div>
+								<div class="welcome-tip">Higher-tier resources need higher skill levels. Train your skills by gathering!</div>
+							</div>
+
+							<div class="welcome-list-title">How to train each skill</div>
+							<div class="welcome-skill-list">
+								<div class="welcome-skill-row">
+									<div class="welcome-skill-name">🪓 Woodcutting</div>
+									<div class="welcome-skill-desc">Chop trees with a hatchet</div>
+								</div>
+								<div class="welcome-skill-row">
+									<div class="welcome-skill-name">⛏ Mining</div>
+									<div class="welcome-skill-desc">Mine rocks and ore veins with a pickaxe</div>
+								</div>
+								<div class="welcome-skill-row">
+									<div class="welcome-skill-name">🔮 Enchanting</div>
+									<div class="welcome-skill-desc">Forage herbs and enchant items at the enchanting altar</div>
+								</div>
+								<div class="welcome-skill-row">
+									<div class="welcome-skill-name">🔨 Smithing</div>
+									<div class="welcome-skill-desc">Smelt ores into bars and forge equipment</div>
+								</div>
+								<div class="welcome-skill-row">
+									<div class="welcome-skill-name">🧵 Crafting</div>
+									<div class="welcome-skill-desc">Craft items at the workbench</div>
+								</div>
+								<div class="welcome-skill-row">
+									<div class="welcome-skill-name">⚔ Attack</div>
+									<div class="welcome-skill-desc">Deal damage with melee weapons</div>
+								</div>
+								<div class="welcome-skill-row">
+									<div class="welcome-skill-name">🛡 Defence</div>
+									<div class="welcome-skill-desc">Gained automatically when fighting with any weapon</div>
+								</div>
+								<div class="welcome-skill-row">
+									<div class="welcome-skill-name">🏹 Archery</div>
+									<div class="welcome-skill-desc">Deal damage with bows</div>
+								</div>
+								<div class="welcome-skill-row">
+									<div class="welcome-skill-name">✨ Magic</div>
+									<div class="welcome-skill-desc">Deal damage with staves and spells</div>
+								</div>
+							</div>
+						</div>
+					}
+
+					@if ( CurrentPage == 2 )
+					{
+						<div class="welcome-section">
+							<div class="welcome-tip-block">
+								<div class="welcome-tip-title">Quests unlock new recipes</div>
+								<div class="welcome-tip">Look for NPCs with a glowing marker above them.</div>
+								<div class="welcome-tip-emphasis">Completing quests is how you unlock new crafting recipes — without quests, you can't progress your crafting!</div>
+								<div class="welcome-tip">Some quests are gated behind earlier ones — explore to find them.</div>
+							</div>
+
+							<div class="welcome-list-title">Crafting Stations</div>
+							<div class="welcome-text">
+								Once you've unlocked a recipe, head to the matching station to craft it:
+							</div>
+							<div class="welcome-skill-list">
+								<div class="welcome-skill-row">
+									<div class="welcome-skill-name">🔥 Furnace</div>
+									<div class="welcome-skill-desc">Smelt raw ores into bars</div>
+								</div>
+								<div class="welcome-skill-row">
+									<div class="welcome-skill-name">⚒ Anvil</div>
+									<div class="welcome-skill-desc">Forge weapons, armor, and tools</div>
+								</div>
+								<div class="welcome-skill-row">
+									<div class="welcome-skill-name">🧪 Alchemy Table</div>
+									<div class="welcome-skill-desc">Brew potions</div>
+								</div>
+								<div class="welcome-skill-row">
+									<div class="welcome-skill-name">🧵 Workbench</div>
+									<div class="welcome-skill-desc">Craft rings, amulets, and accessories</div>
+								</div>
+								<div class="welcome-skill-row">
+									<div class="welcome-skill-name">🔮 Enchanting Altar</div>
+									<div class="welcome-skill-desc">Enchant rings and amulets</div>
+								</div>
+							</div>
+
+							<div class="welcome-list-title">Teleport Stones</div>
+							<div class="welcome-text">
+								Discover teleport stones scattered across the world. Walk up to one and press E to activate it.
+							</div>
+							<div class="welcome-text">
+								Once activated, you can fast-travel between any stones you've found. Stay alert — finding new ones unlocks faster routes through the map.
+							</div>
+
+							<div class="welcome-tip-block">
+								<div class="welcome-tip-title">Your progress is saved</div>
+								<div class="welcome-tip">Your inventory, skills, completed quests, unlocked recipes, and discovered teleport stones follow you across any Terry's Quest server.</div>
+								<div class="welcome-tip">Log out anytime — your stuff comes with you.</div>
+							</div>
+
+							<div class="welcome-final">Have fun, adventurer.</div>
+						</div>
+					}
+				</div>
+
+				<div class="welcome-footer">
+					<div class="welcome-nav-button @(CurrentPage > 0 ? "enabled" : "disabled")" onclick="@(() => OnPrevClick())">← Back</div>
+					<div class="welcome-page-dots">
+						@for ( int i = 0; i < TotalPages; i++ )
+						{
+							var pageIndex = i;
+							<div class="welcome-dot @(CurrentPage == pageIndex ? "active" : "")"></div>
+						}
+					</div>
+					<div class="welcome-nav-button @(CurrentPage < TotalPages - 1 ? "enabled" : "disabled")" onclick="@(() => OnNextClick())">Next →</div>
+				</div>
+			</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	const int TotalPages = 3;
+
+	int CurrentPage { get; set; } = 0;
+	int FurthestPageReached { get; set; } = 0;
+	bool IsOpen { get; set; } = true;
+
+	bool CanClose => FurthestPageReached >= TotalPages - 1;
+
+	protected override void OnStart()
+	{
+		Mouse.Visibility = MouseVisibility.Visible;
+	}
+
+	string GetPageTitle()
+	{
+		switch ( CurrentPage )
+		{
+			case 0: return "Getting Started";
+			case 1: return "Gathering & Skills";
+			case 2: return "Quests, Crafting & Travel";
+			default: return "";
+		}
+	}
+
+	void OnNextClick()
+	{
+		if ( CurrentPage >= TotalPages - 1 )
+			return;
+
+		CurrentPage++;
+		if ( CurrentPage > FurthestPageReached )
+			FurthestPageReached = CurrentPage;
+	}
+
+	void OnPrevClick()
+	{
+		if ( CurrentPage <= 0 )
+			return;
+
+		CurrentPage--;
+	}
+
+	void OnCloseClick()
+	{
+		if ( !CanClose )
+			return;
+
+		IsOpen = false;
+		Mouse.Visibility = MouseVisibility.Hidden;
+	}
+
+	protected override int BuildHash()
+	{
+		return ( CurrentPage, FurthestPageReached, IsOpen ).GetHashCode();
+	}
+}

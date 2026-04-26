@@ -734,9 +734,75 @@
                 "RotationOffset": "0,90,0"
               },
               {
+                "ItemId": "WorldrootStaff",
+                "Model": "models/tools/staffs/worldrootstaff.vmdl",
+                "PositionOffset": "-2,0,-12",
+                "RotationOffset": "0,0,0"
+              },
+              {
+                "ItemId": "DuskoakStaff",
+                "Model": "models/tools/staffs/duskoakstaff.vmdl",
+                "PositionOffset": "-2,0,-12",
+                "RotationOffset": "0,0,0"
+              },
+              {
+                "ItemId": "GhostwoodStaff",
+                "Model": "models/tools/staffs/ghostwoodstaff.vmdl",
+                "PositionOffset": "-2,0,-12",
+                "RotationOffset": "0,0,0"
+              },
+              {
+                "ItemId": "IronbarkStaff",
+                "Model": "models/tools/staffs/ironbarkstaff.vmdl",
+                "PositionOffset": "-2,0,-12",
+                "RotationOffset": "0,0,0"
+              },
+              {
+                "ItemId": "ElmheartStaff",
+                "Model": "models/tools/staffs/elmheartstaff.vmdl",
+                "PositionOffset": "-2,0,-12",
+                "RotationOffset": "0,0,0"
+              },
+              {
+                "ItemId": "AshwoodStaff",
+                "Model": "models/tools/staffs/ashwoodstaff.vmdl",
+                "PositionOffset": "-2,0,-12",
+                "RotationOffset": "0,0,0"
+              },
+              {
                 "ItemId": "AbyssiumHatchet",
                 "Model": "models/tools/hatchets/abyssiumhatchetfbx.vmdl",
                 "PositionOffset": "0,0,-14",
+                "RotationOffset": "0,80,0"
+              },
+              {
+                "ItemId": "LunariteHatchet",
+                "Model": "models/tools/hatchets/lunaritehatchetfbx.vmdl",
+                "PositionOffset": "0,0,-13",
+                "RotationOffset": "0,80,0"
+              },
+              {
+                "ItemId": "SolariumHatchet",
+                "Model": "models/tools/hatchets/solariumhatchetfbx.vmdl",
+                "PositionOffset": "0,0,-13",
+                "RotationOffset": "0,80,0"
+              },
+              {
+                "ItemId": "ColdveinHatchet",
+                "Model": "models/tools/hatchets/coldveinhatchetfbx.vmdl",
+                "PositionOffset": "0,0,-13",
+                "RotationOffset": "0,80,0"
+              },
+              {
+                "ItemId": "AshsteelHatchet",
+                "Model": "models/tools/hatchets/ashsteelhatchetfbx.vmdl",
+                "PositionOffset": "0,0,-13",
+                "RotationOffset": "0,80,0"
+              },
+              {
+                "ItemId": "CoppiteHatchet",
+                "Model": "models/tools/hatchets/coppitehatchetfbx.vmdl",
+                "PositionOffset": "0,0,-13",
                 "RotationOffset": "0,80,0"
               },
               {
@@ -746,16 +812,70 @@
                 "RotationOffset": "0,90,0"
               },
               {
+                "ItemId": "LunaritePickaxe",
+                "Model": "models/tools/pickaxes/lunaritepickaxe.vmdl",
+                "PositionOffset": "0,0,-12",
+                "RotationOffset": "0,90,0"
+              },
+              {
+                "ItemId": "SolariumPickaxe",
+                "Model": "models/tools/pickaxes/solariumpickaxe.vmdl",
+                "PositionOffset": "0,0,-12",
+                "RotationOffset": "0,90,0"
+              },
+              {
+                "ItemId": "ColdveinPickaxe",
+                "Model": "models/tools/pickaxes/coldveinpickaxe.vmdl",
+                "PositionOffset": "0,0,-12",
+                "RotationOffset": "0,90,0"
+              },
+              {
+                "ItemId": "AshsteelPickaxe",
+                "Model": "models/tools/pickaxes/ashsteel pickaxe.vmdl",
+                "PositionOffset": "0,0,-12",
+                "RotationOffset": "0,90,0"
+              },
+              {
+                "ItemId": "CoppitePickaxe",
+                "Model": "models/tools/pickaxes/coppitepickaxe.vmdl",
+                "PositionOffset": "0,0,-11",
+                "RotationOffset": "0,90,0"
+              },
+              {
                 "ItemId": "WorldrootBow",
                 "Model": "models/tools/bows/worldrootbow.vmdl",
                 "PositionOffset": "6.5,0,-22",
                 "RotationOffset": "0,90,0"
               },
               {
-                "ItemId": "WorldrootStaff",
-                "Model": "models/tools/staffs/worldrootstaff.vmdl",
-                "PositionOffset": "-2,0,-12",
-                "RotationOffset": "0,0,0"
+                "ItemId": "DuskoakBow",
+                "Model": "models/tools/bows/duskoakbow.vmdl",
+                "PositionOffset": "6.5,0,-22",
+                "RotationOffset": "0,90,0"
+              },
+              {
+                "ItemId": "GhostwoodBow",
+                "Model": "models/tools/bows/ghostwoodbow.vmdl",
+                "PositionOffset": "6.5,0,-22",
+                "RotationOffset": "0,90,0"
+              },
+              {
+                "ItemId": "IronbarkBow",
+                "Model": "models/tools/bows/ironbarkbow.vmdl",
+                "PositionOffset": "6.5,0,-22",
+                "RotationOffset": "0,90,0"
+              },
+              {
+                "ItemId": "ElmheartBow",
+                "Model": "models/tools/bows/elmheartbow.vmdl",
+                "PositionOffset": "6.5,0,-22",
+                "RotationOffset": "0,90,0"
+              },
+              {
+                "ItemId": "AshwoodBow",
+                "Model": "models/tools/bows/ashwoodbow.vmdl",
+                "PositionOffset": "6.5,0,-22",
+                "RotationOffset": "0,90,0"
               }
             ],
             "ToolRenderer": {
