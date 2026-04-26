@@ -5,38 +5,49 @@ public sealed class PlayerSetup : Component
 	[Property] public CameraComponent PlayerCamera { get; set; }
 	[Property] public Dresser Dresser { get; set; }
 
+	bool _clothingApplied = false;
+	float _waitTimer = 0f;
+	const float MaxWaitSeconds = 5f;
+
 	protected override void OnStart()
 	{
+		// Disable the camera on remote players — each client only renders their own view.
 		if ( !PlayerHelper.IsLocalPlayer( GameObject ) )
 		{
 			if ( PlayerCamera != null )
 				PlayerCamera.Enabled = false;
 		}
-
-		_ = ApplyClothingWhenReady();
 	}
 
-	async System.Threading.Tasks.Task ApplyClothingWhenReady()
+	protected override void OnUpdate()
 	{
+		// Apply clothing once, as soon as the network owner is set on this GameObject.
+		// This runs in the normal update tick (which keeps ticking even during loading)
+		// instead of an async loop that might deadlock during scene transitions.
+		if ( _clothingApplied )
+			return;
+
 		if ( Dresser == null )
 		{
-			Log.Warning( "[PlayerSetup] No Dresser assigned — clothing won't be applied." );
+			_clothingApplied = true; // give up cleanly, no warning spam
 			return;
 		}
 
-		// Wait until network ownership is established. The Dresser needs a real owner
-		// connection to know whose Steam clothing to load.
-		var startTime = RealTime.Now;
-		while ( Network.Owner == null )
+		_waitTimer += Time.Delta;
+
+		if ( Network.Owner != null )
 		{
-			if ( RealTime.Now - startTime > 5f )
-			{
-				Log.Warning( "[PlayerSetup] Timed out waiting for network owner; applying clothing anyway." );
-				break;
-			}
-			await GameTask.DelayRealtime( 16 );
+			Dresser.Apply();
+			_clothingApplied = true;
+			return;
 		}
 
-		Dresser.Apply();
+		// Failsafe: if owner never gets set, apply anyway after the timeout so we don't loop forever.
+		if ( _waitTimer >= MaxWaitSeconds )
+		{
+			Log.Warning( "[PlayerSetup] Timed out waiting for network owner; applying Dresser anyway." );
+			Dresser.Apply();
+			_clothingApplied = true;
+		}
 	}
 }
