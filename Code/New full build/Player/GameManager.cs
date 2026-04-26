@@ -41,7 +41,7 @@ public sealed class GameManager : Component, Component.INetworkListener
 			{
 				MaxPlayers = MaxPlayers,
 				Privacy = LobbyPrivacy.Public,
-				Name = "TerryScape Server"
+				Name = "Terry's Quest Server"
 			} );
 		}
 	}

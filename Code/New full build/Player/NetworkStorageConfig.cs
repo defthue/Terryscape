@@ -21,6 +21,6 @@ public static class NetworkStorageConfig
 		NetworkStorage.Configure( ProjectId, PublicKey );
 		_initialized = true;
 
-		Log.Info( "NetworkStorage configured for project TerryScape." );
+		Log.Info( "NetworkStorage configured for project Terry's Quest." );
 	}
 }
