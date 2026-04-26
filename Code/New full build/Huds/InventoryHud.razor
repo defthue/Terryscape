@@ -248,7 +248,7 @@
 		public string Text;
 		public string Color;
 		public string Sender;
-		public float CreatedValue; // RealTimeSince exposed as float for sorting
+		public float CreatedValue;
 	}
 
 	List<FeedEntry> GetCombinedFeed()
@@ -710,9 +710,13 @@
 			return;
 		}
 
-		// Auto-switch to Chat tab when player presses chat key
-		if ( Input.Pressed( "Chat" ) && LogTab != 2 )
-			LogTab = 2;
+		// T key opens chat. If on Log tab (where chat isn't visible), switch to All so the
+		// player can see what they're typing about. Stay on All or Chat if already there.
+		if ( Input.Pressed( "Chat" ) )
+		{
+			if ( LogTab == 1 )
+				LogTab = 0;
+		}
 	}
 
 	protected override int BuildHash()

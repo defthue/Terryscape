@@ -122,6 +122,29 @@ public static class TerryScapeBackend
 				}
 			}
 
+			if ( json.TryGetProperty( "bank", out var bankEl ) && bankEl.ValueKind == JsonValueKind.Object )
+			{
+				foreach ( var prop in bankEl.EnumerateObject() )
+				{
+					save.Bank[prop.Name] = prop.Value.ValueKind == JsonValueKind.Number
+						? prop.Value.GetInt32()
+						: 0;
+				}
+			}
+
+			if ( json.TryGetProperty( "bankUnique", out var bankUniqueEl ) && bankUniqueEl.ValueKind == JsonValueKind.Array )
+			{
+				foreach ( var item in bankUniqueEl.EnumerateArray() )
+				{
+					save.BankUnique.Add( new PlayerSaveData.UniqueItemEntry
+					{
+						ItemId = item.Str( "itemId", "None" ),
+						Enchantment = item.Str( "enchantment", "None" ),
+						EnchantmentPercent = item.Float( "percent", 0f )
+					} );
+				}
+			}
+
 			Log.Info( $"[TerryScapeBackend] Loaded save from {save.SavedAt}." );
 			return save;
 		}
@@ -161,7 +184,9 @@ public static class TerryScapeBackend
 				recipes = data.Recipes,
 				stones = data.Stones,
 				quests = data.Quests,
-				kills = data.Kills
+				kills = data.Kills,
+				bank = data.Bank ?? new Dictionary<string, int>(),
+				bankUnique = BuildUniqueItemsPayload( data.BankUnique )
 			};
 
 			var result = await NetworkStorage.CallEndpoint( "save-player", payload );
@@ -193,6 +218,9 @@ public static class TerryScapeBackend
 	static List<object> BuildUniqueItemsPayload( List<PlayerSaveData.UniqueItemEntry> items )
 	{
 		var result = new List<object>();
+		if ( items == null )
+			return result;
+
 		foreach ( var item in items )
 		{
 			result.Add( new

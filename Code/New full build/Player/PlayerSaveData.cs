@@ -19,6 +19,10 @@ public class PlayerSaveData
 	public List<string> Quests { get; set; } = new();
 	public Dictionary<string, int> Kills { get; set; } = new();
 
+	// Bank storage — stackable items and unique items kept separately, mirroring inventory.
+	public Dictionary<string, int> Bank { get; set; } = new();
+	public List<UniqueItemEntry> BankUnique { get; set; } = new();
+
 	public class SkillEntry
 	{
 		public int Level { get; set; } = 1;

@@ -80,4 +80,62 @@ public sealed class BankStorage : Component
 	{
 		return _banked;
 	}
+
+	public PlayerSaveData ToSaveData( PlayerSaveData data )
+	{
+		data.Bank = new Dictionary<string, int>();
+		foreach ( var kv in _banked )
+			data.Bank[kv.Key.ToString()] = kv.Value;
+
+		data.BankUnique = new List<PlayerSaveData.UniqueItemEntry>();
+		foreach ( var item in _bankedUnique )
+		{
+			data.BankUnique.Add( new PlayerSaveData.UniqueItemEntry
+			{
+				ItemId = item.ItemId.ToString(),
+				Enchantment = item.Enchantment.ToString(),
+				EnchantmentPercent = item.EnchantmentPercent
+			} );
+		}
+
+		return data;
+	}
+
+	public void ApplySaveData( PlayerSaveData data )
+	{
+		_banked.Clear();
+		_bankedUnique.Clear();
+
+		if ( data == null )
+			return;
+
+		if ( data.Bank != null )
+		{
+			foreach ( var kv in data.Bank )
+			{
+				if ( !System.Enum.TryParse<ItemId>( kv.Key, out var id ) )
+					continue;
+				if ( id == ItemId.None )
+					continue;
+
+				_banked[id] = kv.Value;
+			}
+		}
+
+		if ( data.BankUnique != null )
+		{
+			foreach ( var entry in data.BankUnique )
+			{
+				if ( !System.Enum.TryParse<ItemId>( entry.ItemId, out var id ) )
+					continue;
+				if ( id == ItemId.None )
+					continue;
+
+				var enchant = EnchantmentType.None;
+				System.Enum.TryParse<EnchantmentType>( entry.Enchantment, out enchant );
+
+				_bankedUnique.Add( new ItemInstance( id, enchant, entry.EnchantmentPercent ) );
+			}
+		}
+	}
 }

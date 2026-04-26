@@ -40,6 +40,18 @@ public sealed class PlayerPersistence : Component
 		_ = SaveAsync();
 	}
 
+	// Searches the entire player hierarchy (root + all children) for a component.
+	// Necessary because Inventory, Skills, BankStorage may live on different GameObjects
+	// inside the player prefab.
+	T FindComponentInPlayer<T>() where T : Component
+	{
+		var component = Components.Get<T>();
+		if ( component != null )
+			return component;
+
+		return Components.GetInChildren<T>();
+	}
+
 	async System.Threading.Tasks.Task LoadOnStartAsync()
 	{
 		if ( _loadAttempted )
@@ -50,8 +62,9 @@ public sealed class PlayerPersistence : Component
 
 		var save = await TerryScapeBackend.LoadAsync();
 
-		var inventory = Components.Get<Inventory>();
-		var skills = Components.Get<Skills>();
+		var inventory = FindComponentInPlayer<Inventory>();
+		var skills = FindComponentInPlayer<Skills>();
+		var bank = FindComponentInPlayer<BankStorage>();
 
 		if ( save == null )
 		{
@@ -72,6 +85,9 @@ public sealed class PlayerPersistence : Component
 
 		if ( inventory != null )
 			inventory.ApplySaveData( save );
+
+		if ( bank != null )
+			bank.ApplySaveData( save );
 
 		_loadComplete = true;
 
@@ -120,8 +136,9 @@ public sealed class PlayerPersistence : Component
 
 	public async System.Threading.Tasks.Task SaveAsync()
 	{
-		var inventory = Components.Get<Inventory>();
-		var skills = Components.Get<Skills>();
+		var inventory = FindComponentInPlayer<Inventory>();
+		var skills = FindComponentInPlayer<Skills>();
+		var bank = FindComponentInPlayer<BankStorage>();
 
 		if ( inventory == null || skills == null )
 			return;
@@ -134,6 +151,17 @@ public sealed class PlayerPersistence : Component
 		};
 
 		inventory.ToSaveData( data );
+
+		if ( bank != null )
+		{
+			bank.ToSaveData( data );
+		}
+		else
+		{
+			// Still set defaults so the endpoint receives empty fields and doesn't error.
+			data.Bank = new System.Collections.Generic.Dictionary<string, int>();
+			data.BankUnique = new System.Collections.Generic.List<PlayerSaveData.UniqueItemEntry>();
+		}
 
 		var ok = await TerryScapeBackend.SaveAsync( data );
 		if ( ok )
