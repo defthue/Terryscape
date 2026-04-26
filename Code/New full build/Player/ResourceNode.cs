@@ -111,7 +111,19 @@ public sealed class ResourceNode : Component
 
 		CurrentHealth = MaxHealth;
 		_originalScale = GameObject.LocalScale;
-		ShowNode( true );
+
+		// Initial visibility state — match whatever IsBroken says when we start.
+		// Late-joining clients receive IsBroken=true via Sync before OnStart runs,
+		// so we honor that here instead of always showing the node.
+		if ( IsBroken )
+		{
+			_localBroken = true;
+			ShowNode( false );
+		}
+		else
+		{
+			ShowNode( true );
+		}
 	}
 
 	// Picks up manual property assignments first, falls back to whatever component
@@ -141,11 +153,14 @@ public sealed class ResourceNode : Component
 
 	protected override void OnUpdate()
 	{
+		// Reconcile local visual state with the synced IsBroken flag.
+		// This handles edge cases where the BroadcastBreak/BroadcastRespawn RPC was missed
+		// (late-joiners, network hiccups) — without this, the node can end up visible
+		// but uncollidable on some clients.
 		if ( IsBroken && !_localBroken )
 		{
 			_localBroken = true;
-			if ( _resolvedCollider != null )
-				_resolvedCollider.Enabled = false;
+			ShowNode( false );
 		}
 
 		if ( !IsBroken && _localBroken )
@@ -206,9 +221,6 @@ public sealed class ResourceNode : Component
 	{
 		_localBroken = true;
 		ShowNode( false );
-
-		if ( _resolvedCollider != null )
-			_resolvedCollider.Enabled = false;
 	}
 
 	async void StartRespawnTimer()
