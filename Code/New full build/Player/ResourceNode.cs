@@ -15,7 +15,12 @@ public sealed class ResourceNode : Component
 	[Property] public string DisplayName { get; set; } = "";
 	[Property] public GatherType GatherSkill { get; set; }
 	[Property] public ItemId ResourceItem { get; set; }
-	[Property] public int ResourceAmount { get; set; } = 1;
+
+	[Property, Group( "Yield" )] public int ResourceAmount { get; set; } = 1;
+	// Optional. When > 0 and greater than ResourceAmount, harvested amount is rolled between
+	// ResourceAmount (min) and this value (max), inclusive. Leave at 0 for fixed yield.
+	[Property, Group( "Yield" )] public int ResourceAmountMax { get; set; } = 0;
+
 	[Property] public int Tier { get; set; } = 1;
 	[Property] public int RequiredLevel { get; set; } = 1;
 
@@ -23,21 +28,30 @@ public sealed class ResourceNode : Component
 	[Property] public float RespawnMin { get; set; } = 5f;
 	[Property] public float RespawnMax { get; set; } = 20f;
 
+	// Optional manual references. Leave unset to auto-detect from the GameObject.
+	// If set, the manual reference takes priority over auto-detection.
 	[Property] public Collider NodeCollider { get; set; }
 	[Property] public SkinnedModelRenderer BodyRenderer { get; set; }
+	[Property] public ModelRenderer StaticBodyRenderer { get; set; }
 
 	[Property] public int XpReward { get; set; } = 1;
 
-	[Property] public float ShrinkDuration { get; set; } = 0.8f;
-	[Property] public bool InstantHarvest { get; set; } = false;
-
-	GameObject _stumpColliderObject;
+	// DEPRECATED — kept so existing scene nodes don't lose property data on load.
+	// Resource nodes now always poof out instantly when harvested.
+	[Property, Hide] public float ShrinkDuration { get; set; } = 0.8f;
+	[Property, Hide] public bool InstantHarvest { get; set; } = false;
 
 	[Sync] public int CurrentHealth { get; set; }
 	[Sync] public bool IsBroken { get; set; }
 
 	Vector3 _originalScale;
 	bool _localBroken = false;
+
+	// Resolved at OnStart from manual properties OR from the GameObject's components.
+	// Whichever renderer/collider is present, we'll find it.
+	Collider _resolvedCollider;
+	SkinnedModelRenderer _resolvedSkinnedRenderer;
+	ModelRenderer _resolvedStaticRenderer;
 
 	public string GetDisplayName()
 	{
@@ -77,11 +91,52 @@ public sealed class ResourceNode : Component
 		return GatherSkill == GatherType.Foraging;
 	}
 
+	// Returns the actual amount of resources to award when this node is harvested.
+	// Uses fixed yield if ResourceAmountMax is unset/invalid, otherwise rolls a random
+	// integer between ResourceAmount (min) and ResourceAmountMax (max), inclusive.
+	public int GetHarvestAmount()
+	{
+		int min = Math.Max( 1, ResourceAmount );
+
+		if ( ResourceAmountMax <= min )
+			return min;
+
+		// Random.Shared.Next is exclusive of upper bound, so add 1 to make inclusive.
+		return Random.Shared.Next( min, ResourceAmountMax + 1 );
+	}
+
 	protected override void OnStart()
 	{
+		ResolveReferences();
+
 		CurrentHealth = MaxHealth;
 		_originalScale = GameObject.LocalScale;
 		ShowNode( true );
+	}
+
+	// Picks up manual property assignments first, falls back to whatever component
+	// is on the GameObject. This means most nodes don't need ANYTHING wired up
+	// in the inspector — the script finds the renderer and collider automatically.
+	void ResolveReferences()
+	{
+		_resolvedCollider = NodeCollider != null ? NodeCollider : Components.Get<Collider>();
+
+		_resolvedSkinnedRenderer = BodyRenderer != null ? BodyRenderer : Components.Get<SkinnedModelRenderer>();
+
+		// Look up a static ModelRenderer too. If a SkinnedModelRenderer is present,
+		// Components.Get<ModelRenderer>() may also return that since SkinnedModelRenderer
+		// inherits from ModelRenderer — so prefer the manual assignment when set.
+		if ( StaticBodyRenderer != null )
+		{
+			_resolvedStaticRenderer = StaticBodyRenderer;
+		}
+		else if ( _resolvedSkinnedRenderer == null )
+		{
+			// Only auto-detect a plain ModelRenderer if we don't have a skinned one.
+			// Otherwise the SkinnedModelRenderer would also satisfy a ModelRenderer lookup
+			// and we'd be operating on the same component twice.
+			_resolvedStaticRenderer = Components.Get<ModelRenderer>();
+		}
 	}
 
 	protected override void OnUpdate()
@@ -89,8 +144,8 @@ public sealed class ResourceNode : Component
 		if ( IsBroken && !_localBroken )
 		{
 			_localBroken = true;
-			if ( NodeCollider != null )
-				NodeCollider.Enabled = false;
+			if ( _resolvedCollider != null )
+				_resolvedCollider.Enabled = false;
 		}
 
 		if ( !IsBroken && _localBroken )
@@ -98,12 +153,6 @@ public sealed class ResourceNode : Component
 			_localBroken = false;
 			GameObject.LocalScale = _originalScale;
 			ShowNode( true );
-
-			if ( _stumpColliderObject != null )
-			{
-				_stumpColliderObject.Destroy();
-				_stumpColliderObject = null;
-			}
 		}
 	}
 
@@ -156,29 +205,10 @@ public sealed class ResourceNode : Component
 	void BroadcastBreak()
 	{
 		_localBroken = true;
+		ShowNode( false );
 
-		if ( InstantHarvest )
-		{
-			ShowNode( false );
-		}
-		else
-		{
-			_ = ShrinkTree();
-		}
-
-		if ( NodeCollider != null )
-			NodeCollider.Enabled = false;
-
-		if ( !InstantHarvest )
-		{
-			_stumpColliderObject = new GameObject();
-			_stumpColliderObject.WorldPosition = GameObject.WorldPosition;
-			_stumpColliderObject.Name = "StumpCollider";
-
-			var box = _stumpColliderObject.Components.Create<BoxCollider>();
-			box.Scale = new Vector3( 26f, 26f, 400f );
-			box.Center = new Vector3( 0f, 0f, 200f );
-		}
+		if ( _resolvedCollider != null )
+			_resolvedCollider.Enabled = false;
 	}
 
 	async void StartRespawnTimer()
@@ -199,42 +229,18 @@ public sealed class ResourceNode : Component
 	{
 		_localBroken = false;
 		GameObject.LocalScale = _originalScale;
-
-		if ( _stumpColliderObject != null )
-		{
-			_stumpColliderObject.Destroy();
-			_stumpColliderObject = null;
-		}
-
 		ShowNode( true );
-	}
-
-	async Task ShrinkTree()
-	{
-		float elapsed = 0f;
-		Vector3 startScale = GameObject.LocalScale;
-		Vector3 targetScale = _originalScale * 0.2f;
-
-		while ( elapsed < ShrinkDuration )
-		{
-			elapsed += Time.Delta;
-			float t = elapsed / ShrinkDuration;
-			float eased = t * t;
-
-			GameObject.LocalScale = Vector3.Lerp( startScale, targetScale, eased );
-
-			await Task.Frame();
-		}
-
-		GameObject.LocalScale = targetScale;
 	}
 
 	void ShowNode( bool visible )
 	{
-		if ( BodyRenderer != null )
-			BodyRenderer.Enabled = visible;
+		if ( _resolvedSkinnedRenderer != null )
+			_resolvedSkinnedRenderer.Enabled = visible;
 
-		if ( NodeCollider != null )
-			NodeCollider.Enabled = visible;
+		if ( _resolvedStaticRenderer != null )
+			_resolvedStaticRenderer.Enabled = visible;
+
+		if ( _resolvedCollider != null )
+			_resolvedCollider.Enabled = visible;
 	}
 }

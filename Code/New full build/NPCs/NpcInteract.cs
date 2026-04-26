@@ -454,6 +454,29 @@ public sealed class NpcInteract : Component
 		return list;
 	}
 
+	// Returns the human-readable names of recipes this quest unlocks. Resolves IDs
+	// against RecipeDatabase. Used by the quest dialogue UI to preview rewards before
+	// completion. Returns empty list if no recipes are unlocked.
+	public List<string> GetUnlockedRecipeNames()
+	{
+		var list = new List<string>();
+
+		if ( string.IsNullOrEmpty( UnlocksRecipe ) )
+			return list;
+
+		foreach ( var raw in UnlocksRecipe.Split( ',' ) )
+		{
+			var id = raw.Trim();
+			if ( string.IsNullOrEmpty( id ) )
+				continue;
+
+			var recipe = RecipeDatabase.GetById( id );
+			list.Add( recipe != null ? recipe.Name : id );
+		}
+
+		return list;
+	}
+
 	public string GetItemName( ItemId id )
 	{
 		var def = ItemDatabase.Get( id );

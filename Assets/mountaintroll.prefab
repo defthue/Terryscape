@@ -9,7 +9,7 @@
     "Scale": "1,1,1",
     "Tags": "monster",
     "Enabled": true,
-    "NetworkMode": 2,
+    "NetworkMode": 1,
     "NetworkFlags": 0,
     "NetworkOrphaned": 0,
     "NetworkTransmit": true,
@@ -123,30 +123,12 @@
         "StopAndTurnThreshold": 60,
         "VictoryAnimLength": 3,
         "Waypoints": [
-          {
-            "_type": "gameobject",
-            "go": "bac5a8c6-69d8-4e3f-9626-b8d832cdd42a"
-          },
-          {
-            "_type": "gameobject",
-            "go": "bfae4444-700f-4cc0-a42c-1b5042268b04"
-          },
-          {
-            "_type": "gameobject",
-            "go": "0b6811bd-a5f1-4acd-8744-51eb349fc07d"
-          },
-          {
-            "_type": "gameobject",
-            "go": "01d86857-7ebc-4fec-bf60-82c35047eb06"
-          },
-          {
-            "_type": "gameobject",
-            "go": "c9fa3b9d-47c2-4d92-8c4a-2ad0570b5723"
-          },
-          {
-            "_type": "gameobject",
-            "go": "e56e366a-e18b-4af4-9e1e-59582fabcb7d"
-          }
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
         ]
       },
       {
@@ -205,7 +187,28 @@
         "UpdateRotation": false
       }
     ],
-    "Children": []
+    "Children": [],
+    "__properties": {
+      "NetworkInterpolation": true,
+      "TimeScale": 1,
+      "WantsSystemScene": true,
+      "Metadata": {},
+      "NavMesh": {
+        "Enabled": false,
+        "IncludeStaticBodies": true,
+        "IncludeKeyframedBodies": true,
+        "EditorAutoUpdate": false,
+        "AgentHeight": 64,
+        "AgentRadius": 16,
+        "AgentStepSize": 18,
+        "AgentMaxSlope": 40,
+        "ExcludedBodies": "",
+        "IncludedBodies": "",
+        "DeferGeneration": false,
+        "CustomBounds": false
+      }
+    },
+    "__variables": []
   },
   "ResourceVersion": 2,
   "ShowInMenu": false,

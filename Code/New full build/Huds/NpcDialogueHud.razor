@@ -48,15 +48,41 @@
 						}
 					}
 
-					@if ( RewardItems.Count > 0 && !IsCompleted )
+					@if ( ( RewardItems.Count > 0 || RecipeNames.Count > 0 ) && !IsCompleted )
 					{
 						<div class="detail-section-label">Rewards</div>
-						@foreach ( var reward in RewardItems )
-						{
-							var name = GetItemName( reward.Item );
 
-							<div class="reward-row">
-								@reward.Amount x @name
+						@if ( RewardItems.Count > 0 )
+						{
+							<div class="reward-icon-row">
+								@foreach ( var reward in RewardItems )
+								{
+									var name = GetItemName( reward.Item );
+
+									<div class="reward-icon-slot">
+										<div class="reward-icon">
+											<img class="reward-icon-img" src="@GetIconPath( reward.Item )" />
+										</div>
+										@if ( reward.Amount > 1 )
+										{
+											<div class="reward-count">@reward.Amount</div>
+										}
+										<div class="reward-tooltip">@name x@(reward.Amount)</div>
+									</div>
+								}
+							</div>
+						}
+
+						@if ( RecipeNames.Count > 0 )
+						{
+							<div class="recipe-list">
+								@foreach ( var recipeName in RecipeNames )
+								{
+									<div class="recipe-row">
+										<span class="recipe-icon">📜</span>
+										<span class="recipe-name">Recipe: @recipeName</span>
+									</div>
+								}
 							</div>
 						}
 					}
@@ -102,6 +128,9 @@
 	List<NpcInteract.QuestItem> RewardItems =>
 		NpcInteract.ActiveNpc?.GetRewardItems() ?? new List<NpcInteract.QuestItem>();
 
+	List<string> RecipeNames =>
+		NpcInteract.ActiveNpc?.GetUnlockedRecipeNames() ?? new List<string>();
+
 	int GetPlayerItemCount( ItemId id )
 	{
 		return PlayerInventory != null ? PlayerInventory.GetItemCount( id ) : 0;
@@ -116,6 +145,14 @@
 	{
 		var def = ItemDatabase.Get( id );
 		return def != null ? def.Name : id.ToString();
+	}
+
+	string GetIconPath( ItemId id )
+	{
+		if ( id == ItemId.None )
+			return "";
+
+		return $"/ItemIcons/{id}.vtex";
 	}
 
 	void Complete()

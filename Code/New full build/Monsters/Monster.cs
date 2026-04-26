@@ -79,6 +79,10 @@ public sealed class Monster : Component
 	int _strafeDirection = 1;
 	float _repositionExtra = 0f;
 
+	// Track previous values so we only broadcast animation state changes, not every frame.
+	bool _lastBroadcastMoving = false;
+	bool _lastBroadcastRunning = false;
+
 	protected override void OnStart()
 	{
 		_spawnPosition = GameObject.WorldPosition;
@@ -429,8 +433,27 @@ public sealed class Monster : Component
 		_state = MonsterState.Returning;
 	}
 
+	// Sets walk/run animation state. Only broadcasts to clients when the values change,
+	// to avoid spamming the network every frame.
 	void SetMoving( bool moving, bool running )
 	{
+		// Always update locally on the host.
+		ModelRenderer?.Set( "is_moving", moving );
+		ModelRenderer?.Set( "is_running", running );
+
+		// Only broadcast to all clients if values changed since last broadcast.
+		if ( moving != _lastBroadcastMoving || running != _lastBroadcastRunning )
+		{
+			_lastBroadcastMoving = moving;
+			_lastBroadcastRunning = running;
+			BroadcastMovingState( moving, running );
+		}
+	}
+
+	[Rpc.Broadcast]
+	void BroadcastMovingState( bool moving, bool running )
+	{
+		// On the host, we already set this above — this is for joining clients.
 		ModelRenderer?.Set( "is_moving", moving );
 		ModelRenderer?.Set( "is_running", running );
 	}
@@ -786,6 +809,10 @@ public sealed class Monster : Component
 			_repositionExtra = 0f;
 			_state = MonsterState.Idle;
 			GameObject.WorldPosition = _spawnPosition;
+
+			// Reset broadcast tracking so first SetMoving call after respawn re-broadcasts.
+			_lastBroadcastMoving = false;
+			_lastBroadcastRunning = false;
 		}
 
 		ModelRenderer?.Set( "b_death", false );

@@ -10,6 +10,10 @@ public sealed class TeleportStone : Component
 	[Property] public int TeleportCost { get; set; } = 1;
 	[Property] public float CooldownDuration { get; set; } = 10f;
 
+	// How far above the stone the player spawns when teleporting in.
+	// Stones are typically tall, so without this you spawn inside the stone.
+	[Property] public float SpawnHeightOffset { get; set; } = 80f;
+
 	public static TeleportStone ActiveStone { get; private set; }
 	public static float CooldownRemaining { get; private set; }
 
@@ -112,7 +116,7 @@ public sealed class TeleportStone : Component
 			return false;
 
 		inventory.RemoveItem( ItemId.GoldCoin, TeleportCost );
-		player.WorldPosition = target.WorldPosition;
+		player.WorldPosition = target.WorldPosition + Vector3.Up * target.SpawnHeightOffset;
 		CooldownRemaining = CooldownDuration;
 
 		GameLog.Add( $"Teleported to {target.StoneName} for {TeleportCost} gold.", "#a080d0" );

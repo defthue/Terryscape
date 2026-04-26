@@ -699,6 +699,12 @@
 
 	protected override void OnUpdate()
 	{
+		// Force the panel to re-evaluate BuildHash and re-render every frame.
+		// Without this, joining clients (proxies) don't get polled aggressively enough
+		// and HUD elements like inventory, health, and chat go stale until something
+		// like opening the inventory triggers a manual refresh.
+		StateHasChanged();
+
 		if ( IsChatOpen && ChatInputRef != null )
 			ChatInputRef.Focus();
 

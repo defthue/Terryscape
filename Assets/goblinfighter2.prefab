@@ -3,13 +3,13 @@
     "__guid": "16b44872-b120-4506-a8ab-9d57477e8327",
     "__version": 2,
     "Flags": 0,
-    "Name": "Goblinfighter2",
+    "Name": "goblinfighter2",
     "Position": "0,0,0",
     "Rotation": "0,-0.707106829,0,0.707106829",
     "Scale": "1,1,1",
     "Tags": "monster,particles",
     "Enabled": true,
-    "NetworkMode": 2,
+    "NetworkMode": 1,
     "NetworkFlags": 0,
     "NetworkOrphaned": 0,
     "NetworkTransmit": true,
@@ -123,22 +123,10 @@
         "StopAndTurnThreshold": 60,
         "VictoryAnimLength": 3,
         "Waypoints": [
-          {
-            "_type": "gameobject",
-            "go": "bac5a8c6-69d8-4e3f-9626-b8d832cdd42a"
-          },
-          {
-            "_type": "gameobject",
-            "go": "c9fa3b9d-47c2-4d92-8c4a-2ad0570b5723"
-          },
-          {
-            "_type": "gameobject",
-            "go": "01d86857-7ebc-4fec-bf60-82c35047eb06"
-          },
-          {
-            "_type": "gameobject",
-            "go": "e56e366a-e18b-4af4-9e1e-59582fabcb7d"
-          }
+          null,
+          null,
+          null,
+          null
         ]
       },
       {
@@ -322,7 +310,28 @@
         "Yaw": 0
       }
     ],
-    "Children": []
+    "Children": [],
+    "__properties": {
+      "NetworkInterpolation": true,
+      "TimeScale": 1,
+      "WantsSystemScene": true,
+      "Metadata": {},
+      "NavMesh": {
+        "Enabled": false,
+        "IncludeStaticBodies": true,
+        "IncludeKeyframedBodies": true,
+        "EditorAutoUpdate": false,
+        "AgentHeight": 64,
+        "AgentRadius": 16,
+        "AgentStepSize": 18,
+        "AgentMaxSlope": 40,
+        "ExcludedBodies": "",
+        "IncludedBodies": "",
+        "DeferGeneration": false,
+        "CustomBounds": false
+      }
+    },
+    "__variables": []
   },
   "ResourceVersion": 2,
   "ShowInMenu": false,

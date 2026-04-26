@@ -429,11 +429,12 @@ public sealed class PlayerGatherResource : Component
 
 		if ( willBreak )
 		{
-			inventory.AddItem( node.ResourceItem, node.ResourceAmount );
+			int harvestAmount = node.GetHarvestAmount();
+			inventory.AddItem( node.ResourceItem, harvestAmount );
 
 			var def = ItemDatabase.Get( node.ResourceItem );
 			string itemName = def != null ? def.Name : node.ResourceItem.ToString();
-			GameLog.Add( $"You collected {node.ResourceAmount}x {itemName} from {node.GetDisplayName()}.", "#6db8f0" );
+			GameLog.Add( $"You collected {harvestAmount}x {itemName} from {node.GetDisplayName()}.", "#6db8f0" );
 
 			skills.AddXp( node.GetSkillType(), node.XpReward );
 
