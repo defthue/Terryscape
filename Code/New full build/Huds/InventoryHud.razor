@@ -121,7 +121,7 @@
 									<div class="item-count">@item.Count</div>
 								}
 								<div class="item-tooltip">
-									@item.Name x@item.Count
+									@item.Name x@(item.Count)
 									@if ( isPotion )
 									{
 										<div class="tooltip-hint">Click to drink</div>
@@ -289,7 +289,7 @@
 		if ( id == ItemId.None )
 			return "";
 
-		return $"/ItemIcons/{id}.png";
+		return $"/ItemIcons/{id}.vtex";
 	}
 
 	void OnInventorySlotClick( ItemSlotDisplay item )

@@ -381,6 +381,12 @@
         "__guid": "a9dba935-ebf3-4168-8157-1c94f9a5be00",
         "__enabled": true,
         "Flags": 0,
+        "Dresser": {
+          "_type": "component",
+          "component_id": "d315cc36-3479-4cd3-a8b1-f688395540ba",
+          "go": "43dc9686-8264-42d7-9f3e-17be6bb1f957",
+          "component_type": "Dresser"
+        },
         "OnComponentDestroy": null,
         "OnComponentDisabled": null,
         "OnComponentEnabled": null,
@@ -463,7 +469,7 @@
         "Scale": "1,1,1",
         "Tags": "",
         "Enabled": true,
-        "NetworkMode": 2,
+        "NetworkMode": 0,
         "NetworkFlags": 0,
         "NetworkOrphaned": 0,
         "NetworkTransmit": true,
@@ -634,7 +640,7 @@
         "Scale": "1,1,1",
         "Tags": "",
         "Enabled": true,
-        "NetworkMode": 2,
+        "NetworkMode": 1,
         "NetworkFlags": 0,
         "NetworkOrphaned": 0,
         "NetworkTransmit": true,
@@ -698,6 +704,36 @@
                 "RotationOffset": "0,90,0"
               },
               {
+                "ItemId": "LunariteSword",
+                "Model": "models/tools/swords/lunariteswordfbx.vmdl",
+                "PositionOffset": "0,0,-12",
+                "RotationOffset": "0,90,0"
+              },
+              {
+                "ItemId": "SolariumSword",
+                "Model": "models/tools/swords/solariumswordfbx.vmdl",
+                "PositionOffset": "0,0,-11",
+                "RotationOffset": "0,90,0"
+              },
+              {
+                "ItemId": "ColdveinSword",
+                "Model": "models/tools/swords/coldveinswordfbx.vmdl",
+                "PositionOffset": "0,0,-11",
+                "RotationOffset": "0,90,0"
+              },
+              {
+                "ItemId": "AshsteelSword",
+                "Model": "models/tools/swords/ashsteelswordfbx.vmdl",
+                "PositionOffset": "0,0,-11",
+                "RotationOffset": "0,90,0"
+              },
+              {
+                "ItemId": "CoppiteSword",
+                "Model": "models/tools/swords/coppiteswordfbx.vmdl",
+                "PositionOffset": "0,0,-11",
+                "RotationOffset": "0,90,0"
+              },
+              {
                 "ItemId": "AbyssiumHatchet",
                 "Model": "models/tools/hatchets/abyssiumhatchetfbx.vmdl",
                 "PositionOffset": "0,0,-14",
@@ -742,7 +778,7 @@
         "Scale": "1,1,1",
         "Tags": "",
         "Enabled": true,
-        "NetworkMode": 2,
+        "NetworkMode": 0,
         "NetworkFlags": 0,
         "NetworkOrphaned": 0,
         "NetworkTransmit": true,
