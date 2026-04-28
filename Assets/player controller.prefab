@@ -896,7 +896,7 @@
                 "RotationOffset": "0,80,0"
               },
               {
-                "ItemId": "None",
+                "ItemId": "PrimitivePickaxe",
                 "Model": "models/tools/pickaxes/primitivepickaxe.vmdl",
                 "PositionOffset": "0,0,-11",
                 "RotationOffset": "0,90,0"
