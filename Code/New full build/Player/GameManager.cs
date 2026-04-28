@@ -8,7 +8,7 @@ public sealed class GameManager : Component, Component.INetworkListener
 	[Property] public GameObject PlayerPrefab { get; set; }
 	[Property] public Vector3 SpawnPoint { get; set; } = new Vector3( 0f, 0f, 50f );
 	[Property] public bool AutoCreateLobby { get; set; } = true;
-	[Property] public int MaxPlayers { get; set; } = 20;
+	[Property] public int MaxPlayers { get; set; } = 64;
 
 	public static GameManager Instance { get; private set; }
 

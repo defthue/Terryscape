@@ -6,6 +6,17 @@ public sealed class NpcInteract : Component
 {
 	[Property] public string NpcName { get; set; } = "Villager";
 	[Property] public string QuestId { get; set; } = "";
+
+	// Optional human-readable title shown in the journal HUD. Leave empty to fall back
+	// to the NPC name. Useful when an NPC has multiple quests (future) or the NPC name
+	// alone doesn't communicate what the quest is about.
+	[Property] public string QuestTitle { get; set; } = "";
+
+	// Category for the quest journal (e.g. "Main Story", "Side Quests", "Tutorial").
+	// The journal auto-collects unique non-empty values across all quests in the scene
+	// and shows them as filter tabs. Empty = goes under "Uncategorized" in the journal.
+	[Property] public string Category { get; set; } = "";
+
 	[Property] public string PreviousQuestId { get; set; } = "";
 
 	[Property, TextArea] public string DialogueOffer { get; set; } = "Can you help me out?";
@@ -114,6 +125,11 @@ public sealed class NpcInteract : Component
 			return;
 
 		if ( EnchantingStation.ActiveStation != null )
+			return;
+
+		// Block interactions while the journal is open so pressing E doesn't
+		// trigger NPC dialogue underneath the journal HUD.
+		if ( JournalStation.IsOpen )
 			return;
 
 		var player = PlayerHelper.GetLocalPlayer();
@@ -290,6 +306,15 @@ public sealed class NpcInteract : Component
 	{
 		ActiveNpc = this;
 		Mouse.Visibility = MouseVisibility.Visible;
+
+		// Mark this quest as discovered the first time the player opens the dialogue.
+		// The journal HUD uses this list to show quests the player knows about,
+		// even ones they haven't completed yet.
+		if ( !string.IsNullOrEmpty( QuestId ) )
+		{
+			var inventory = GetPlayerInventory();
+			inventory?.DiscoverQuest( QuestId );
+		}
 	}
 
 	public void CloseDialogue()
@@ -321,6 +346,15 @@ public sealed class NpcInteract : Component
 			return DialogueReady;
 
 		return DialogueOffer;
+	}
+
+	// Returns the title shown in the journal: explicit QuestTitle if set, otherwise NpcName.
+	public string GetJournalTitle()
+	{
+		if ( !string.IsNullOrEmpty( QuestTitle ) )
+			return QuestTitle;
+
+		return NpcName;
 	}
 
 	public bool HasFollowUpOnThisNpc()

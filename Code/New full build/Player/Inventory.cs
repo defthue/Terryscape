@@ -10,7 +10,10 @@ public sealed class Inventory : Component
 	HashSet<string> _unlockedRecipes = new();
 	HashSet<string> _discoveredStones = new();
 	HashSet<string> _completedQuests = new();
+	HashSet<string> _discoveredQuests = new();
 	Dictionary<string, int> _killCounts = new();
+
+	int _nodesMined = 0;
 
 	ItemId _equippedAmmoId = ItemId.None;
 	int _equippedAmmoCount = 0;
@@ -28,7 +31,9 @@ public sealed class Inventory : Component
 		_unlockedRecipes.Clear();
 		_discoveredStones.Clear();
 		_completedQuests.Clear();
+		_discoveredQuests.Clear();
 		_killCounts.Clear();
+		_nodesMined = 0;
 		_equippedAmmoId = ItemId.None;
 		_equippedAmmoCount = 0;
 	}
@@ -539,6 +544,30 @@ public sealed class Inventory : Component
 		return _completedQuests;
 	}
 
+	// Marks a quest as discovered (player has opened the dialogue at least once).
+	// Used by the journal HUD to show quests the player knows about, before completion.
+	public void DiscoverQuest( string questId )
+	{
+		if ( string.IsNullOrEmpty( questId ) )
+			return;
+
+		if ( _discoveredQuests.Add( questId ) )
+		{
+			Log.Info( $"[Inventory] Quest discovered: {questId}" );
+			PlayerPersistence.Local?.RequestSaveNow();
+		}
+	}
+
+	public bool IsQuestDiscovered( string questId )
+	{
+		return _discoveredQuests.Contains( questId );
+	}
+
+	public HashSet<string> GetDiscoveredQuests()
+	{
+		return _discoveredQuests;
+	}
+
 	public int GetKillCount( string monsterType )
 	{
 		if ( _killCounts.TryGetValue( monsterType, out var count ) )
@@ -558,6 +587,27 @@ public sealed class Inventory : Component
 	public Dictionary<string, int> GetAllKillCounts()
 	{
 		return _killCounts;
+	}
+
+	// Total kills across all monster types — denormalized for leaderboard queries.
+	public int GetTotalKills()
+	{
+		int total = 0;
+		foreach ( var kv in _killCounts )
+			total += kv.Value;
+		return total;
+	}
+
+	// Total resource nodes harvested over the player's lifetime.
+	// Used by the leaderboard. Increments by 1 each time a node is broken.
+	public int GetNodesMined()
+	{
+		return _nodesMined;
+	}
+
+	public void AddNodeMined()
+	{
+		_nodesMined++;
 	}
 
 	public PlayerSaveData ToSaveData( PlayerSaveData data )
@@ -594,7 +644,12 @@ public sealed class Inventory : Component
 		data.Recipes = new List<string>( _unlockedRecipes );
 		data.Stones = new List<string>( _discoveredStones );
 		data.Quests = new List<string>( _completedQuests );
+		data.DiscoveredQuests = new List<string>( _discoveredQuests );
 		data.Kills = new Dictionary<string, int>( _killCounts );
+
+		// Leaderboard fields — keep nodesMined updated, the others are computed
+		// at save time in PlayerPersistence.SaveAsync from the source-of-truth fields.
+		data.NodesMined = _nodesMined;
 
 		return data;
 	}
@@ -659,7 +714,15 @@ public sealed class Inventory : Component
 		foreach ( var q in data.Quests )
 			_completedQuests.Add( q );
 
+		if ( data.DiscoveredQuests != null )
+		{
+			foreach ( var q in data.DiscoveredQuests )
+				_discoveredQuests.Add( q );
+		}
+
 		foreach ( var kv in data.Kills )
 			_killCounts[kv.Key] = kv.Value;
+
+		_nodesMined = data.NodesMined;
 	}
 }

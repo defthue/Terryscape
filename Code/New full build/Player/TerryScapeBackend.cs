@@ -42,7 +42,11 @@ public static class TerryScapeBackend
 				SavedAt = json.Str( "savedAt", "" ),
 				PlayerName = json.Str( "playerName", "" ),
 				EquippedAmmoId = json.Str( "equippedAmmoId", "None" ),
-				EquippedAmmoQty = json.Int( "equippedAmmoQty", 0 )
+				EquippedAmmoQty = json.Int( "equippedAmmoQty", 0 ),
+				NodesMined = json.Int( "nodesMined", 0 ),
+				TotalLevel = json.Int( "totalLevel", 0 ),
+				TotalGold = json.Int( "totalGold", 0 ),
+				TotalKills = json.Int( "totalKills", 0 )
 			};
 
 			if ( json.TryGetProperty( "skills", out var skillsEl ) && skillsEl.ValueKind == JsonValueKind.Object )
@@ -110,6 +114,12 @@ public static class TerryScapeBackend
 			{
 				foreach ( var q in questsEl.EnumerateArray() )
 					if ( q.ValueKind == JsonValueKind.String ) save.Quests.Add( q.GetString() );
+			}
+
+			if ( json.TryGetProperty( "discoveredQuests", out var discEl ) && discEl.ValueKind == JsonValueKind.Array )
+			{
+				foreach ( var q in discEl.EnumerateArray() )
+					if ( q.ValueKind == JsonValueKind.String ) save.DiscoveredQuests.Add( q.GetString() );
 			}
 
 			if ( json.TryGetProperty( "kills", out var killsEl ) && killsEl.ValueKind == JsonValueKind.Object )
@@ -184,9 +194,14 @@ public static class TerryScapeBackend
 				recipes = data.Recipes,
 				stones = data.Stones,
 				quests = data.Quests,
+				discoveredQuests = data.DiscoveredQuests ?? new List<string>(),
 				kills = data.Kills,
 				bank = data.Bank ?? new Dictionary<string, int>(),
-				bankUnique = BuildUniqueItemsPayload( data.BankUnique )
+				bankUnique = BuildUniqueItemsPayload( data.BankUnique ),
+				nodesMined = data.NodesMined,
+				totalLevel = data.TotalLevel,
+				totalGold = data.TotalGold,
+				totalKills = data.TotalKills
 			};
 
 			var result = await NetworkStorage.CallEndpoint( "save-player", payload );

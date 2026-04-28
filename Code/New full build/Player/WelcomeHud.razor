@@ -266,7 +266,12 @@
 			return;
 
 		IsOpen = false;
-		Mouse.Visibility = MouseVisibility.Hidden;
+
+		// Return the player to a clean gameplay input state. Without this, the player
+		// can move/look but left click won't register until they Q+Q the inventory,
+		// because the gather/combat system gets stuck waiting for the inventory toggle
+		// to fire and reset its internal state.
+		PlayerGatherResource.ForceCloseUI();
 	}
 
 	void OnDiscordClick()

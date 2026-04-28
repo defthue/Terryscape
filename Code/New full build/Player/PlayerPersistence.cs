@@ -19,11 +19,48 @@ public sealed class PlayerPersistence : Component
 		if ( IsProxy )
 			return;
 
+		// Reset any HUDs that might still be marked "open" from a previous session.
+		// These are static-state HUDs whose flags survive scene reloads — without this
+		// reset, closing the game mid-bank (or mid-journal, etc.) would leave the HUD
+		// stuck open on next join, blocking the WelcomeHud and other interactions.
+		ResetTransientHudState();
+
 		Local = this;
 
 		NetworkStorageConfig.EnsureInitialized();
 
 		_ = LoadOnStartAsync();
+	}
+
+	void ResetTransientHudState()
+	{
+		// Each Close() below is guarded so it only runs when the HUD was actually
+		// active. Avoids the side effect of HUD Close() methods setting the mouse
+		// to hidden — the WelcomeHud needs the mouse visible on fresh join.
+
+		JournalStation.Close();
+
+		if ( BankStation.ActiveBank != null )
+			BankStation.Close();
+
+		if ( CraftingStation.ActiveStation != null )
+			CraftingStation.Close();
+
+		if ( ShopStation.ActiveShop != null )
+			ShopStation.CloseShop();
+
+		ShopStation.ShowingChoice = false;
+		ShopStation.ChoosingShop = null;
+		ShopStation.ClearPendingSellAll();
+
+		if ( EnchantingStation.ActiveStation != null )
+			EnchantingStation.Close();
+
+		if ( TeleportStone.ActiveStone != null )
+			TeleportStone.Close();
+
+		if ( NpcInteract.ActiveNpc != null )
+			NpcInteract.ActiveNpc.CloseDialogue();
 	}
 
 	protected override void OnDestroy()
@@ -163,8 +200,28 @@ public sealed class PlayerPersistence : Component
 			data.BankUnique = new System.Collections.Generic.List<PlayerSaveData.UniqueItemEntry>();
 		}
 
+		// Compute denormalized leaderboard fields just before saving. These are flat
+		// top-level numbers so sbox.cool can sort/query by them without walking nested
+		// objects. NodesMined is already in data (Inventory.ToSaveData set it).
+		data.TotalLevel = ComputeTotalLevel( data.Skills );
+		data.TotalGold = inventory.GetItemCount( ItemId.GoldCoin );
+		data.TotalKills = inventory.GetTotalKills();
+
 		var ok = await TerryScapeBackend.SaveAsync( data );
 		if ( ok )
 			Log.Info( "[PlayerPersistence] Save successful." );
+	}
+
+	// Sums all skill levels into a single total. RuneScape-style "total level" stat,
+	// used by the leaderboard.
+	static int ComputeTotalLevel( System.Collections.Generic.Dictionary<string, PlayerSaveData.SkillEntry> skills )
+	{
+		if ( skills == null )
+			return 0;
+
+		int total = 0;
+		foreach ( var kv in skills )
+			total += kv.Value.Level;
+		return total;
 	}
 }

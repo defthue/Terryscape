@@ -1,0 +1,394 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using System.Linq;
+@using System.Collections.Generic;
+@inherits PanelComponent
+
+<root>
+	@if ( IsOpen )
+	{
+		<div class="crafting-overlay">
+			<div class="crafting-popup" style="width: 700px; height: 600px;">
+				<div class="crafting-header">
+					<div class="crafting-title">Quest Journal</div>
+					<div class="crafting-close" onclick="@(() => CloseJournal())">✕</div>
+				</div>
+
+				<div class="tab-row">
+					<div class="tab-button @(Tab == 0 ? "active" : "")" onclick="@(() => SetTab(0))">
+						Available: @AvailableQuests.Count
+					</div>
+					<div class="tab-button @(Tab == 1 ? "active" : "")" onclick="@(() => SetTab(1))">
+						Completed: @CompletedQuests.Count
+					</div>
+				</div>
+
+				@if ( CategoryList.Count > 0 )
+				{
+					<div class="category-row">
+						@foreach ( var cat in CategoryList )
+						{
+							int count = CountInCategory( cat );
+
+							<div class="category-button @(SelectedCategory == cat ? "active" : "")"
+								 onclick="@(() => SelectCategory( cat ))">
+								@cat: @count
+							</div>
+						}
+					</div>
+				}
+
+				<div class="journal-body">
+					@{ var visible = GetVisibleQuests(); }
+					@if ( visible.Count == 0 )
+					{
+						<div class="no-recipes">
+							@if ( Tab == 0 )
+							{
+								<text>No active quests in this category.</text>
+							}
+							else
+							{
+								<text>No completed quests in this category.</text>
+							}
+						</div>
+					}
+
+					@foreach ( var quest in visible )
+					{
+						bool expanded = ExpandedQuestId == quest.QuestId;
+
+						<div class="quest-row @(expanded ? "expanded" : "")">
+							<div class="quest-header" onclick="@(() => ToggleExpanded( quest.QuestId ))">
+								<div class="quest-arrow">@(expanded ? "▼" : "▶")</div>
+								<div class="quest-title-line">
+									<div class="quest-title">@quest.GetJournalTitle()</div>
+									<div class="quest-npc">@quest.NpcName</div>
+								</div>
+							</div>
+
+							@if ( expanded )
+							{
+								<div class="quest-details">
+									@{ var requiredItems = quest.GetRequiredItems(); }
+									@if ( requiredItems.Count > 0 )
+									{
+										<div class="detail-section-label">Required Items</div>
+										@foreach ( var req in requiredItems )
+										{
+											var name = GetItemName( req.Item );
+											var have = GetPlayerItemCount( req.Item );
+											bool met = have >= req.Amount;
+											bool isCompleted = Tab == 1;
+
+											<div class="requirement-row @(met || isCompleted ? "met" : "unmet")">
+												<div class="req-name">@name</div>
+												<div class="req-count">@(isCompleted ? req.Amount : have) / @req.Amount</div>
+											</div>
+										}
+									}
+
+									@{ var requiredKills = quest.GetRequiredKills(); }
+									@if ( requiredKills.Count > 0 )
+									{
+										<div class="detail-section-label">Required Kills</div>
+										@foreach ( var req in requiredKills )
+										{
+											var have = GetPlayerKillCount( req.MonsterType );
+											bool met = have >= req.Amount;
+											bool isCompleted = Tab == 1;
+
+											<div class="requirement-row @(met || isCompleted ? "met" : "unmet")">
+												<div class="req-name">@req.MonsterType</div>
+												<div class="req-count">@(isCompleted ? req.Amount : have) / @req.Amount</div>
+											</div>
+										}
+									}
+
+									@{
+										var rewardItems = quest.GetRewardItems();
+										var recipeNames = quest.GetUnlockedRecipeNames();
+									}
+									@if ( rewardItems.Count > 0 || recipeNames.Count > 0 )
+									{
+										<div class="detail-section-label">Rewards</div>
+
+										@if ( rewardItems.Count > 0 )
+										{
+											<div class="reward-icon-row">
+												@foreach ( var reward in rewardItems )
+												{
+													var name = GetItemName( reward.Item );
+
+													<div class="reward-icon-slot">
+														<div class="reward-icon">
+															<img class="reward-icon-img" src="@GetIconPath( reward.Item )" />
+														</div>
+														@if ( reward.Amount > 1 )
+														{
+															<div class="reward-count">@reward.Amount</div>
+														}
+														<div class="reward-tooltip">@name x@(reward.Amount)</div>
+													</div>
+												}
+											</div>
+										}
+
+										@if ( recipeNames.Count > 0 )
+										{
+											<div class="recipe-list">
+												@foreach ( var recipeName in recipeNames )
+												{
+													<div class="recipe-row">
+														<span class="recipe-icon">📜</span>
+														<span class="recipe-name">Recipe: @recipeName</span>
+													</div>
+												}
+											</div>
+										}
+									}
+								</div>
+							}
+						</div>
+					}
+				</div>
+			</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	const string UncategorizedLabel = "Uncategorized";
+
+	bool IsOpen => JournalStation.IsOpen;
+
+	int Tab { get; set; } = 0;
+	string SelectedCategory { get; set; } = "";
+	string ExpandedQuestId { get; set; } = "";
+
+	Inventory PlayerInventory { get; set; }
+
+	List<NpcInteract> AvailableQuests { get; set; } = new();
+	List<NpcInteract> CompletedQuests { get; set; } = new();
+	List<string> CategoryList { get; set; } = new();
+
+	void SetTab( int tab )
+	{
+		Tab = tab;
+		ExpandedQuestId = "";
+	}
+
+	void SelectCategory( string cat )
+	{
+		SelectedCategory = cat;
+		ExpandedQuestId = "";
+	}
+
+	void ToggleExpanded( string questId )
+	{
+		if ( ExpandedQuestId == questId )
+			ExpandedQuestId = "";
+		else
+			ExpandedQuestId = questId;
+	}
+
+	void CloseJournal()
+	{
+		JournalStation.Close();
+	}
+
+	int GetPlayerItemCount( ItemId id )
+	{
+		return PlayerInventory != null ? PlayerInventory.GetItemCount( id ) : 0;
+	}
+
+	int GetPlayerKillCount( string monsterType )
+	{
+		return PlayerInventory != null ? PlayerInventory.GetKillCount( monsterType ) : 0;
+	}
+
+	string GetItemName( ItemId id )
+	{
+		var def = ItemDatabase.Get( id );
+		return def != null ? def.Name : id.ToString();
+	}
+
+	string GetIconPath( ItemId id )
+	{
+		if ( id == ItemId.None )
+			return "";
+
+		return $"/ItemIcons/{id}.vtex";
+	}
+
+	// Returns the category for a quest, mapping empty strings to the Uncategorized
+	// label so they show up in their own filter tab (helps spot quests we forgot
+	// to categorize).
+	string GetCategoryFor( NpcInteract quest )
+	{
+		if ( quest == null )
+			return UncategorizedLabel;
+
+		if ( string.IsNullOrEmpty( quest.Category ) )
+			return UncategorizedLabel;
+
+		return quest.Category;
+	}
+
+	List<NpcInteract> GetCurrentTabList()
+	{
+		return Tab == 0 ? AvailableQuests : CompletedQuests;
+	}
+
+	int CountInCategory( string cat )
+	{
+		int count = 0;
+		foreach ( var q in GetCurrentTabList() )
+		{
+			if ( GetCategoryFor( q ) == cat )
+				count++;
+		}
+		return count;
+	}
+
+	List<NpcInteract> GetVisibleQuests()
+	{
+		var current = GetCurrentTabList();
+		if ( string.IsNullOrEmpty( SelectedCategory ) )
+			return current;
+
+		var filtered = new List<NpcInteract>();
+		foreach ( var q in current )
+		{
+			if ( GetCategoryFor( q ) == SelectedCategory )
+				filtered.Add( q );
+		}
+		return filtered;
+	}
+
+	void RefreshLists()
+	{
+		AvailableQuests.Clear();
+		CompletedQuests.Clear();
+
+		PlayerInventory = PlayerHelper.GetLocalInventory();
+		if ( PlayerInventory == null )
+		{
+			RefreshCategories();
+			return;
+		}
+
+		var discovered = PlayerInventory.GetDiscoveredQuests();
+		if ( discovered == null || discovered.Count == 0 )
+		{
+			RefreshCategories();
+			return;
+		}
+
+		// Find every NpcInteract in the scene whose QuestId is in the player's
+		// discovered list. Bucket them by completed vs available.
+		foreach ( var npc in Scene.GetAllComponents<NpcInteract>() )
+		{
+			if ( string.IsNullOrEmpty( npc.QuestId ) )
+				continue;
+
+			if ( !discovered.Contains( npc.QuestId ) )
+				continue;
+
+			if ( PlayerInventory.IsQuestCompleted( npc.QuestId ) )
+				CompletedQuests.Add( npc );
+			else
+				AvailableQuests.Add( npc );
+		}
+
+		RefreshCategories();
+	}
+
+	// Auto-collects unique categories from the discovered quests across both tabs.
+	// Sorted alphabetically with Uncategorized always last so it sticks out as
+	// "things we still need to categorize". Updates SelectedCategory if the previously
+	// selected one no longer exists.
+	void RefreshCategories()
+	{
+		var allCategories = new HashSet<string>();
+		bool hasUncategorized = false;
+
+		foreach ( var q in AvailableQuests )
+		{
+			var cat = GetCategoryFor( q );
+			if ( cat == UncategorizedLabel )
+				hasUncategorized = true;
+			else
+				allCategories.Add( cat );
+		}
+
+		foreach ( var q in CompletedQuests )
+		{
+			var cat = GetCategoryFor( q );
+			if ( cat == UncategorizedLabel )
+				hasUncategorized = true;
+			else
+				allCategories.Add( cat );
+		}
+
+		var sorted = new List<string>( allCategories );
+		sorted.Sort();
+		if ( hasUncategorized )
+			sorted.Add( UncategorizedLabel );
+
+		CategoryList = sorted;
+
+		// If we have categories and none is selected, default to the first one.
+		if ( CategoryList.Count > 0 && string.IsNullOrEmpty( SelectedCategory ) )
+		{
+			SelectedCategory = CategoryList[0];
+		}
+
+		// If the selected category no longer exists (quest list changed), reset.
+		if ( !string.IsNullOrEmpty( SelectedCategory ) && !CategoryList.Contains( SelectedCategory ) )
+		{
+			SelectedCategory = CategoryList.Count > 0 ? CategoryList[0] : "";
+		}
+	}
+
+	// Force a re-render every frame while the journal is open so progress on
+	// requirements (kill counts, item counts) updates live.
+	protected override void OnUpdate()
+	{
+		if ( IsOpen )
+			StateHasChanged();
+	}
+
+	protected override int BuildHash()
+	{
+		if ( IsOpen )
+		{
+			RefreshLists();
+		}
+
+		int reqHash = 0;
+		if ( PlayerInventory != null )
+		{
+			foreach ( var npc in AvailableQuests )
+			{
+				foreach ( var req in npc.GetRequiredItems() )
+					reqHash += PlayerInventory.GetItemCount( req.Item ) * (int)req.Item;
+
+				foreach ( var req in npc.GetRequiredKills() )
+					reqHash += PlayerInventory.GetKillCount( req.MonsterType ) * 1000;
+			}
+		}
+
+		return (
+			IsOpen,
+			Tab,
+			SelectedCategory,
+			ExpandedQuestId,
+			AvailableQuests.Count,
+			CompletedQuests.Count,
+			CategoryList.Count,
+			reqHash
+		).GetHashCode();
+	}
+}

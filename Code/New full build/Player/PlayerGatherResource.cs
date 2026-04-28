@@ -23,6 +23,18 @@ public sealed class PlayerGatherResource : Component
 
 	Dictionary<ResourceNode, int> _localNodeHealth = new();
 
+	/// <summary>
+	/// Forces UIOpen back to false and hides the mouse. Used by HUDs (like WelcomeHud)
+	/// that need to return the player to normal gameplay input state when they close.
+	/// Without this, UI HUDs that bypass the inventory toggle can leave the gather/combat
+	/// system in a stuck state where left click doesn't register until Q is pressed twice.
+	/// </summary>
+	public static void ForceCloseUI()
+	{
+		UIOpen = false;
+		Mouse.Visibility = MouseVisibility.Hidden;
+	}
+
 	protected override void OnUpdate()
 	{
 		if ( IsProxy )
@@ -35,6 +47,9 @@ public sealed class PlayerGatherResource : Component
 		}
 
 		if ( UIOpen )
+			return;
+
+		if ( JournalStation.IsOpen )
 			return;
 
 		var potionSystem = GameObject.Components.Get<PotionSystem>();
@@ -431,6 +446,10 @@ public sealed class PlayerGatherResource : Component
 		{
 			int harvestAmount = node.GetHarvestAmount();
 			inventory.AddItem( node.ResourceItem, harvestAmount );
+
+			// Track lifetime nodes mined for the leaderboard. One increment per node broken,
+			// regardless of how many resources rolled out of it.
+			inventory.AddNodeMined();
 
 			var def = ItemDatabase.Get( node.ResourceItem );
 			string itemName = def != null ? def.Name : node.ResourceItem.ToString();

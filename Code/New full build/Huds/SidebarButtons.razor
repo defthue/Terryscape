@@ -1,0 +1,58 @@
+@using Sandbox;
+@using Sandbox.UI;
+@inherits PanelComponent
+
+<root>
+	<div class="sidebar-buttons">
+		<div class="sidebar-button" onclick="@(() => OpenJournal())">
+			<div class="sidebar-icon">📜</div>
+			<div class="sidebar-tooltip">Quest Journal</div>
+		</div>
+		<div class="sidebar-button" onclick="@(() => OpenLeaderboard())">
+			<div class="sidebar-icon">🏆</div>
+			<div class="sidebar-tooltip">Leaderboard</div>
+		</div>
+	</div>
+</root>
+
+@code
+{
+	void OpenJournal()
+	{
+		// Close any other open station-style HUDs first to avoid stacked overlays.
+		CloseAllOtherHuds();
+		JournalStation.Open();
+	}
+
+	void OpenLeaderboard()
+	{
+		// Placeholder — leaderboard HUD doesn't exist yet.
+		// Will hook this up when we build the leaderboard in Part C.
+	}
+
+	void CloseAllOtherHuds()
+	{
+		if ( NpcInteract.ActiveNpc != null )
+			NpcInteract.ActiveNpc.CloseDialogue();
+
+		if ( CraftingStation.ActiveStation != null )
+			CraftingStation.Close();
+
+		if ( ShopStation.ActiveShop != null )
+			ShopStation.CloseShop();
+
+		if ( BankStation.ActiveBank != null )
+			BankStation.Close();
+
+		if ( EnchantingStation.ActiveStation != null )
+			EnchantingStation.Close();
+
+		if ( TeleportStone.ActiveStone != null )
+			TeleportStone.Close();
+	}
+
+	protected override int BuildHash()
+	{
+		return JournalStation.IsOpen.GetHashCode();
+	}
+}
