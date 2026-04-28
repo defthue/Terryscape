@@ -36,6 +36,16 @@ public sealed class ResourceNode : Component
 
 	[Property] public int XpReward { get; set; } = 1;
 
+	// Distance culling. When the local camera is farther than this many units away,
+	// the renderer and collider are disabled to save GPU/physics cost.
+	// Purely a client-side visual/physics optimization — networked state
+	// (IsBroken, harvesting via Rpc.Host) is unaffected. Each client decides
+	// independently what to cull based on their own local camera position.
+	// NOTE: Renamed from MaxDrawDistance to DrawDistanceMax to force scene/prefab
+	// instances to fall back to the code default (any old saved MaxDrawDistance
+	// values become orphaned data that s&box will ignore).
+	[Property, Group( "Culling" )] public float DrawDistanceMax { get; set; } = 5000f;
+
 	// DEPRECATED — kept so existing scene nodes don't lose property data on load.
 	// Resource nodes now always poof out instantly when harvested.
 	[Property, Hide] public float ShrinkDuration { get; set; } = 0.8f;
@@ -46,6 +56,11 @@ public sealed class ResourceNode : Component
 
 	Vector3 _originalScale;
 	bool _localBroken = false;
+
+	// Distance culling state. Tracks whether this node is currently culled
+	// for the local client based on distance to the local camera.
+	bool _localCulled = false;
+	float _nextCullCheckTime = 0f;
 
 	// Resolved at OnStart from manual properties OR from the GameObject's components.
 	// Whichever renderer/collider is present, we'll find it.
@@ -112,9 +127,14 @@ public sealed class ResourceNode : Component
 		CurrentHealth = MaxHealth;
 		_originalScale = GameObject.LocalScale;
 
+		// Stagger initial cull checks across nodes so we don't hammer the system
+		// with every node checking distance on the same frame.
+		_nextCullCheckTime = Time.Now + Random.Shared.NextSingle() * 0.5f;
+
 		// Initial visibility state — match whatever IsBroken says when we start.
 		// Late-joining clients receive IsBroken=true via Sync before OnStart runs,
 		// so we honor that here instead of always showing the node.
+		// Distance culling will kick in on the first OnUpdate tick.
 		if ( IsBroken )
 		{
 			_localBroken = true;
@@ -122,7 +142,10 @@ public sealed class ResourceNode : Component
 		}
 		else
 		{
-			ShowNode( true );
+			// Compute initial cull state immediately so joining players don't see
+			// a flash of distant nodes before the first cull check runs.
+			_localCulled = ShouldCullForDistance();
+			ShowNode( !_localCulled );
 		}
 	}
 
@@ -167,8 +190,44 @@ public sealed class ResourceNode : Component
 		{
 			_localBroken = false;
 			GameObject.LocalScale = _originalScale;
-			ShowNode( true );
+			// Re-evaluate culling on respawn so we don't show a node that's far away.
+			_localCulled = ShouldCullForDistance();
+			ShowNode( !_localCulled );
 		}
+
+		// Distance culling. Only runs when the node is not broken — if it's broken,
+		// it's already hidden and we don't need to do anything.
+		// Throttled to ~2 checks per second per node, with staggered start times,
+		// so this doesn't add meaningful overhead even with thousands of nodes.
+		if ( !IsBroken && Time.Now >= _nextCullCheckTime )
+		{
+			_nextCullCheckTime = Time.Now + 0.5f;
+
+			bool shouldCull = ShouldCullForDistance();
+			if ( shouldCull != _localCulled )
+			{
+				_localCulled = shouldCull;
+				ShowNode( !_localCulled );
+			}
+		}
+	}
+
+	// Returns true if this node should be culled (hidden) based on distance
+	// to the local camera. Falls back to "don't cull" if we can't find a
+	// reference camera — better to show than to hide.
+	bool ShouldCullForDistance()
+	{
+		if ( DrawDistanceMax <= 0f )
+			return false;
+
+		var camera = Scene.Camera;
+		if ( camera == null )
+			return false;
+
+		float sqrDist = ( WorldPosition - camera.WorldPosition ).LengthSquared;
+		float maxSqr = DrawDistanceMax * DrawDistanceMax;
+
+		return sqrDist > maxSqr;
 	}
 
 	public bool CanHarvest( Inventory inventory )
@@ -241,7 +300,10 @@ public sealed class ResourceNode : Component
 	{
 		_localBroken = false;
 		GameObject.LocalScale = _originalScale;
-		ShowNode( true );
+		// Re-evaluate distance culling on respawn — the player may have walked away
+		// while the node was broken, in which case we shouldn't show it.
+		_localCulled = ShouldCullForDistance();
+		ShowNode( !_localCulled );
 	}
 
 	void ShowNode( bool visible )

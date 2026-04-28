@@ -296,6 +296,8 @@ public sealed class PlayerGatherResource : Component
 
 		GameLog.Add( $"You hit {monster.MonsterName} for {damage} damage. ({monster.CurrentHealth}/{monster.MaxHealth} HP left)", "#a8c8a8" );
 
+		SoundLibrary.PlayMonsterHit( monster.WorldPosition );
+
 		monster.TakeDamage( damage, GameObject );
 	}
 
@@ -332,6 +334,8 @@ public sealed class PlayerGatherResource : Component
 		if ( damage < 1 ) damage = 1;
 
 		GameLog.Add( $"You hit {boss.BossName} for {damage} damage. ({boss.CurrentHealth}/{boss.MaxHealth} HP left)", "#a8c8a8" );
+
+		SoundLibrary.PlayMonsterHit( boss.WorldPosition );
 
 		boss.TakeDamage( damage, GameObject );
 	}
@@ -439,6 +443,11 @@ public sealed class PlayerGatherResource : Component
 
 		GameLog.Add( $"You hit {node.GetDisplayName()} for {damage} damage. ({System.Math.Max( 0, _localNodeHealth[node] )}/{node.MaxHealth} HP left)", "#a8c8a8" );
 
+		if ( node.GatherSkill == GatherType.Woodcutting )
+			SoundLibrary.PlayChop( node.WorldPosition );
+		else if ( node.GatherSkill == GatherType.Mining )
+			SoundLibrary.PlayOreHit( node.WorldPosition );
+
 		bool willBreak = _localNodeHealth[node] <= 0;
 
 		node.TakeDamage( damage, GameObject );
@@ -448,8 +457,6 @@ public sealed class PlayerGatherResource : Component
 			int harvestAmount = node.GetHarvestAmount();
 			inventory.AddItem( node.ResourceItem, harvestAmount );
 
-			// Track lifetime nodes mined for the leaderboard. One increment per node broken,
-			// regardless of how many resources rolled out of it.
 			inventory.AddNodeMined();
 
 			var def = ItemDatabase.Get( node.ResourceItem );
