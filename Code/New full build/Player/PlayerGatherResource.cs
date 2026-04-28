@@ -26,8 +26,6 @@ public sealed class PlayerGatherResource : Component
 	/// <summary>
 	/// Forces UIOpen back to false and hides the mouse. Used by HUDs (like WelcomeHud)
 	/// that need to return the player to normal gameplay input state when they close.
-	/// Without this, UI HUDs that bypass the inventory toggle can leave the gather/combat
-	/// system in a stuck state where left click doesn't register until Q is pressed twice.
 	/// </summary>
 	public static void ForceCloseUI()
 	{
@@ -50,6 +48,9 @@ public sealed class PlayerGatherResource : Component
 			return;
 
 		if ( JournalStation.IsOpen )
+			return;
+
+		if ( LeaderboardStation.IsOpen )
 			return;
 
 		var potionSystem = GameObject.Components.Get<PotionSystem>();

@@ -7,14 +7,8 @@ public sealed class NpcInteract : Component
 	[Property] public string NpcName { get; set; } = "Villager";
 	[Property] public string QuestId { get; set; } = "";
 
-	// Optional human-readable title shown in the journal HUD. Leave empty to fall back
-	// to the NPC name. Useful when an NPC has multiple quests (future) or the NPC name
-	// alone doesn't communicate what the quest is about.
 	[Property] public string QuestTitle { get; set; } = "";
 
-	// Category for the quest journal (e.g. "Main Story", "Side Quests", "Tutorial").
-	// The journal auto-collects unique non-empty values across all quests in the scene
-	// and shows them as filter tabs. Empty = goes under "Uncategorized" in the journal.
 	[Property] public string Category { get; set; } = "";
 
 	[Property] public string PreviousQuestId { get; set; } = "";
@@ -60,16 +54,9 @@ public sealed class NpcInteract : Component
 
 	protected override void OnStart()
 	{
-		// Sync NPC state with what the player's inventory remembers from their cloud save.
-		// Note: the cloud save loads async, so this might run before the inventory is populated.
-		// PlayerPersistence calls RefreshFromPersistedState() on every NPC after the load finishes.
 		CheckPersistedCompletion();
 	}
 
-	/// <summary>
-	/// Public hook for PlayerPersistence to call once the cloud save has been loaded
-	/// and applied to the player's inventory. Re-checks completion state.
-	/// </summary>
 	public void RefreshFromPersistedState()
 	{
 		CheckPersistedCompletion();
@@ -87,8 +74,6 @@ public sealed class NpcInteract : Component
 		if ( !inventory.IsQuestCompleted( QuestId ) )
 			return;
 
-		// Repeatable quests stay Available — "you've done it before, you can do it again."
-		// We don't persist cooldowns, so a freshly loaded repeatable quest is always ready to redo.
 		if ( Repeatable )
 			return;
 
@@ -127,9 +112,12 @@ public sealed class NpcInteract : Component
 		if ( EnchantingStation.ActiveStation != null )
 			return;
 
-		// Block interactions while the journal is open so pressing E doesn't
-		// trigger NPC dialogue underneath the journal HUD.
+		// Block interactions while the journal or leaderboard is open so pressing E
+		// doesn't trigger NPC dialogue underneath the HUD.
 		if ( JournalStation.IsOpen )
+			return;
+
+		if ( LeaderboardStation.IsOpen )
 			return;
 
 		var player = PlayerHelper.GetLocalPlayer();
@@ -307,9 +295,6 @@ public sealed class NpcInteract : Component
 		ActiveNpc = this;
 		Mouse.Visibility = MouseVisibility.Visible;
 
-		// Mark this quest as discovered the first time the player opens the dialogue.
-		// The journal HUD uses this list to show quests the player knows about,
-		// even ones they haven't completed yet.
 		if ( !string.IsNullOrEmpty( QuestId ) )
 		{
 			var inventory = GetPlayerInventory();
@@ -348,7 +333,6 @@ public sealed class NpcInteract : Component
 		return DialogueOffer;
 	}
 
-	// Returns the title shown in the journal: explicit QuestTitle if set, otherwise NpcName.
 	public string GetJournalTitle()
 	{
 		if ( !string.IsNullOrEmpty( QuestTitle ) )
@@ -488,9 +472,6 @@ public sealed class NpcInteract : Component
 		return list;
 	}
 
-	// Returns the human-readable names of recipes this quest unlocks. Resolves IDs
-	// against RecipeDatabase. Used by the quest dialogue UI to preview rewards before
-	// completion. Returns empty list if no recipes are unlocked.
 	public List<string> GetUnlockedRecipeNames()
 	{
 		var list = new List<string>();

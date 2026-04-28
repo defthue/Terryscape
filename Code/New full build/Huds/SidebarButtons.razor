@@ -26,8 +26,8 @@
 
 	void OpenLeaderboard()
 	{
-		// Placeholder — leaderboard HUD doesn't exist yet.
-		// Will hook this up when we build the leaderboard in Part C.
+		CloseAllOtherHuds();
+		LeaderboardStation.Open();
 	}
 
 	void CloseAllOtherHuds()
@@ -49,10 +49,15 @@
 
 		if ( TeleportStone.ActiveStone != null )
 			TeleportStone.Close();
+
+		// Close the other sidebar HUD if it's open. E.g. clicking the leaderboard
+		// while the journal is open should swap them.
+		JournalStation.Close();
+		LeaderboardStation.Close();
 	}
 
 	protected override int BuildHash()
 	{
-		return JournalStation.IsOpen.GetHashCode();
+		return ( JournalStation.IsOpen, LeaderboardStation.IsOpen ).GetHashCode();
 	}
 }

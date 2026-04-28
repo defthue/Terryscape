@@ -1,0 +1,225 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using System.Linq;
+@using System.Collections.Generic;
+@inherits PanelComponent
+
+<root>
+	@if ( IsOpen )
+	{
+		<div class="crafting-overlay">
+			<div class="crafting-popup" style="width: 700px; height: 600px;">
+				<div class="crafting-header">
+					<div class="crafting-title">Leaderboard</div>
+					<div class="crafting-close" onclick="@(() => CloseLeaderboard())">✕</div>
+				</div>
+
+				<div class="tab-row">
+					<div class="tab-button @(Tab == 0 ? "active" : "")" onclick="@(() => SetTab(0))">Total Level</div>
+					<div class="tab-button @(Tab == 1 ? "active" : "")" onclick="@(() => SetTab(1))">Gold</div>
+					<div class="tab-button @(Tab == 2 ? "active" : "")" onclick="@(() => SetTab(2))">Nodes Mined</div>
+					<div class="tab-button @(Tab == 3 ? "active" : "")" onclick="@(() => SetTab(3))">Kills</div>
+				</div>
+
+				<div class="leaderboard-toolbar">
+					<div class="leaderboard-status">@StatusText</div>
+					<div class="leaderboard-refresh @(IsLoading ? "disabled" : "")" onclick="@(() => Refresh())">
+						↻ Refresh
+					</div>
+				</div>
+
+				<div class="leaderboard-body">
+					@if ( IsLoading && Sorted.Count == 0 )
+					{
+						<div class="no-recipes">Loading leaderboard...</div>
+					}
+					else if ( Sorted.Count == 0 )
+					{
+						<div class="no-recipes">No players to show yet.</div>
+					}
+					else
+					{
+						<div class="leaderboard-header-row">
+							<div class="lb-rank">#</div>
+							<div class="lb-name">Player</div>
+							<div class="lb-value">@GetCurrentStatLabel()</div>
+						</div>
+
+						@{ int rank = 0; }
+						@foreach ( var entry in Sorted )
+						{
+							rank++;
+							bool isLocal = LocalPlayerName != null && entry.PlayerName == LocalPlayerName;
+
+							<div class="leaderboard-row @(isLocal ? "local" : "") @(rank <= 3 ? "top-three" : "")">
+								<div class="lb-rank">@GetRankDisplay( rank )</div>
+								<div class="lb-name">@entry.PlayerName</div>
+								<div class="lb-value">@GetValueFor( entry )</div>
+							</div>
+						}
+					}
+				</div>
+			</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	const int MaxRows = 50;
+
+	bool IsOpen => LeaderboardStation.IsOpen;
+
+	int Tab { get; set; } = 0;
+	bool IsLoading { get; set; } = false;
+	RealTimeSince TimeSinceLoad { get; set; } = 0f;
+	bool HasLoadedOnce { get; set; } = false;
+
+	List<LeaderboardBackend.Entry> AllEntries { get; set; } = new();
+	List<LeaderboardBackend.Entry> Sorted { get; set; } = new();
+
+	string LocalPlayerName => Network.Owner?.DisplayName;
+
+	bool _wasOpen = false;
+
+	string StatusText
+	{
+		get
+		{
+			if ( IsLoading )
+				return "Loading...";
+
+			if ( !HasLoadedOnce )
+				return "";
+
+			int seconds = (int)TimeSinceLoad;
+			if ( seconds < 5 )
+				return "Updated just now";
+			if ( seconds < 60 )
+				return $"Updated {seconds}s ago";
+
+			int minutes = seconds / 60;
+			return $"Updated {minutes}m ago";
+		}
+	}
+
+	void SetTab( int tab )
+	{
+		Tab = tab;
+		ResortByCurrentTab();
+	}
+
+	void CloseLeaderboard()
+	{
+		LeaderboardStation.Close();
+	}
+
+	async void Refresh()
+	{
+		if ( IsLoading )
+			return;
+
+		IsLoading = true;
+		var fetched = await LeaderboardBackend.FetchAllAsync();
+		AllEntries = fetched;
+		ResortByCurrentTab();
+		IsLoading = false;
+		HasLoadedOnce = true;
+		TimeSinceLoad = 0f;
+	}
+
+	// Re-sorts the cached AllEntries list according to the active tab. No network
+	// call — this is the fast path when the player switches tabs.
+	void ResortByCurrentTab()
+	{
+		var sorted = new List<LeaderboardBackend.Entry>( AllEntries );
+
+		switch ( Tab )
+		{
+			case 0:
+				sorted.Sort( ( a, b ) => b.TotalLevel.CompareTo( a.TotalLevel ) );
+				break;
+			case 1:
+				sorted.Sort( ( a, b ) => b.TotalGold.CompareTo( a.TotalGold ) );
+				break;
+			case 2:
+				sorted.Sort( ( a, b ) => b.NodesMined.CompareTo( a.NodesMined ) );
+				break;
+			case 3:
+				sorted.Sort( ( a, b ) => b.TotalKills.CompareTo( a.TotalKills ) );
+				break;
+		}
+
+		// Cap at MaxRows so we don't render hundreds of rows in the UI.
+		if ( sorted.Count > MaxRows )
+			sorted = sorted.GetRange( 0, MaxRows );
+
+		Sorted = sorted;
+	}
+
+	int GetValueFor( LeaderboardBackend.Entry entry )
+	{
+		switch ( Tab )
+		{
+			case 0: return entry.TotalLevel;
+			case 1: return entry.TotalGold;
+			case 2: return entry.NodesMined;
+			case 3: return entry.TotalKills;
+			default: return 0;
+		}
+	}
+
+	string GetCurrentStatLabel()
+	{
+		switch ( Tab )
+		{
+			case 0: return "Total Level";
+			case 1: return "Gold";
+			case 2: return "Nodes Mined";
+			case 3: return "Kills";
+			default: return "";
+		}
+	}
+
+	// Top 3 ranks get medal emoji, everyone else gets a number.
+	string GetRankDisplay( int rank )
+	{
+		switch ( rank )
+		{
+			case 1: return "🥇";
+			case 2: return "🥈";
+			case 3: return "🥉";
+			default: return rank.ToString();
+		}
+	}
+
+	// Detect open/close transition to fire an initial fetch when the leaderboard opens.
+	protected override void OnUpdate()
+	{
+		if ( IsOpen )
+		{
+			if ( !_wasOpen )
+			{
+				_wasOpen = true;
+				Refresh();
+			}
+			StateHasChanged();
+		}
+		else
+		{
+			_wasOpen = false;
+		}
+	}
+
+	protected override int BuildHash()
+	{
+		return (
+			IsOpen,
+			Tab,
+			IsLoading,
+			HasLoadedOnce,
+			Sorted.Count,
+			(int)TimeSinceLoad
+		).GetHashCode();
+	}
+}

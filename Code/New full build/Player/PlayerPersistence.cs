@@ -4,10 +4,6 @@ public sealed class PlayerPersistence : Component
 {
 	[Property] public float AutoSaveIntervalSeconds { get; set; } = 30f;
 
-	/// <summary>
-	/// The local player's persistence component. Other systems use this to trigger
-	/// immediate saves on important events (level up, item gain, quest complete).
-	/// </summary>
 	public static PlayerPersistence Local { get; private set; }
 
 	bool _loadAttempted;
@@ -19,10 +15,6 @@ public sealed class PlayerPersistence : Component
 		if ( IsProxy )
 			return;
 
-		// Reset any HUDs that might still be marked "open" from a previous session.
-		// These are static-state HUDs whose flags survive scene reloads — without this
-		// reset, closing the game mid-bank (or mid-journal, etc.) would leave the HUD
-		// stuck open on next join, blocking the WelcomeHud and other interactions.
 		ResetTransientHudState();
 
 		Local = this;
@@ -39,6 +31,7 @@ public sealed class PlayerPersistence : Component
 		// to hidden — the WelcomeHud needs the mouse visible on fresh join.
 
 		JournalStation.Close();
+		LeaderboardStation.Close();
 
 		if ( BankStation.ActiveBank != null )
 			BankStation.Close();
@@ -61,6 +54,10 @@ public sealed class PlayerPersistence : Component
 
 		if ( NpcInteract.ActiveNpc != null )
 			NpcInteract.ActiveNpc.CloseDialogue();
+
+		// The WelcomeHud opens on every join and needs the mouse visible so the player
+		// can navigate it. Restore mouse visible after the HUD resets above.
+		Mouse.Visibility = MouseVisibility.Visible;
 	}
 
 	protected override void OnDestroy()
@@ -77,9 +74,6 @@ public sealed class PlayerPersistence : Component
 		_ = SaveAsync();
 	}
 
-	// Searches the entire player hierarchy (root + all children) for a component.
-	// Necessary because Inventory, Skills, BankStorage may live on different GameObjects
-	// inside the player prefab.
 	T FindComponentInPlayer<T>() where T : Component
 	{
 		var component = Components.Get<T>();
@@ -128,8 +122,6 @@ public sealed class PlayerPersistence : Component
 
 		_loadComplete = true;
 
-		// Now that the inventory has its persisted quest list, let every NPC re-check
-		// whether their quest is already completed by this player.
 		RefreshAllNpcQuestState();
 	}
 
@@ -154,11 +146,6 @@ public sealed class PlayerPersistence : Component
 		}
 	}
 
-	/// <summary>
-	/// Triggers an immediate cloud save. Safe to call from anywhere on the local player.
-	/// No-ops if called before the load completes (so save-on-AddItem during the starter
-	/// kit grant doesn't fire 10 saves in a row).
-	/// </summary>
 	public void RequestSaveNow()
 	{
 		if ( IsProxy )
@@ -195,14 +182,10 @@ public sealed class PlayerPersistence : Component
 		}
 		else
 		{
-			// Still set defaults so the endpoint receives empty fields and doesn't error.
 			data.Bank = new System.Collections.Generic.Dictionary<string, int>();
 			data.BankUnique = new System.Collections.Generic.List<PlayerSaveData.UniqueItemEntry>();
 		}
 
-		// Compute denormalized leaderboard fields just before saving. These are flat
-		// top-level numbers so sbox.cool can sort/query by them without walking nested
-		// objects. NodesMined is already in data (Inventory.ToSaveData set it).
 		data.TotalLevel = ComputeTotalLevel( data.Skills );
 		data.TotalGold = inventory.GetItemCount( ItemId.GoldCoin );
 		data.TotalKills = inventory.GetTotalKills();
@@ -212,8 +195,6 @@ public sealed class PlayerPersistence : Component
 			Log.Info( "[PlayerPersistence] Save successful." );
 	}
 
-	// Sums all skill levels into a single total. RuneScape-style "total level" stat,
-	// used by the leaderboard.
 	static int ComputeTotalLevel( System.Collections.Generic.Dictionary<string, PlayerSaveData.SkillEntry> skills )
 	{
 		if ( skills == null )
