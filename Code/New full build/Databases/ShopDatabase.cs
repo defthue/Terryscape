@@ -7,107 +7,60 @@ public enum ShopId
 	Blacksmith
 }
 
-public class ShopEntry
+/// <summary>
+/// Default presets for the items each ShopId sells. Used as a fallback when a
+/// ShopStation in the scene doesn't have a custom ItemsForSale list configured.
+/// Lets us add a "General Store" shop to the scene with zero per-shop setup.
+///
+/// Override-by-design: if a scene-level shop populates ItemsForSale in the inspector,
+/// ShopStation uses THAT and ignores the preset here. So this is just a starting
+/// point, not a hard contract.
+/// </summary>
+public static class ShopDefaults
 {
-	public ItemId Item;
-	public int BuyPrice;
-	public int SellPrice;
-}
-
-public class ShopDefinition
-{
-	public ShopId Id;
-	public string Name;
-	public List<ShopEntry> Entries = new();
-
-	public ShopEntry GetEntry( ItemId item )
+	public class DefaultOffer
 	{
-		foreach ( var entry in Entries )
+		public ItemId Item;
+		public int Price;
+	}
+
+	public static List<DefaultOffer> GetDefaultItemsForSale( ShopId id )
+	{
+		var list = new List<DefaultOffer>();
+
+		switch ( id )
 		{
-			if ( entry.Item == item )
-				return entry;
+			case ShopId.GeneralStore:
+				list.Add( new DefaultOffer { Item = ItemId.LesserHealingPotion, Price = 5 } );
+				list.Add( new DefaultOffer { Item = ItemId.LesserManaPotion, Price = 5 } );
+				list.Add( new DefaultOffer { Item = ItemId.RoughFiber, Price = 3 } );
+				list.Add( new DefaultOffer { Item = ItemId.MonsterHide, Price = 4 } );
+				list.Add( new DefaultOffer { Item = ItemId.GlassVial, Price = 2 } );
+				list.Add( new DefaultOffer { Item = ItemId.CrystalVial, Price = 15 } );
+				break;
+
+			case ShopId.Blacksmith:
+				// For now both shops sell the same things. Differentiate later when we
+				// decide each shop's identity.
+				list.Add( new DefaultOffer { Item = ItemId.LesserHealingPotion, Price = 5 } );
+				list.Add( new DefaultOffer { Item = ItemId.LesserManaPotion, Price = 5 } );
+				list.Add( new DefaultOffer { Item = ItemId.RoughFiber, Price = 3 } );
+				list.Add( new DefaultOffer { Item = ItemId.MonsterHide, Price = 4 } );
+				list.Add( new DefaultOffer { Item = ItemId.GlassVial, Price = 2 } );
+				list.Add( new DefaultOffer { Item = ItemId.CrystalVial, Price = 15 } );
+				break;
 		}
 
-		return null;
+		return list;
 	}
-}
 
-public static class ShopDatabase
-{
-	static Dictionary<ShopId, ShopDefinition> _shops;
-
-	static ShopDefinition Define( ShopId id, string name )
+	public static string GetDefaultName( ShopId id )
 	{
-		return new ShopDefinition
+		switch ( id )
 		{
-			Id = id,
-			Name = name
-		};
-	}
-
-	static ShopEntry Entry( ItemId item, int buyPrice = 0, int sellPrice = 0 )
-	{
-		return new ShopEntry
-		{
-			Item = item,
-			BuyPrice = buyPrice,
-			SellPrice = sellPrice
-		};
-	}
-
-	static void Build()
-	{
-		_shops = new Dictionary<ShopId, ShopDefinition>();
-
-		var general = Define( ShopId.GeneralStore, "General Store" );
-		general.Entries.Add( Entry( ItemId.Sticks, buyPrice: 2, sellPrice: 1 ) );
-		general.Entries.Add( Entry( ItemId.GlassVial, buyPrice: 5, sellPrice: 2 ) );
-		general.Entries.Add( Entry( ItemId.LesserHealingPotion, buyPrice: 10, sellPrice: 3 ) );
-		general.Entries.Add( Entry( ItemId.Rock, buyPrice: 0, sellPrice: 1 ) );
-		general.Entries.Add( Entry( ItemId.Coal, buyPrice: 0, sellPrice: 2 ) );
-		general.Entries.Add( Entry( ItemId.AshwoodLog, buyPrice: 0, sellPrice: 2 ) );
-		general.Entries.Add( Entry( ItemId.CoppiteOre, buyPrice: 0, sellPrice: 3 ) );
-		general.Entries.Add( Entry( ItemId.PrimitiveHatchet, buyPrice: 0, sellPrice: 3 ) );
-		general.Entries.Add( Entry( ItemId.PrimitivePickaxe, buyPrice: 0, sellPrice: 3 ) );
-		general.Entries.Add( Entry( ItemId.PrimitiveSword, buyPrice: 0, sellPrice: 4 ) );
-		Add( general );
-
-		var blacksmith = Define( ShopId.Blacksmith, "Blacksmith" );
-		blacksmith.Entries.Add( Entry( ItemId.CoppiteOre, buyPrice: 0, sellPrice: 5 ) );
-		blacksmith.Entries.Add( Entry( ItemId.AshsteelOre, buyPrice: 0, sellPrice: 12 ) );
-		blacksmith.Entries.Add( Entry( ItemId.ColdveinOre, buyPrice: 0, sellPrice: 25 ) );
-		blacksmith.Entries.Add( Entry( ItemId.CoppiteBar, buyPrice: 0, sellPrice: 12 ) );
-		blacksmith.Entries.Add( Entry( ItemId.AshsteelBar, buyPrice: 0, sellPrice: 28 ) );
-		blacksmith.Entries.Add( Entry( ItemId.ColdveinBar, buyPrice: 0, sellPrice: 55 ) );
-		blacksmith.Entries.Add( Entry( ItemId.CoppiteSword, buyPrice: 0, sellPrice: 30 ) );
-		blacksmith.Entries.Add( Entry( ItemId.CoppiteShield, buyPrice: 0, sellPrice: 25 ) );
-		blacksmith.Entries.Add( Entry( ItemId.CoppiteHeavyHelm, buyPrice: 0, sellPrice: 20 ) );
-		blacksmith.Entries.Add( Entry( ItemId.CoppiteHeavyChestplate, buyPrice: 0, sellPrice: 35 ) );
-		blacksmith.Entries.Add( Entry( ItemId.CoppiteHeavyLegs, buyPrice: 0, sellPrice: 25 ) );
-		Add( blacksmith );
-	}
-
-	static void Add( ShopDefinition shop )
-	{
-		_shops[shop.Id] = shop;
-	}
-
-	public static ShopDefinition Get( ShopId id )
-	{
-		if ( _shops == null )
-			Build();
-
-		if ( _shops.TryGetValue( id, out var shop ) )
-			return shop;
-
-		return null;
-	}
-
-	public static IEnumerable<ShopDefinition> GetAll()
-	{
-		if ( _shops == null )
-			Build();
-
-		return _shops.Values;
+			case ShopId.GeneralStore: return "General Store";
+			case ShopId.Blacksmith: return "Blacksmith";
+			default: return "Shop";
+		}
 	}
 }

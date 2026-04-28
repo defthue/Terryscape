@@ -1,9 +1,20 @@
 using Sandbox;
+using System.Collections.Generic;
 
 public sealed class ShopStation : Component
 {
 	[Property] public ShopId Shop { get; set; } = ShopId.None;
-	[Property] public float InteractDistance { get; set; } = 150f;
+	[Property] public string StationName { get; set; } = "";
+	[Property] public float InteractDistance { get; set; } = 200f;
+
+	// Items this shop sells to the player. Leave EMPTY to use the default preset
+	// from ShopDefaults based on the Shop id. Populate in the inspector to override.
+	[Property] public List<ShopSellOffer> ItemsForSale { get; set; } = new();
+
+	// Optional per-shop price overrides for buying from the player. Use this when
+	// a specific shop should pay more or less than the default ShopPricing value
+	// for a particular item. Leave empty to just use the global ShopPricing helper.
+	[Property] public List<ShopBuyOverride> BuysFromPlayerOverrides { get; set; } = new();
 
 	public static ShopStation ActiveShop { get; private set; }
 	public static ShopStation ChoosingShop { get; set; }
@@ -14,6 +25,17 @@ public sealed class ShopStation : Component
 	public static int PendingSellAllTotalGold { get; set; }
 
 	bool HasQuest => Components.Get<NpcInteract>() != null;
+
+	public string DisplayName
+	{
+		get
+		{
+			if ( !string.IsNullOrEmpty( StationName ) )
+				return StationName;
+
+			return ShopDefaults.GetDefaultName( Shop );
+		}
+	}
 
 	protected override void OnUpdate()
 	{
@@ -45,6 +67,12 @@ public sealed class ShopStation : Component
 			return;
 
 		if ( EnchantingStation.ActiveStation != null )
+			return;
+
+		if ( JournalStation.IsOpen )
+			return;
+
+		if ( LeaderboardStation.IsOpen )
 			return;
 
 		if ( !IsPlayerInRange() )
@@ -101,48 +129,87 @@ public sealed class ShopStation : Component
 		return Vector3.DistanceBetween( WorldPosition, player.WorldPosition ) <= InteractDistance;
 	}
 
-	public ShopDefinition GetShopDefinition()
+	// Returns the effective list of items this shop sells.
+	public IEnumerable<(ItemId Item, int Price)> GetEffectiveItemsForSale()
 	{
-		return ShopDatabase.Get( Shop );
+		if ( ItemsForSale != null && ItemsForSale.Count > 0 )
+		{
+			foreach ( var offer in ItemsForSale )
+			{
+				yield return (offer.Item, offer.Price);
+			}
+			yield break;
+		}
+
+		var defaults = ShopDefaults.GetDefaultItemsForSale( Shop );
+		foreach ( var d in defaults )
+		{
+			yield return (d.Item, d.Price);
+		}
+	}
+
+	public int GetSellPriceForPlayer( ItemId item )
+	{
+		foreach ( var (entryItem, price) in GetEffectiveItemsForSale() )
+		{
+			if ( entryItem == item )
+				return price;
+		}
+		return 0;
+	}
+
+	public bool SellsItemToPlayer( ItemId item )
+	{
+		return GetSellPriceForPlayer( item ) > 0;
+	}
+
+	// What price does this shop pay the player for this item?
+	// Per-shop override always wins, otherwise falls back to the global ShopPricing helper.
+	public int GetBuyPriceFromPlayer( ItemId item )
+	{
+		foreach ( var ov in BuysFromPlayerOverrides )
+		{
+			if ( ov.Item == item )
+				return ov.Price;
+		}
+
+		return ShopPricing.GetSellPrice( item );
+	}
+
+	public bool BuysItemFromPlayer( ItemId item )
+	{
+		return GetBuyPriceFromPlayer( item ) > 0;
 	}
 
 	public bool TryBuy( ItemId item )
 	{
-		var shop = GetShopDefinition();
-		if ( shop == null )
-			return false;
-
-		var entry = shop.GetEntry( item );
-		if ( entry == null || entry.BuyPrice <= 0 )
+		int price = GetSellPriceForPlayer( item );
+		if ( price <= 0 )
 			return false;
 
 		var inventory = GetPlayerInventory();
 		if ( inventory == null )
 			return false;
 
-		if ( !inventory.HasItem( ItemId.GoldCoin, entry.BuyPrice ) )
+		if ( !inventory.HasItem( ItemId.GoldCoin, price ) )
 		{
 			GameLog.Add( "You don't have enough gold.", "#c86464" );
 			return false;
 		}
 
-		inventory.RemoveItem( ItemId.GoldCoin, entry.BuyPrice );
+		inventory.RemoveItem( ItemId.GoldCoin, price );
 		inventory.AddItem( item, 1 );
 
 		var def = ItemDatabase.Get( item );
 		string name = def != null ? def.Name : item.ToString();
-		GameLog.Add( $"Bought {name} for {entry.BuyPrice} gold.", "#f0c040" );
+		GameLog.Add( $"Bought {name} for {price} gold.", "#f0c040" );
 		return true;
 	}
 
 	public bool TrySell( ItemId item )
 	{
-		var shop = GetShopDefinition();
-		if ( shop == null )
-			return false;
-
-		var entry = shop.GetEntry( item );
-		if ( entry == null || entry.SellPrice <= 0 )
+		int price = GetBuyPriceFromPlayer( item );
+		if ( price <= 0 )
 			return false;
 
 		var inventory = GetPlayerInventory();
@@ -153,22 +220,18 @@ public sealed class ShopStation : Component
 			return false;
 
 		inventory.RemoveItem( item, 1 );
-		inventory.AddItem( ItemId.GoldCoin, entry.SellPrice );
+		inventory.AddItem( ItemId.GoldCoin, price );
 
 		var def = ItemDatabase.Get( item );
 		string name = def != null ? def.Name : item.ToString();
-		GameLog.Add( $"Sold {name} for {entry.SellPrice} gold.", "#f0c040" );
+		GameLog.Add( $"Sold {name} for {price} gold.", "#f0c040" );
 		return true;
 	}
 
 	public bool RequestSellAll( ItemId item )
 	{
-		var shop = GetShopDefinition();
-		if ( shop == null )
-			return false;
-
-		var entry = shop.GetEntry( item );
-		if ( entry == null || entry.SellPrice <= 0 )
+		int price = GetBuyPriceFromPlayer( item );
+		if ( price <= 0 )
 			return false;
 
 		var inventory = GetPlayerInventory();
@@ -181,7 +244,7 @@ public sealed class ShopStation : Component
 
 		PendingSellAllItem = item;
 		PendingSellAllAmount = amount;
-		PendingSellAllTotalGold = amount * entry.SellPrice;
+		PendingSellAllTotalGold = amount * price;
 		return true;
 	}
 
@@ -190,15 +253,8 @@ public sealed class ShopStation : Component
 		if ( PendingSellAllItem == ItemId.None || PendingSellAllAmount <= 0 )
 			return false;
 
-		var shop = GetShopDefinition();
-		if ( shop == null )
-		{
-			ClearPendingSellAll();
-			return false;
-		}
-
-		var entry = shop.GetEntry( PendingSellAllItem );
-		if ( entry == null || entry.SellPrice <= 0 )
+		int price = GetBuyPriceFromPlayer( PendingSellAllItem );
+		if ( price <= 0 )
 		{
 			ClearPendingSellAll();
 			return false;
@@ -219,7 +275,7 @@ public sealed class ShopStation : Component
 		}
 
 		int amountToSell = System.Math.Min( actualAmount, PendingSellAllAmount );
-		int totalGold = amountToSell * entry.SellPrice;
+		int totalGold = amountToSell * price;
 
 		inventory.RemoveItem( PendingSellAllItem, amountToSell );
 		inventory.AddItem( ItemId.GoldCoin, totalGold );
@@ -257,23 +313,19 @@ public sealed class ShopStation : Component
 			return false;
 		}
 
-		var shop = GetShopDefinition();
-		if ( shop == null )
-			return false;
-
-		var entry = shop.GetEntry( instance.ItemId );
-		if ( entry == null || entry.SellPrice <= 0 )
+		int price = GetBuyPriceFromPlayer( instance.ItemId );
+		if ( price <= 0 )
 		{
 			GameLog.Add( "This shop doesn't buy that item.", "#c86464" );
 			return false;
 		}
 
 		inventory.RemoveUniqueItem( uniqueIndex );
-		inventory.AddItem( ItemId.GoldCoin, entry.SellPrice );
+		inventory.AddItem( ItemId.GoldCoin, price );
 
 		var def = ItemDatabase.Get( instance.ItemId );
 		string name = def != null ? def.Name : instance.ItemId.ToString();
-		GameLog.Add( $"Sold {name} for {entry.SellPrice} gold.", "#f0c040" );
+		GameLog.Add( $"Sold {name} for {price} gold.", "#f0c040" );
 		return true;
 	}
 
@@ -284,9 +336,6 @@ public sealed class ShopStation : Component
 
 	public bool ShouldShowMarker()
 	{
-		if ( Shop == ShopId.None )
-			return false;
-
 		var quests = GameObject.Components.GetAll<NpcInteract>();
 		foreach ( var quest in quests )
 		{
@@ -301,4 +350,16 @@ public sealed class ShopStation : Component
 	{
 		return "#4db8c9";
 	}
+}
+
+public class ShopSellOffer
+{
+	public ItemId Item { get; set; }
+	public int Price { get; set; }
+}
+
+public class ShopBuyOverride
+{
+	public ItemId Item { get; set; }
+	public int Price { get; set; }
 }

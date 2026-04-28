@@ -22,13 +22,13 @@
 							var def = ItemDatabase.Get( entry.Item );
 							string name = def != null ? def.Name : entry.Item.ToString();
 
-							<div class="recipe-row @(SelectedEntry == entry && !SelectedIsUnique ? "selected" : "") @(CanBuy( entry ) ? "craftable" : "locked")"
-								 onclick="@(() => SelectEntry( entry, true ))">
+							<div class="recipe-row @(SelectedItem == entry.Item && IsBuyMode && !SelectedIsUnique ? "selected" : "") @(CanBuy( entry ) ? "craftable" : "locked")"
+								 onclick="@(() => SelectBuy( entry ))">
 								<div class="recipe-icon" style="background: @GetItemColor( def );">
 									<img class="recipe-icon-img" src="@GetIconPath( entry.Item )" />
 								</div>
 								<div class="recipe-name">@name</div>
-								<div class="recipe-amount gold">@entry.BuyPrice g</div>
+								<div class="recipe-amount gold">@entry.Price g</div>
 							</div>
 						}
 
@@ -43,8 +43,8 @@
 							string name = def != null ? def.Name : entry.Item.ToString();
 							int count = PlayerInventory != null ? PlayerInventory.GetItemCount( entry.Item ) : 0;
 
-							<div class="recipe-row @(SelectedEntry == entry && !SelectedIsUnique ? "selected" : "") @(count > 0 ? "craftable" : "locked")"
-								 onclick="@(() => SelectEntry( entry, false ))">
+							<div class="recipe-row @(SelectedItem == entry.Item && !IsBuyMode && !SelectedIsUnique ? "selected" : "") @(count > 0 ? "craftable" : "locked")"
+								 onclick="@(() => SelectSell( entry ))">
 								<div class="recipe-icon" style="background: @GetItemColor( def );">
 									<img class="recipe-icon-img" src="@GetIconPath( entry.Item )" />
 								</div>
@@ -75,10 +75,8 @@
 							@if ( items != null && SelectedUniqueIndex < items.Count )
 							{
 								var instance = items[SelectedUniqueIndex];
-								var def = ItemDatabase.Get( instance.ItemId );
-								var shop = ShopStation.ActiveShop?.GetShopDefinition();
-								var shopEntry = shop?.GetEntry( instance.ItemId );
-								int sellPrice = shopEntry?.SellPrice ?? 0;
+								var shop = ShopStation.ActiveShop;
+								int sellPrice = shop != null ? shop.GetBuyPriceFromPlayer( instance.ItemId ) : 0;
 
 								<div class="detail-header">@instance.GetDisplayName()</div>
 
@@ -96,10 +94,10 @@
 								}
 							}
 						}
-						else if ( SelectedEntry != null )
+						else if ( SelectedItem != ItemId.None )
 						{
-							var def = ItemDatabase.Get( SelectedEntry.Item );
-							string name = def != null ? def.Name : SelectedEntry.Item.ToString();
+							var def = ItemDatabase.Get( SelectedItem );
+							string name = def != null ? def.Name : SelectedItem.ToString();
 
 							<div class="detail-header">@name</div>
 
@@ -113,30 +111,30 @@
 								}
 							}
 
-							@if ( IsBuyMode && SelectedEntry.BuyPrice > 0 )
+							@if ( IsBuyMode && SelectedPrice > 0 )
 							{
 								<div class="detail-section-label">Cost</div>
-								<div class="ingredient-row @(HasEnoughGold( SelectedEntry.BuyPrice ) ? "have" : "need")">
+								<div class="ingredient-row @(HasEnoughGold( SelectedPrice ) ? "have" : "need")">
 									<div class="ingredient-name">Gold</div>
-									<div class="ingredient-count">@PlayerGold / @SelectedEntry.BuyPrice</div>
+									<div class="ingredient-count">@PlayerGold / @SelectedPrice</div>
 								</div>
 
 								<div class="craft-button-area">
-									<div class="craft-button @(CanBuy( SelectedEntry ) ? "" : "disabled")"
+									<div class="craft-button @(CanAffordSelected() ? "" : "disabled")"
 										 onclick="@(() => DoBuy())">
 										Buy
 									</div>
 								</div>
 							}
 
-							@if ( !IsBuyMode && SelectedEntry.SellPrice > 0 )
+							@if ( !IsBuyMode && SelectedPrice > 0 )
 							{
-								var sellCount = PlayerInventory != null ? PlayerInventory.GetItemCount( SelectedEntry.Item ) : 0;
+								var sellCount = PlayerInventory != null ? PlayerInventory.GetItemCount( SelectedItem ) : 0;
 
 								<div class="detail-section-label">Sell Value</div>
 								<div class="ingredient-row have">
 									<div class="ingredient-name">You receive</div>
-									<div class="ingredient-count">@SelectedEntry.SellPrice gold</div>
+									<div class="ingredient-count">@SelectedPrice gold</div>
 								</div>
 								<div class="ingredient-row @(sellCount > 0 ? "have" : "need")">
 									<div class="ingredient-name">In inventory</div>
@@ -187,16 +185,30 @@
 @code
 {
 	bool IsOpen => ShopStation.ActiveShop != null;
-	string ShopName => ShopStation.ActiveShop?.GetShopDefinition()?.Name ?? "Shop";
+	string ShopName => ShopStation.ActiveShop?.DisplayName ?? "Shop";
 
-	ShopEntry SelectedEntry { get; set; }
+	ItemId SelectedItem { get; set; } = ItemId.None;
+	int SelectedPrice { get; set; }
 	bool IsBuyMode { get; set; }
+
 	bool SelectedIsUnique { get; set; }
 	int SelectedUniqueIndex { get; set; } = -1;
+
 	Inventory PlayerInventory { get; set; }
 
-	List<ShopEntry> BuyEntries { get; set; } = new();
-	List<ShopEntry> SellEntries { get; set; } = new();
+	public class BuyListEntry
+	{
+		public ItemId Item;
+		public int Price;
+	}
+	public class SellListEntry
+	{
+		public ItemId Item;
+		public int Price;
+	}
+
+	List<BuyListEntry> BuyEntries { get; set; } = new();
+	List<SellListEntry> SellEntries { get; set; } = new();
 
 	public class SellableUniqueEntry
 	{
@@ -227,25 +239,41 @@
 		return PlayerGold >= price;
 	}
 
-	bool CanBuy( ShopEntry entry )
+	bool CanBuy( BuyListEntry entry )
 	{
-		if ( entry == null || entry.BuyPrice <= 0 )
+		if ( entry == null || entry.Price <= 0 )
 			return false;
 
-		return HasEnoughGold( entry.BuyPrice );
+		return HasEnoughGold( entry.Price );
 	}
 
-	void SelectEntry( ShopEntry entry, bool buyMode )
+	bool CanAffordSelected()
 	{
-		SelectedEntry = entry;
-		IsBuyMode = buyMode;
+		return SelectedPrice > 0 && HasEnoughGold( SelectedPrice );
+	}
+
+	void SelectBuy( BuyListEntry entry )
+	{
+		SelectedItem = entry.Item;
+		SelectedPrice = entry.Price;
+		IsBuyMode = true;
+		SelectedIsUnique = false;
+		SelectedUniqueIndex = -1;
+	}
+
+	void SelectSell( SellListEntry entry )
+	{
+		SelectedItem = entry.Item;
+		SelectedPrice = entry.Price;
+		IsBuyMode = false;
 		SelectedIsUnique = false;
 		SelectedUniqueIndex = -1;
 	}
 
 	void SelectUnique( int index )
 	{
-		SelectedEntry = null;
+		SelectedItem = ItemId.None;
+		SelectedPrice = 0;
 		IsBuyMode = false;
 		SelectedIsUnique = true;
 		SelectedUniqueIndex = index;
@@ -253,26 +281,26 @@
 
 	void DoBuy()
 	{
-		if ( ShopStation.ActiveShop == null || SelectedEntry == null )
+		if ( ShopStation.ActiveShop == null || SelectedItem == ItemId.None )
 			return;
 
-		ShopStation.ActiveShop.TryBuy( SelectedEntry.Item );
+		ShopStation.ActiveShop.TryBuy( SelectedItem );
 	}
 
 	void DoSell()
 	{
-		if ( ShopStation.ActiveShop == null || SelectedEntry == null )
+		if ( ShopStation.ActiveShop == null || SelectedItem == ItemId.None )
 			return;
 
-		ShopStation.ActiveShop.TrySell( SelectedEntry.Item );
+		ShopStation.ActiveShop.TrySell( SelectedItem );
 	}
 
 	void DoSellAllRequest()
 	{
-		if ( ShopStation.ActiveShop == null || SelectedEntry == null )
+		if ( ShopStation.ActiveShop == null || SelectedItem == ItemId.None )
 			return;
 
-		ShopStation.ActiveShop.RequestSellAll( SelectedEntry.Item );
+		ShopStation.ActiveShop.RequestSellAll( SelectedItem );
 	}
 
 	void ConfirmSellAll()
@@ -300,7 +328,8 @@
 
 	void CloseShop()
 	{
-		SelectedEntry = null;
+		SelectedItem = ItemId.None;
+		SelectedPrice = 0;
 		SelectedIsUnique = false;
 		SelectedUniqueIndex = -1;
 		ShopStation.CloseShop();
@@ -343,26 +372,45 @@
 
 		if ( shop != null )
 		{
-			var shopDef = shop.GetShopDefinition();
 			PlayerInventory = PlayerHelper.GetLocalInventory();
 
 			BuyEntries.Clear();
 			SellEntries.Clear();
 			SellableUnique.Clear();
 
-			if ( shopDef != null )
+			// Buy list = what the shop sells to the player
+			foreach ( var (item, price) in shop.GetEffectiveItemsForSale() )
 			{
-				foreach ( var entry in shopDef.Entries )
-				{
-					if ( entry.BuyPrice > 0 )
-						BuyEntries.Add( entry );
+				if ( price <= 0 )
+					continue;
 
-					if ( entry.SellPrice > 0 )
-						SellEntries.Add( entry );
+				BuyEntries.Add( new BuyListEntry { Item = item, Price = price } );
+			}
+
+			// Sell list = items in player's stackable inventory that have a sell price.
+			// Pulls prices from ShopPricing.GetSellPrice directly — no dependency on
+			// ItemDefinition.BaseSellPrice or shop config.
+			if ( PlayerInventory != null )
+			{
+				var seen = new HashSet<ItemId>();
+				foreach ( var kv in PlayerInventory.GetAllItems() )
+				{
+					if ( kv.Value <= 0 )
+						continue;
+					if ( seen.Contains( kv.Key ) )
+						continue;
+
+					int price = ShopPricing.GetSellPrice( kv.Key );
+					if ( price <= 0 )
+						continue;
+
+					SellEntries.Add( new SellListEntry { Item = kv.Key, Price = price } );
+					seen.Add( kv.Key );
 				}
 			}
 
-			if ( PlayerInventory != null && shopDef != null )
+			// Sellable unique items: any non-enchanted unique with a sell price
+			if ( PlayerInventory != null )
 			{
 				var uniqueItems = PlayerInventory.GetUniqueItems();
 				for ( int i = 0; i < uniqueItems.Count; i++ )
@@ -371,17 +419,28 @@
 					if ( instance.IsEnchanted )
 						continue;
 
-					var shopEntry = shopDef.GetEntry( instance.ItemId );
-					if ( shopEntry != null && shopEntry.SellPrice > 0 )
-						SellableUnique.Add( new SellableUniqueEntry { Instance = instance, OriginalIndex = i } );
+					int price = ShopPricing.GetSellPrice( instance.ItemId );
+					if ( price <= 0 )
+						continue;
+
+					SellableUnique.Add( new SellableUniqueEntry { Instance = instance, OriginalIndex = i } );
 				}
 			}
 
-			if ( SelectedEntry != null && !SelectedIsUnique )
+			if ( SelectedItem != ItemId.None && !SelectedIsUnique )
 			{
-				bool stillValid = BuyEntries.Contains( SelectedEntry ) || SellEntries.Contains( SelectedEntry );
-				if ( !stillValid )
-					SelectedEntry = null;
+				if ( IsBuyMode )
+				{
+					SelectedPrice = shop.GetSellPriceForPlayer( SelectedItem );
+					if ( SelectedPrice <= 0 )
+						SelectedItem = ItemId.None;
+				}
+				else
+				{
+					SelectedPrice = ShopPricing.GetSellPrice( SelectedItem );
+					if ( SelectedPrice <= 0 )
+						SelectedItem = ItemId.None;
+				}
 			}
 		}
 		else
@@ -389,7 +448,8 @@
 			BuyEntries.Clear();
 			SellEntries.Clear();
 			SellableUnique.Clear();
-			SelectedEntry = null;
+			SelectedItem = ItemId.None;
+			SelectedPrice = 0;
 			SelectedIsUnique = false;
 			SelectedUniqueIndex = -1;
 		}
@@ -398,8 +458,8 @@
 		if ( PlayerInventory != null )
 		{
 			invHash = PlayerGold;
-			if ( SelectedEntry != null )
-				invHash += PlayerInventory.GetItemCount( SelectedEntry.Item ) * 1000;
+			if ( SelectedItem != ItemId.None )
+				invHash += PlayerInventory.GetItemCount( SelectedItem ) * 1000;
 			invHash += PlayerInventory.GetUniqueItemCount() * 10000;
 		}
 
@@ -409,7 +469,8 @@
 			BuyEntries.Count,
 			SellEntries.Count,
 			SellableUnique.Count,
-			SelectedEntry?.Item ?? ItemId.None,
+			SelectedItem,
+			SelectedPrice,
 			IsBuyMode,
 			SelectedIsUnique,
 			SelectedUniqueIndex,
