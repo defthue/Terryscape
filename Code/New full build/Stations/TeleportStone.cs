@@ -115,11 +115,16 @@ public sealed class TeleportStone : Component
 		if ( player == null )
 			return false;
 
+		Vector3 fromPos = player.WorldPosition;
+
 		inventory.RemoveItem( ItemId.GoldCoin, TeleportCost );
 		player.WorldPosition = target.WorldPosition + Vector3.Up * target.SpawnHeightOffset;
 		CooldownRemaining = CooldownDuration;
 
 		GameLog.Add( $"Teleported to {target.StoneName} for {TeleportCost} gold.", "#a080d0" );
+
+		SoundLibrary.PlayTeleport( fromPos );
+		SoundLibrary.PlayTeleport( target.WorldPosition );
 
 		Close();
 		return true;

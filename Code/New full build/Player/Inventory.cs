@@ -18,6 +18,8 @@ public sealed class Inventory : Component
 	ItemId _equippedAmmoId = ItemId.None;
 	int _equippedAmmoCount = 0;
 
+	bool _suppressUnequipSound = false;
+
 	protected override void OnStart()
 	{
 		InitializeDefaults();
@@ -181,13 +183,18 @@ public sealed class Inventory : Component
 		}
 
 		if ( _equippedAmmoId != ItemId.None )
+		{
+			_suppressUnequipSound = true;
 			UnequipAmmo();
+			_suppressUnequipSound = false;
+		}
 
 		_equippedAmmoId = ammoId;
 		_equippedAmmoCount = count;
 		_items.Remove( ammoId );
 
 		GameLog.Add( $"Equipped {count}x {def.Name}.", "#c9a84c" );
+		SoundLibrary.PlayEquip();
 		return true;
 	}
 
@@ -211,6 +218,9 @@ public sealed class Inventory : Component
 
 		_equippedAmmoId = ItemId.None;
 		_equippedAmmoCount = 0;
+
+		if ( !_suppressUnequipSound )
+			SoundLibrary.PlayEquip();
 	}
 
 	public bool ConsumeAmmo( int amount = 1 )
@@ -267,6 +277,7 @@ public sealed class Inventory : Component
 		_equippedUnique[def.Slot] = instance;
 
 		GameLog.Add( $"Equipped {instance.GetDisplayName()}.", "#c9a84c" );
+		SoundLibrary.PlayEquip();
 		return true;
 	}
 
@@ -280,6 +291,9 @@ public sealed class Inventory : Component
 		_uniqueItems.Add( instance );
 
 		GameLog.Add( $"Unequipped {instance.GetDisplayName()}.", "#c9a84c" );
+
+		if ( !_suppressUnequipSound )
+			SoundLibrary.PlayEquip();
 	}
 
 	public ItemInstance GetEquippedUnique( EquipSlot slot )

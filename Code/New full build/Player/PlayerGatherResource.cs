@@ -203,6 +203,7 @@ public sealed class PlayerGatherResource : Component
 		{
 			TriggerSwingAnimation( false );
 			GameLog.Add( "You swing but hit nothing.", "#6a6a6a" );
+			SoundLibrary.PlayHitNothing();
 			return;
 		}
 
@@ -231,6 +232,7 @@ public sealed class PlayerGatherResource : Component
 			{
 				TriggerSwingAnimation( false );
 				GameLog.Add( "You swing but hit nothing.", "#6a6a6a" );
+				SoundLibrary.PlayHitNothing();
 				return;
 			}
 		}
@@ -447,6 +449,8 @@ public sealed class PlayerGatherResource : Component
 			SoundLibrary.PlayChop( node.WorldPosition );
 		else if ( node.GatherSkill == GatherType.Mining )
 			SoundLibrary.PlayOreHit( node.WorldPosition );
+		else if ( node.GatherSkill == GatherType.Foraging )
+			SoundLibrary.PlayForage( node.WorldPosition );
 
 		bool willBreak = _localNodeHealth[node] <= 0;
 
@@ -456,6 +460,7 @@ public sealed class PlayerGatherResource : Component
 		{
 			int harvestAmount = node.GetHarvestAmount();
 			inventory.AddItem( node.ResourceItem, harvestAmount );
+			SoundLibrary.PlayReceiveItem();
 
 			inventory.AddNodeMined();
 

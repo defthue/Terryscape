@@ -269,6 +269,13 @@ public sealed class SpellCaster : Component
 
 		skills.AddXp( SkillType.Magic, 2 );
 
+		switch ( spell.Id )
+		{
+			case SpellId.Fireball: SoundLibrary.PlayFireball( spawnPos ); break;
+			case SpellId.IceShard: SoundLibrary.PlayIceShard( spawnPos ); break;
+			case SpellId.DarkBlast: SoundLibrary.PlayDarkBlast( spawnPos ); break;
+		}
+
 		int manaLeft = 0;
 		var manaCheck = GameObject.Components.Get<ManaSystem>();
 		if ( manaCheck != null )

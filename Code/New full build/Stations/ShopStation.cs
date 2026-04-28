@@ -7,13 +7,8 @@ public sealed class ShopStation : Component
 	[Property] public string StationName { get; set; } = "";
 	[Property] public float InteractDistance { get; set; } = 200f;
 
-	// Items this shop sells to the player. Leave EMPTY to use the default preset
-	// from ShopDefaults based on the Shop id. Populate in the inspector to override.
 	[Property] public List<ShopSellOffer> ItemsForSale { get; set; } = new();
 
-	// Optional per-shop price overrides for buying from the player. Use this when
-	// a specific shop should pay more or less than the default ShopPricing value
-	// for a particular item. Leave empty to just use the global ShopPricing helper.
 	[Property] public List<ShopBuyOverride> BuysFromPlayerOverrides { get; set; } = new();
 
 	public static ShopStation ActiveShop { get; private set; }
@@ -129,7 +124,6 @@ public sealed class ShopStation : Component
 		return Vector3.DistanceBetween( WorldPosition, player.WorldPosition ) <= InteractDistance;
 	}
 
-	// Returns the effective list of items this shop sells.
 	public IEnumerable<(ItemId Item, int Price)> GetEffectiveItemsForSale()
 	{
 		if ( ItemsForSale != null && ItemsForSale.Count > 0 )
@@ -163,8 +157,6 @@ public sealed class ShopStation : Component
 		return GetSellPriceForPlayer( item ) > 0;
 	}
 
-	// What price does this shop pay the player for this item?
-	// Per-shop override always wins, otherwise falls back to the global ShopPricing helper.
 	public int GetBuyPriceFromPlayer( ItemId item )
 	{
 		foreach ( var ov in BuysFromPlayerOverrides )
@@ -203,6 +195,8 @@ public sealed class ShopStation : Component
 		var def = ItemDatabase.Get( item );
 		string name = def != null ? def.Name : item.ToString();
 		GameLog.Add( $"Bought {name} for {price} gold.", "#f0c040" );
+
+		SoundLibrary.PlaySellBuy();
 		return true;
 	}
 
@@ -225,6 +219,8 @@ public sealed class ShopStation : Component
 		var def = ItemDatabase.Get( item );
 		string name = def != null ? def.Name : item.ToString();
 		GameLog.Add( $"Sold {name} for {price} gold.", "#f0c040" );
+
+		SoundLibrary.PlaySellBuy();
 		return true;
 	}
 
@@ -284,6 +280,8 @@ public sealed class ShopStation : Component
 		string name = def != null ? def.Name : PendingSellAllItem.ToString();
 		GameLog.Add( $"Sold {amountToSell}x {name} for {totalGold} gold.", "#f0c040" );
 
+		SoundLibrary.PlaySellBuy();
+
 		ClearPendingSellAll();
 		return true;
 	}
@@ -326,6 +324,8 @@ public sealed class ShopStation : Component
 		var def = ItemDatabase.Get( instance.ItemId );
 		string name = def != null ? def.Name : instance.ItemId.ToString();
 		GameLog.Add( $"Sold {name} for {price} gold.", "#f0c040" );
+
+		SoundLibrary.PlaySellBuy();
 		return true;
 	}
 

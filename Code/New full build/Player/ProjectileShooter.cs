@@ -117,6 +117,8 @@ public sealed class ProjectileShooter : Component
 
 		BroadcastDrawAnim();
 
+		SoundLibrary.PlayBowPull( WorldPosition );
+
 		return true;
 	}
 
@@ -213,6 +215,8 @@ public sealed class ProjectileShooter : Component
 		}
 
 		GameLog.Add( $"You fire an arrow! ({damage} power)", "#a8c8a8" );
+
+		SoundLibrary.PlayBowRelease( spawnPos );
 
 		if ( Input.Down( "attack1" ) )
 			_wantsRedraw = true;

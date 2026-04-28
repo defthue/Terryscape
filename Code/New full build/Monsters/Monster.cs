@@ -41,12 +41,7 @@ public sealed class Monster : Component
 	[Property, Group( "Animations" )] public float DeathLingerTime { get; set; } = 2.0f;
 	[Property, Group( "Animations" )] public float VictoryAnimLength { get; set; } = 3.0f;
 
-	// Distance culling. When the local camera is farther than this many units away,
-	// the renderer and collider are disabled to save GPU/physics cost.
-	// Purely a client-side visual/physics optimization — networked state and
-	// host-authoritative AI are unaffected. Each client decides independently
-	// based on local camera position.
-	[Property, Group( "Culling" )] public float MaxDrawDistance { get; set; } = 3000f;
+	[Property, Group( "Culling" )] public float DrawDistanceMax { get; set; } = 5000f;
 
 	[Property, Group( "References" )] public SkinnedModelRenderer ModelRenderer { get; set; }
 	[Property, Group( "References" )] public Collider MonsterCollider { get; set; }
@@ -86,12 +81,9 @@ public sealed class Monster : Component
 	int _strafeDirection = 1;
 	float _repositionExtra = 0f;
 
-	// Track previous values so we only broadcast animation state changes, not every frame.
 	bool _lastBroadcastMoving = false;
 	bool _lastBroadcastRunning = false;
 
-	// Distance culling state. Tracks whether this monster is currently culled
-	// for the local client based on distance to the local camera.
 	bool _localCulled = false;
 	float _nextCullCheckTime = 0f;
 
@@ -100,13 +92,8 @@ public sealed class Monster : Component
 		_spawnPosition = GameObject.WorldPosition;
 		CurrentHealth = MaxHealth;
 
-		// Stagger initial cull checks across monsters so we don't hammer the system
-		// with every monster checking distance on the same frame.
 		_nextCullCheckTime = Time.Now + Random.Shared.NextSingle() * 0.5f;
 
-		// Compute initial cull state immediately so joining players don't see
-		// a flash of distant monsters before the first cull check runs.
-		// IsDead is synced before OnStart, so respect it here for late-joiners.
 		if ( !IsDead )
 		{
 			_localCulled = ShouldCullForDistance();
@@ -116,9 +103,6 @@ public sealed class Monster : Component
 
 	protected override void OnUpdate()
 	{
-		// Distance culling runs on every client (including host). Purely visual/physics.
-		// Throttled to ~2 checks per second per monster, with staggered start times.
-		// Skipped when monster is dead — death already disables renderer/collider.
 		if ( !IsDead && Time.Now >= _nextCullCheckTime )
 		{
 			_nextCullCheckTime = Time.Now + 0.5f;
@@ -162,11 +146,9 @@ public sealed class Monster : Component
 		}
 	}
 
-	// Returns true if this monster should be culled (hidden) based on distance
-	// to the local camera. Falls back to "don't cull" if no camera reference.
 	bool ShouldCullForDistance()
 	{
-		if ( MaxDrawDistance <= 0f )
+		if ( DrawDistanceMax <= 0f )
 			return false;
 
 		var camera = Scene.Camera;
@@ -174,13 +156,11 @@ public sealed class Monster : Component
 			return false;
 
 		float sqrDist = ( WorldPosition - camera.WorldPosition ).LengthSquared;
-		float maxSqr = MaxDrawDistance * MaxDrawDistance;
+		float maxSqr = DrawDistanceMax * DrawDistanceMax;
 
 		return sqrDist > maxSqr;
 	}
 
-	// Toggles renderer and collider for distance culling. Does NOT touch animation state
-	// or any networked properties — it's purely a local visibility/physics toggle.
 	void ApplyCulling( bool culled )
 	{
 		if ( ModelRenderer != null )
@@ -501,15 +481,11 @@ public sealed class Monster : Component
 		_state = MonsterState.Returning;
 	}
 
-	// Sets walk/run animation state. Only broadcasts to clients when the values change,
-	// to avoid spamming the network every frame.
 	void SetMoving( bool moving, bool running )
 	{
-		// Always update locally on the host.
 		ModelRenderer?.Set( "is_moving", moving );
 		ModelRenderer?.Set( "is_running", running );
 
-		// Only broadcast to all clients if values changed since last broadcast.
 		if ( moving != _lastBroadcastMoving || running != _lastBroadcastRunning )
 		{
 			_lastBroadcastMoving = moving;
@@ -521,7 +497,6 @@ public sealed class Monster : Component
 	[Rpc.Broadcast]
 	void BroadcastMovingState( bool moving, bool running )
 	{
-		// On the host, we already set this above — this is for joining clients.
 		ModelRenderer?.Set( "is_moving", moving );
 		ModelRenderer?.Set( "is_running", running );
 	}
@@ -770,22 +745,11 @@ public sealed class Monster : Component
 		StartRespawnTimer( generation );
 	}
 
-	// Runs on host. Computes which loot rolls succeed, then broadcasts the rewards
-	// to all clients. Each client filters by SteamId so only the killer's machine
-	// applies the rewards to their LOCAL Inventory/Skills components.
-	//
-	// This matches the "self-service" pattern used by ResourceNode harvesting
-	// (see PlayerGatherResource.HitNode): the local player's own machine is the
-	// only one that mutates their components. Without this pattern, joining
-	// players never receive monster rewards because the host modifies its own
-	// local copy of the joiner's components, which never syncs back.
 	void AwardLootAndXp()
 	{
 		if ( FirstAttacker == null || !FirstAttacker.IsValid() )
 			return;
 
-		// Resolve the killer's SteamId on the host while we still have the GameObject
-		// reference. SteamId is a ulong and safe to send through an RPC.
 		ulong killerSteamId = 0;
 		var ownerConnection = FirstAttacker.Network.Owner;
 		if ( ownerConnection != null )
@@ -794,13 +758,8 @@ public sealed class Monster : Component
 		if ( killerSteamId == 0 )
 			return;
 
-		// Determine the combat skill to award XP to, based on the killer's weapon.
-		// Reading the host's view of the equipped weapon ID is fine here — we're
-		// not mutating, just looking up which skill to credit.
 		SkillType killerSkill = GetKillerSkill();
 
-		// Roll loot on the host so it's deterministic and not exploitable.
-		// 0 means the roll failed or the slot is empty.
 		var rng = new Random();
 		int rolledAmount1 = RollLootAmount( rng, LootItem1, LootAmount1, LootChance1 );
 		int rolledAmount2 = RollLootAmount( rng, LootItem2, LootAmount2, LootChance2 );
@@ -816,7 +775,6 @@ public sealed class Monster : Component
 			LootItem3, rolledAmount3 );
 	}
 
-	// Returns the rolled amount, or 0 if the roll failed / item is None / chance is 0.
 	int RollLootAmount( Random rng, ItemId itemId, int amount, float chance )
 	{
 		if ( itemId == ItemId.None || chance <= 0f )
@@ -828,9 +786,6 @@ public sealed class Monster : Component
 		return 0;
 	}
 
-	// Fires on every client. Each client checks if the reward is for THEM via SteamId,
-	// and if so, applies it to their LOCAL Inventory/Skills components — same pattern
-	// as resource nodes. This is what makes joining-player rewards actually arrive.
 	[Rpc.Broadcast]
 	void BroadcastReward(
 		ulong killerSteamId,
@@ -841,7 +796,6 @@ public sealed class Monster : Component
 		ItemId loot2, int amount2,
 		ItemId loot3, int amount3 )
 	{
-		// Only the killer's machine should apply the rewards.
 		if ( Connection.Local == null || Connection.Local.SteamId != killerSteamId )
 			return;
 
@@ -852,26 +806,38 @@ public sealed class Monster : Component
 		var inventory = localPlayer.Components.Get<Inventory>();
 		var skills = localPlayer.Components.Get<Skills>();
 
+		bool gainedAnyItem = false;
+
 		if ( inventory != null )
 		{
 			inventory.AddKill( monsterType );
 
 			if ( loot1 != ItemId.None && amount1 > 0 )
+			{
 				inventory.AddItem( loot1, amount1 );
+				gainedAnyItem = true;
+			}
 
 			if ( loot2 != ItemId.None && amount2 > 0 )
+			{
 				inventory.AddItem( loot2, amount2 );
+				gainedAnyItem = true;
+			}
 
 			if ( loot3 != ItemId.None && amount3 > 0 )
+			{
 				inventory.AddItem( loot3, amount3 );
+				gainedAnyItem = true;
+			}
 		}
 
 		if ( skills != null && xpReward > 0 )
 			skills.AddCombatXp( killerSkill, xpReward );
+
+		if ( gainedAnyItem )
+			SoundLibrary.PlayReceiveItem();
 	}
 
-	// Finds the local player's GameObject by walking PlayerControllers and matching
-	// the network owner SteamId to the local connection.
 	GameObject FindLocalPlayer()
 	{
 		var players = Scene.GetAllComponents<PlayerController>();
@@ -884,9 +850,6 @@ public sealed class Monster : Component
 		return null;
 	}
 
-	// Determines which combat skill should receive XP, based on the killer's weapon.
-	// Runs on the host using the host's view of the killer's inventory — fine because
-	// we only READ the equipped weapon ID, we don't mutate anything.
 	SkillType GetKillerSkill()
 	{
 		if ( FirstAttacker == null || !FirstAttacker.IsValid() )
@@ -916,6 +879,9 @@ public sealed class Monster : Component
 		ModelRenderer?.Set( "b_death", true );
 		ModelRenderer?.Set( "is_moving", false );
 		ModelRenderer?.Set( "is_running", false );
+
+		SoundLibrary.PlayMonsterDeath( WorldPosition );
+
 		HideAfterDeath();
 	}
 
@@ -966,7 +932,6 @@ public sealed class Monster : Component
 			_state = MonsterState.Idle;
 			GameObject.WorldPosition = _spawnPosition;
 
-			// Reset broadcast tracking so first SetMoving call after respawn re-broadcasts.
 			_lastBroadcastMoving = false;
 			_lastBroadcastRunning = false;
 		}
@@ -977,8 +942,6 @@ public sealed class Monster : Component
 		ModelRenderer?.Set( "is_moving", false );
 		ModelRenderer?.Set( "is_running", false );
 
-		// Re-evaluate distance culling on respawn — the local player may have walked away
-		// while the monster was dead, so don't blindly enable the renderer.
 		_localCulled = ShouldCullForDistance();
 
 		if ( ModelRenderer != null )

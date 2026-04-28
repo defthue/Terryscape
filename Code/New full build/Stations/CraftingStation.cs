@@ -56,10 +56,16 @@ public sealed class CraftingStation : Component
 	{
 		ActiveStation = this;
 		Mouse.Visibility = MouseVisibility.Visible;
+
+		if ( Station == StationType.Furnace )
+			SoundLibrary.StartFurnaceLoop();
 	}
 
 	public static void Close()
 	{
+		if ( ActiveStation != null && ActiveStation.Station == StationType.Furnace )
+			SoundLibrary.StopFurnaceLoop();
+
 		ActiveStation = null;
 		Mouse.Visibility = MouseVisibility.Hidden;
 	}
@@ -148,6 +154,13 @@ public sealed class CraftingStation : Component
 			GameLog.Add( $"You crafted {outputName}!", "#4caf78" );
 
 		skills.AddXp( recipe.XpSkill, recipe.XpReward );
+
+		switch ( Station )
+		{
+			case StationType.Workbench: SoundLibrary.PlayWorkbenchCraft(); break;
+			case StationType.Anvil: SoundLibrary.PlayAnvilCraft(); break;
+			case StationType.Furnace: SoundLibrary.PlayUseFurnace(); break;
+		}
 
 		return true;
 	}
