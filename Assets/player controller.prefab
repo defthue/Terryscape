@@ -469,6 +469,20 @@
         "OnComponentFixedUpdate": null,
         "OnComponentStart": null,
         "OnComponentUpdate": null
+      },
+      {
+        "__type": "PlayerMovementTuner",
+        "__guid": "3b13e688-95bd-4913-8730-78fd777f2466",
+        "__enabled": true,
+        "Flags": 0,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "RunSpeedMultiplier": 1.5,
+        "WalkSpeedMultiplier": 1.75
       }
     ],
     "Children": [

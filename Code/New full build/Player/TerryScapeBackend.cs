@@ -7,11 +7,23 @@ using Sandbox;
 public static class TerryScapeBackend
 {
 	/// <summary>
-	/// Loads the calling player's save from the cloud.
-	/// Returns null if the player has no save yet OR if the request failed.
-	/// Use HasExistingSave() logic in the caller to distinguish "brand new player" from "load was attempted".
+	/// Result of a load attempt. Success=false means the request failed (network error, etc).
+	/// Success=true with Save=null means the request succeeded but the player has no save yet.
+	/// Success=true with Save!=null means an existing save was loaded.
 	/// </summary>
-	public static async Task<PlayerSaveData> LoadAsync()
+	public struct LoadResult
+	{
+		public bool Success;
+		public PlayerSaveData Save;
+	}
+
+	/// <summary>
+	/// Loads the calling player's save from the cloud.
+	/// Returns Success=false on failure (caller must NOT save afterward — would overwrite real data with empty state).
+	/// Returns Success=true, Save=null for a brand new player.
+	/// Returns Success=true, Save=<data> when an existing save was loaded.
+	/// </summary>
+	public static async Task<LoadResult> LoadAsync()
 	{
 		NetworkStorageConfig.EnsureInitialized();
 
@@ -21,19 +33,17 @@ public static class TerryScapeBackend
 			if ( !result.HasValue )
 			{
 				Log.Info( "[TerryScapeBackend] load-player returned no value (probably a brand new player)." );
-				return null;
+				return new LoadResult { Success = true, Save = null };
 			}
 
 			var json = result.Value;
 
-			// The load-player endpoint returns an object with nulls when the player has no record yet.
-			// Any of these missing = treat as "no save exists".
 			if ( !json.TryGetProperty( "version", out var versionProp ) ||
 				versionProp.ValueKind == JsonValueKind.Null ||
 				versionProp.ValueKind == JsonValueKind.Undefined )
 			{
 				Log.Info( "[TerryScapeBackend] No existing save for this player." );
-				return null;
+				return new LoadResult { Success = true, Save = null };
 			}
 
 			var save = new PlayerSaveData
@@ -156,12 +166,12 @@ public static class TerryScapeBackend
 			}
 
 			Log.Info( $"[TerryScapeBackend] Loaded save from {save.SavedAt}." );
-			return save;
+			return new LoadResult { Success = true, Save = save };
 		}
 		catch ( Exception ex )
 		{
 			Log.Warning( $"[TerryScapeBackend] LoadAsync failed: {ex.Message}" );
-			return null;
+			return new LoadResult { Success = false, Save = null };
 		}
 	}
 

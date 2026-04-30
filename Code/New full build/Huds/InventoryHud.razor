@@ -249,6 +249,7 @@
 		public string Color;
 		public string Sender;
 		public float CreatedValue;
+		public long Sequence;
 	}
 
 	List<FeedEntry> GetCombinedFeed()
@@ -263,7 +264,8 @@
 				Text = msg.Text,
 				Color = msg.Color,
 				Sender = null,
-				CreatedValue = (float)msg.Created
+				CreatedValue = (float)msg.Created,
+				Sequence = msg.Sequence
 			} );
 		}
 
@@ -276,14 +278,23 @@
 				Text = msg.Text,
 				Color = null,
 				Sender = msg.Sender,
-				CreatedValue = (float)msg.Created
+				CreatedValue = (float)msg.Created,
+				Sequence = msg.Sequence
 			} );
 		}
 
-		// RealTimeSince counts up from when the message was added.
-		// Older messages have a HIGHER Created value (more time has passed since they were created).
-		// We want oldest first in the list, so sort descending by Created.
-		feed.Sort( ( a, b ) => b.CreatedValue.CompareTo( a.CreatedValue ) );
+		feed.Sort( ( a, b ) =>
+		{
+			int cmp = b.CreatedValue.CompareTo( a.CreatedValue );
+			if ( cmp != 0 )
+				return cmp;
+
+			cmp = a.IsChat.CompareTo( b.IsChat );
+			if ( cmp != 0 )
+				return cmp;
+
+			return a.Sequence.CompareTo( b.Sequence );
+		} );
 
 		return feed;
 	}

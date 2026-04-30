@@ -1,0 +1,100 @@
+@using Sandbox;
+@using Sandbox.UI;
+@inherits PanelComponent
+
+<root>
+	<div class="minimap-container">
+		<div class="minimap-window">
+			<div class="minimap-image" style="background-image: url(@MapImagePath); width: @(ZoomLevel * 100)%; height: @(ZoomLevel * 100)%; left: @(MinimapImageLeft)%; top: @(MinimapImageTop)%;"></div>
+			<div class="minimap-dot"></div>
+		</div>
+	</div>
+
+	@if ( IsFullMapOpen )
+	{
+		<div class="fullmap-backdrop" onclick="@(() => CloseFullMap())"></div>
+		<div class="fullmap-overlay">
+			<div class="fullmap-popup">
+				<div class="fullmap-body" style="background-image: url(@MapImagePath);">
+					<div class="fullmap-dot" style="left: @(FullDotX)%; top: @(FullDotY)%;"></div>
+				</div>
+			</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	[Property] public Vector2 WorldMin { get; set; } = new Vector2( 0f, 0f );
+	[Property] public Vector2 WorldMax { get; set; } = new Vector2( 39936f, 39936f );
+	[Property] public string MapImagePath { get; set; } = "/ui/FullMap.png";
+	[Property] public float ZoomLevel { get; set; } = 6f;
+	[Property] public bool FlipY { get; set; } = true;
+
+	public static bool IsFullMapOpen
+	{
+		get => MinimapState.IsFullMapOpen;
+		private set => MinimapState.IsFullMapOpen = value;
+	}
+
+	float MinimapImageLeft { get; set; } = 0f;
+	float MinimapImageTop { get; set; } = 0f;
+
+	float FullDotX { get; set; } = 50f;
+	float FullDotY { get; set; } = 50f;
+
+	protected override void OnUpdate()
+	{
+		if ( !PlayerHelper.IsLocalPlayer( GameObject.Root ) && PlayerHelper.GetLocalPlayer() != null )
+		{
+		}
+
+		if ( Input.Pressed( "Map" ) )
+		{
+			IsFullMapOpen = !IsFullMapOpen;
+		}
+
+		StateHasChanged();
+	}
+
+	void CloseFullMap()
+	{
+		IsFullMapOpen = false;
+	}
+
+	(float u, float v) ComputeUV()
+	{
+		var player = PlayerHelper.GetLocalPlayer();
+		if ( player == null )
+			return (0.5f, 0.5f);
+
+		var pos = player.WorldPosition;
+
+		float rangeX = WorldMax.x - WorldMin.x;
+		float rangeY = WorldMax.y - WorldMin.y;
+
+		if ( rangeX <= 0f || rangeY <= 0f )
+			return (0.5f, 0.5f);
+
+		float u = (pos.x - WorldMin.x) / rangeX;
+		float v = (pos.y - WorldMin.y) / rangeY;
+
+		if ( FlipY )
+			v = 1f - v;
+
+		return (u, v);
+	}
+
+	protected override int BuildHash()
+	{
+		var (u, v) = ComputeUV();
+
+		MinimapImageLeft = 50f - u * ZoomLevel * 100f;
+		MinimapImageTop = 50f - v * ZoomLevel * 100f;
+
+		FullDotX = u * 100f;
+		FullDotY = v * 100f;
+
+		return ((int)(u * 10000f), (int)(v * 10000f), IsFullMapOpen).GetHashCode();
+	}
+}

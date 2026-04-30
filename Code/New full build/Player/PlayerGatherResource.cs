@@ -46,7 +46,8 @@ public sealed class PlayerGatherResource : Component
 				TeleportStone.ActiveStone != null ||
 				JournalStation.IsOpen ||
 				LeaderboardStation.IsOpen ||
-				NpcInteract.ActiveNpc != null;
+				NpcInteract.ActiveNpc != null ||
+				MinimapState.IsFullMapOpen;
 
 			if ( UIOpen || anyHudOpen )
 			{
@@ -73,6 +74,9 @@ public sealed class PlayerGatherResource : Component
 
 				if ( NpcInteract.ActiveNpc != null )
 					NpcInteract.ActiveNpc.CloseDialogue();
+
+				if ( MinimapState.IsFullMapOpen )
+					MinimapState.IsFullMapOpen = false;
 
 				UIOpen = false;
 				Mouse.Visibility = MouseVisibility.Hidden;
@@ -109,6 +113,9 @@ public sealed class PlayerGatherResource : Component
 			return;
 
 		if ( LeaderboardStation.IsOpen )
+			return;
+
+		if ( MinimapState.IsFullMapOpen )
 			return;
 
 		var potionSystem = GameObject.Components.Get<PotionSystem>();

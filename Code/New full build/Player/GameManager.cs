@@ -17,6 +17,7 @@ public sealed class GameManager : Component, Component.INetworkListener
 		public string Sender { get; set; }
 		public string Text { get; set; }
 		public RealTimeSince Created { get; set; }
+		public long Sequence { get; set; }
 	}
 
 	public List<ChatMessage> ChatMessages { get; private set; } = new();
@@ -24,6 +25,8 @@ public sealed class GameManager : Component, Component.INetworkListener
 	public string ChatInput { get; set; } = "";
 
 	const int MaxChatMessages = 100;
+
+	static long _nextChatSequence = 0;
 
 	protected override async void OnStart()
 	{
@@ -84,7 +87,8 @@ public sealed class GameManager : Component, Component.INetworkListener
 		{
 			Sender = sender,
 			Text = text,
-			Created = 0
+			Created = 0,
+			Sequence = _nextChatSequence++
 		} );
 
 		if ( ChatMessages.Count > MaxChatMessages )

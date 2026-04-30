@@ -1,0 +1,113 @@
+root {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	pointer-events: none;
+}
+
+.minimap-container {
+	position: absolute;
+	top: 12px;
+	right: 12px;
+	width: 200px;
+	height: 200px;
+	background: linear-gradient(180deg, #2a2218f2, #1a1510fa);
+	border: 2px solid #5a4a30;
+	border-radius: 5px;
+	box-shadow: 0 4px 28px #00000088;
+	overflow: hidden;
+	pointer-events: none;
+	font-family: Almendra;
+	font-smooth: auto;
+}
+
+.minimap-window {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background-color: #1a150e;
+	overflow: hidden;
+}
+
+.minimap-image {
+	position: absolute;
+	background-repeat: no-repeat;
+	background-size: 100% 100%;
+}
+
+.minimap-dot {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	width: 8px;
+	height: 8px;
+	margin-top: -4px;
+	margin-left: -4px;
+	background: #f0c040;
+	border: 1px solid #1a150e;
+	border-radius: 50%;
+	box-shadow: 0 0 6px #f0c04088;
+}
+
+.fullmap-backdrop {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background: #00000080;
+	pointer-events: all;
+}
+
+.fullmap-overlay {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	pointer-events: none;
+	font-family: Almendra;
+	font-smooth: auto;
+}
+
+.fullmap-popup {
+	width: 900px;
+	height: 900px;
+	background: linear-gradient(180deg, #2a2218f2, #1a1510fa);
+	border: 2px solid #5a4a30;
+	border-radius: 5px;
+	box-shadow: 0 4px 28px #00000088;
+	display: flex;
+	flex-direction: column;
+	pointer-events: all;
+}
+
+.fullmap-body {
+	position: relative;
+	flex: 1;
+	margin: 12px;
+	background-size: 100% 100%;
+	background-repeat: no-repeat;
+	background-color: #1a150e;
+	border: 1px solid #5a4a3088;
+	border-radius: 4px;
+}
+
+.fullmap-dot {
+	position: absolute;
+	width: 14px;
+	height: 14px;
+	margin-top: -7px;
+	margin-left: -7px;
+	background: #f0c040;
+	border: 2px solid #1a150e;
+	border-radius: 50%;
+	box-shadow: 0 0 8px #f0c040cc;
+}

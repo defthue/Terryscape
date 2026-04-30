@@ -34,18 +34,6 @@
         "ZIndex": 100
       },
       {
-        "__type": "Sandbox.Huds.BankHud",
-        "__guid": "8cd9c142-63ac-4c80-b689-8d962a42b79d",
-        "__enabled": true,
-        "Flags": 0,
-        "OnComponentDestroy": null,
-        "OnComponentDisabled": null,
-        "OnComponentEnabled": null,
-        "OnComponentFixedUpdate": null,
-        "OnComponentStart": null,
-        "OnComponentUpdate": null
-      },
-      {
         "__type": "Sandbox.Huds.CraftingHud",
         "__guid": "7d75723f-120c-4911-a659-c52974cc3b84",
         "__enabled": true,
@@ -212,6 +200,35 @@
         "OnComponentFixedUpdate": null,
         "OnComponentStart": null,
         "OnComponentUpdate": null
+      },
+      {
+        "__type": "Sandbox.Huds.BankHud",
+        "__guid": "7f290a78-776f-4712-8e66-22f5ff668276",
+        "__enabled": true,
+        "Flags": 0,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null
+      },
+      {
+        "__type": "Sandbox.Huds.MinimapHud",
+        "__guid": "21626730-cfdd-4ae6-99dc-c4f623b387f5",
+        "__enabled": true,
+        "Flags": 0,
+        "FlipY": true,
+        "MapImagePath": "/Map/FullMap.png",
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "WorldMax": "39936,39936",
+        "WorldMin": "0,0",
+        "ZoomLevel": 6
       }
     ],
     "Children": [],

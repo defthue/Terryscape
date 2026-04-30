@@ -8,11 +8,14 @@ public static class GameLog
 		public string Text { get; set; }
 		public string Color { get; set; }
 		public RealTimeSince Created { get; set; }
+		public long Sequence { get; set; }
 	}
 
 	public static List<LogMessage> Messages { get; private set; } = new();
 
 	const int MaxMessages = 100;
+
+	static long _nextSequence = 0;
 
 	public static void Add( string text, string color = "#e8e8e8" )
 	{
@@ -20,7 +23,8 @@ public static class GameLog
 		{
 			Text = text,
 			Color = color,
-			Created = 0
+			Created = 0,
+			Sequence = _nextSequence++
 		} );
 
 		if ( Messages.Count > MaxMessages )

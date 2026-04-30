@@ -91,11 +91,19 @@ public sealed class PlayerPersistence : Component
 		_loadAttempted = true;
 		_timeSinceLastSave = 0f;
 
-		var save = await TerryScapeBackend.LoadAsync();
+		var result = await TerryScapeBackend.LoadAsync();
+
+		if ( !result.Success )
+		{
+			Log.Warning( "[PlayerPersistence] Load failed — saves are blocked for this session to prevent overwriting real data with empty state. Reconnect or restart to retry." );
+			return;
+		}
 
 		var inventory = FindComponentInPlayer<Inventory>();
 		var skills = FindComponentInPlayer<Skills>();
 		var bank = FindComponentInPlayer<BankStorage>();
+
+		var save = result.Save;
 
 		if ( save == null )
 		{
