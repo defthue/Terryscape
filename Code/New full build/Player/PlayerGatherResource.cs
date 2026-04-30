@@ -37,11 +37,72 @@ public sealed class PlayerGatherResource : Component
 
 		if ( Input.Pressed( "inventory" ) )
 		{
-			UIOpen = !UIOpen;
-			Mouse.Visibility = UIOpen ? MouseVisibility.Visible : MouseVisibility.Hidden;
+			bool anyHudOpen =
+				ShopStation.ActiveShop != null ||
+				ShopStation.ShowingChoice ||
+				BankStation.ActiveBank != null ||
+				CraftingStation.ActiveStation != null ||
+				EnchantingStation.ActiveStation != null ||
+				TeleportStone.ActiveStone != null ||
+				JournalStation.IsOpen ||
+				LeaderboardStation.IsOpen ||
+				NpcInteract.ActiveNpc != null;
+
+			if ( UIOpen || anyHudOpen )
+			{
+				if ( ShopStation.ActiveShop != null || ShopStation.ShowingChoice )
+					ShopStation.CloseAll();
+
+				if ( BankStation.ActiveBank != null )
+					BankStation.Close();
+
+				if ( CraftingStation.ActiveStation != null )
+					CraftingStation.Close();
+
+				if ( EnchantingStation.ActiveStation != null )
+					EnchantingStation.Close();
+
+				if ( TeleportStone.ActiveStone != null )
+					TeleportStone.Close();
+
+				if ( JournalStation.IsOpen )
+					JournalStation.Close();
+
+				if ( LeaderboardStation.IsOpen )
+					LeaderboardStation.Close();
+
+				if ( NpcInteract.ActiveNpc != null )
+					NpcInteract.ActiveNpc.CloseDialogue();
+
+				UIOpen = false;
+				Mouse.Visibility = MouseVisibility.Hidden;
+			}
+			else
+			{
+				UIOpen = true;
+				Mouse.Visibility = MouseVisibility.Visible;
+			}
 		}
 
 		if ( UIOpen )
+			return;
+
+		if ( ShopStation.ActiveShop != null || ShopStation.ShowingChoice )
+			return;
+
+		if ( BankStation.ActiveBank != null )
+			return;
+
+		if ( CraftingStation.ActiveStation != null )
+			return;
+
+		if ( EnchantingStation.ActiveStation != null )
+			return;
+
+		if ( TeleportStone.ActiveStone != null )
+			return;
+
+		if ( NpcInteract.ActiveNpc != null )
 			return;
 
 		if ( JournalStation.IsOpen )

@@ -7,17 +7,26 @@ root {
 	pointer-events: none;
 }
 
-.crafting-overlay {
+.shop-backdrop {
 	position: absolute;
 	top: 0;
 	left: 0;
 	width: 100%;
 	height: 100%;
 	background: #00000080;
+	pointer-events: all;
+}
+
+.crafting-overlay {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	pointer-events: all;
+	pointer-events: none;
 	font-family: Almendra;
 	font-smooth: auto;
 }
@@ -31,6 +40,7 @@ root {
 	display: flex;
 	flex-direction: column;
 	overflow: hidden;
+	pointer-events: all;
 }
 
 .crafting-header {

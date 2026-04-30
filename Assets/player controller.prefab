@@ -426,7 +426,8 @@
         "OnComponentStart": null,
         "OnComponentUpdate": null,
         "PunchStanceResetTime": 2,
-        "ShowDebugTrace": true,
+        "ShowDebugTrace": false,
+        "StaffMeleeDamageMultiplier": 0.5,
         "SwingCooldown": 0.5,
         "TraceDistance": 5,
         "TraceRadius": 20

@@ -7,6 +7,7 @@
 <root>
 	@if ( IsOpen )
 	{
+		<div class="shop-backdrop" onclick="@(() => CloseShop())"></div>
 		<div class="crafting-overlay">
 			<div class="crafting-popup">
 				<div class="crafting-header">
@@ -163,6 +164,7 @@
 
 			@if ( ShopStation.PendingSellAllItem != ItemId.None )
 			{
+				<div class="shop-backdrop confirm" onclick="@(() => CancelSellAll())"></div>
 				<div class="confirm-overlay">
 					<div class="confirm-popup">
 						<div class="confirm-title">Sell All?</div>
