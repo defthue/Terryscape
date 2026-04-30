@@ -113,7 +113,7 @@
 							var def = ItemDatabase.Get( unique.Instance.ItemId );
 							string color = unique.Instance.IsEnchanted ? "#a080d0" : GetItemColor( unique.Instance.ItemId, def );
 
-							<div class="item-slot filled equippable"
+							<div class="item-slot filled equippable @(IsRecentlyReceived( unique.Instance.ItemId ) ? "just-received" : "")"
 								 onclick="@(() => OnUniqueSlotClick( unique ))">
 								<div class="item-icon" style="background: @color;">
 									<img class="item-icon-img" src="@GetIconPath( unique.Instance.ItemId )" />
@@ -132,7 +132,7 @@
 						{
 							bool isPotion = item.ItemId != ItemId.None && ItemDatabase.Get( item.ItemId )?.Type == ItemType.Potion;
 
-							<div class="item-slot filled @(isPotion ? "potion-slot" : "")"
+							<div class="item-slot filled @(isPotion ? "potion-slot" : "") @(IsRecentlyReceived( item.ItemId ) ? "just-received" : "")"
 								 onclick="@(() => OnInventorySlotClick( item ))">
 								<div class="item-icon" style="background: @item.Color;">
 									<img class="item-icon-img" src="@GetIconPath( item.ItemId )" />
@@ -360,6 +360,13 @@
 			return "";
 
 		return $"/ItemIcons/{id}.vtex";
+	}
+
+	// True for a brief moment after the player receives this item from a node
+	// or monster — used to apply the "just-received" bump animation to the slot.
+	bool IsRecentlyReceived( ItemId id )
+	{
+		return ItemPickupEffect.IsRecentlyReceived( id );
 	}
 
 	void OnInventorySlotClick( ItemSlotDisplay item )

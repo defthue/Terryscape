@@ -14,6 +14,7 @@ public sealed class PlayerGatherResource : Component
 	[Property] public float PunchStanceResetTime { get; set; } = 2.0f;
 	[Property] public int ForageHoldType { get; set; } = 4;
 	[Property] public int ForageHoldTypeAttack { get; set; } = 0;
+	[Property] public float StaffMeleeDamageMultiplier { get; set; } = 0.5f;
 
 	public static bool UIOpen { get; private set; } = false;
 	public static bool IsForaging { get; private set; } = false;
@@ -23,10 +24,6 @@ public sealed class PlayerGatherResource : Component
 
 	Dictionary<ResourceNode, int> _localNodeHealth = new();
 
-	/// <summary>
-	/// Forces UIOpen back to false and hides the mouse. Used by HUDs (like WelcomeHud)
-	/// that need to return the player to normal gameplay input state when they close.
-	/// </summary>
 	public static void ForceCloseUI()
 	{
 		UIOpen = false;
@@ -293,7 +290,9 @@ public sealed class PlayerGatherResource : Component
 				buffMult = potionSystem.GetBuffMultiplier( BuffType.Magic );
 		}
 
-		int damage = (int)( weaponPower * skillBonus * triangleMult * buffMult );
+		float staffMeleeMult = ( weaponDef != null && weaponDef.Type == ItemType.MagicWeapon ) ? StaffMeleeDamageMultiplier : 1f;
+
+		int damage = (int)( weaponPower * skillBonus * triangleMult * buffMult * staffMeleeMult );
 		if ( damage < 1 ) damage = 1;
 
 		GameLog.Add( $"You hit {monster.MonsterName} for {damage} damage. ({monster.CurrentHealth}/{monster.MaxHealth} HP left)", "#a8c8a8" );
@@ -332,7 +331,9 @@ public sealed class PlayerGatherResource : Component
 				buffMult = potionSystem.GetBuffMultiplier( BuffType.Magic );
 		}
 
-		int damage = (int)( weaponPower * skillBonus * triangleMult * buffMult );
+		float staffMeleeMult = ( weaponDef != null && weaponDef.Type == ItemType.MagicWeapon ) ? StaffMeleeDamageMultiplier : 1f;
+
+		int damage = (int)( weaponPower * skillBonus * triangleMult * buffMult * staffMeleeMult );
 		if ( damage < 1 ) damage = 1;
 
 		GameLog.Add( $"You hit {boss.BossName} for {damage} damage. ({boss.CurrentHealth}/{boss.MaxHealth} HP left)", "#a8c8a8" );
@@ -354,12 +355,16 @@ public sealed class PlayerGatherResource : Component
 			if ( !bareHanded )
 			{
 				GameLog.Add( "You need empty hands to forage.", "#c86464" );
+				TriggerSwingAnimation( false );
+				SoundLibrary.PlayHitNothing();
 				return;
 			}
 
 			if ( !skills.MeetsRequirement( SkillType.Enchanting, node.RequiredLevel ) )
 			{
 				GameLog.Add( $"You need Enchanting level {node.RequiredLevel} to gather this.", "#c86464" );
+				TriggerSwingAnimation( false );
+				SoundLibrary.PlayHitNothing();
 				return;
 			}
 
@@ -374,6 +379,8 @@ public sealed class PlayerGatherResource : Component
 		if ( weaponDef != null && ( weaponDef.Type == ItemType.MeleeWeapon || weaponDef.Type == ItemType.RangedWeapon || weaponDef.Type == ItemType.MagicWeapon ) )
 		{
 			GameLog.Add( "You can't harvest resources with a weapon!", "#c86464" );
+			TriggerSwingAnimation( false );
+			SoundLibrary.PlayHitNothing();
 			return;
 		}
 
@@ -382,12 +389,16 @@ public sealed class PlayerGatherResource : Component
 			if ( node.RequiresHatchet() && !inventory.IsWeaponHatchet() )
 			{
 				GameLog.Add( "You need a hatchet to harvest this.", "#c86464" );
+				TriggerSwingAnimation( false );
+				SoundLibrary.PlayHitNothing();
 				return;
 			}
 
 			if ( node.RequiresPickaxe() && !inventory.IsWeaponPickaxe() )
 			{
 				GameLog.Add( "You need a pickaxe to harvest this.", "#c86464" );
+				TriggerSwingAnimation( false );
+				SoundLibrary.PlayHitNothing();
 				return;
 			}
 
@@ -395,12 +406,16 @@ public sealed class PlayerGatherResource : Component
 			if ( requiredToolTier > 0 && weaponDef != null && weaponDef.Tier < requiredToolTier )
 			{
 				GameLog.Add( $"You need a tier {requiredToolTier}+ tool to harvest this.", "#c86464" );
+				TriggerSwingAnimation( false );
+				SoundLibrary.PlayHitNothing();
 				return;
 			}
 
 			if ( node.RequiredLevel > 1 && !skills.MeetsRequirement( node.GetSkillType(), node.RequiredLevel ) )
 			{
 				GameLog.Add( $"You need {node.GetSkillType()} level {node.RequiredLevel} to harvest this.", "#c86464" );
+				TriggerSwingAnimation( false );
+				SoundLibrary.PlayHitNothing();
 				return;
 			}
 		}
@@ -410,12 +425,16 @@ public sealed class PlayerGatherResource : Component
 			if ( node.GatherSkill == GatherType.Woodcutting && inventory.IsWeaponPickaxe() )
 			{
 				GameLog.Add( "You can't chop trees with a pickaxe.", "#c86464" );
+				TriggerSwingAnimation( false );
+				SoundLibrary.PlayHitNothing();
 				return;
 			}
 
 			if ( node.GatherSkill == GatherType.Mining && inventory.IsWeaponHatchet() )
 			{
 				GameLog.Add( "You can't mine rocks with a hatchet.", "#c86464" );
+				TriggerSwingAnimation( false );
+				SoundLibrary.PlayHitNothing();
 				return;
 			}
 		}
@@ -461,6 +480,7 @@ public sealed class PlayerGatherResource : Component
 			int harvestAmount = node.GetHarvestAmount();
 			inventory.AddItem( node.ResourceItem, harvestAmount );
 			SoundLibrary.PlayReceiveItem();
+			ItemPickupEffect.Trigger( node.ResourceItem );
 
 			inventory.AddNodeMined();
 

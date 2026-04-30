@@ -187,7 +187,8 @@ public sealed class PlayerPersistence : Component
 		}
 
 		data.TotalLevel = ComputeTotalLevel( data.Skills );
-		data.TotalGold = inventory.GetItemCount( ItemId.GoldCoin );
+		data.TotalGold = inventory.GetItemCount( ItemId.GoldCoin )
+			+ ( bank != null ? bank.GetItemCount( ItemId.GoldCoin ) : 0 );
 		data.TotalKills = inventory.GetTotalKills();
 
 		var ok = await TerryScapeBackend.SaveAsync( data );

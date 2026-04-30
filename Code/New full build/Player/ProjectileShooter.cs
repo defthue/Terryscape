@@ -63,14 +63,9 @@ public sealed class ProjectileShooter : Component
 		_drawTimer += Time.Delta;
 
 		if ( _drawTimer >= MinDrawDuration )
-			IsDrawReady = true;
-
-		if ( Input.Released( "attack1" ) )
 		{
-			if ( IsDrawReady )
-				ReleaseShot();
-			else
-				CancelDraw();
+			IsDrawReady = true;
+			ReleaseShot();
 		}
 	}
 
@@ -217,8 +212,5 @@ public sealed class ProjectileShooter : Component
 		GameLog.Add( $"You fire an arrow! ({damage} power)", "#a8c8a8" );
 
 		SoundLibrary.PlayBowRelease( spawnPos );
-
-		if ( Input.Down( "attack1" ) )
-			_wantsRedraw = true;
 	}
 }

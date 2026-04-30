@@ -815,18 +815,21 @@ public sealed class Monster : Component
 			if ( loot1 != ItemId.None && amount1 > 0 )
 			{
 				inventory.AddItem( loot1, amount1 );
+				ItemPickupEffect.Trigger( loot1 );
 				gainedAnyItem = true;
 			}
 
 			if ( loot2 != ItemId.None && amount2 > 0 )
 			{
 				inventory.AddItem( loot2, amount2 );
+				ItemPickupEffect.Trigger( loot2 );
 				gainedAnyItem = true;
 			}
 
 			if ( loot3 != ItemId.None && amount3 > 0 )
 			{
 				inventory.AddItem( loot3, amount3 );
+				ItemPickupEffect.Trigger( loot3 );
 				gainedAnyItem = true;
 			}
 		}

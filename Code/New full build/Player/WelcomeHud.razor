@@ -10,7 +10,7 @@
 				<div class="welcome-header">
 					<div class="welcome-title">@GetPageTitle()</div>
 					<div class="welcome-page-indicator">Page @(CurrentPage + 1) of @TotalPages</div>
-					<div class="welcome-close @(CanClose ? "enabled" : "disabled")" onclick="@(() => OnCloseClick())">✕</div>
+					<div class="welcome-close enabled" onclick="@(() => OnCloseClick())">✕</div>
 				</div>
 
 				<div class="welcome-body">
@@ -217,11 +217,8 @@
 	const string DiscordUrl = "https://discord.gg/sBFvneAt";
 
 	int CurrentPage { get; set; } = 0;
-	int FurthestPageReached { get; set; } = 0;
 	bool IsOpen { get; set; } = true;
 	bool CopiedToClipboard { get; set; } = false;
-
-	bool CanClose => FurthestPageReached >= TotalPages - 1;
 
 	string DiscordButtonText => CopiedToClipboard ? "Copied! Paste in your browser" : "Click to copy invite link";
 
@@ -248,8 +245,6 @@
 			return;
 
 		CurrentPage++;
-		if ( CurrentPage > FurthestPageReached )
-			FurthestPageReached = CurrentPage;
 	}
 
 	void OnPrevClick()
@@ -262,15 +257,8 @@
 
 	void OnCloseClick()
 	{
-		if ( !CanClose )
-			return;
-
 		IsOpen = false;
 
-		// Return the player to a clean gameplay input state. Without this, the player
-		// can move/look but left click won't register until they Q+Q the inventory,
-		// because the gather/combat system gets stuck waiting for the inventory toggle
-		// to fire and reset its internal state.
 		PlayerGatherResource.ForceCloseUI();
 	}
 
@@ -282,6 +270,6 @@
 
 	protected override int BuildHash()
 	{
-		return ( CurrentPage, FurthestPageReached, IsOpen, CopiedToClipboard ).GetHashCode();
+		return ( CurrentPage, IsOpen, CopiedToClipboard ).GetHashCode();
 	}
 }

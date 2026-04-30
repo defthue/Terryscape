@@ -105,14 +105,9 @@ public sealed class SpellCaster : Component
 			_castTimer += Time.Delta;
 
 			if ( _castTimer >= _activeSpell.MinCastTime )
-				IsCastReady = true;
-
-			if ( Input.Released( _castAction ) )
 			{
-				if ( IsCastReady )
-					ReleaseCast();
-				else
-					CancelCast();
+				IsCastReady = true;
+				ReleaseCast();
 			}
 		}
 	}

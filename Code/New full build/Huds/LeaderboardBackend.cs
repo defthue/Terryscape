@@ -109,20 +109,26 @@ public static class LeaderboardBackend
 		return total;
 	}
 
-	// Reads the GoldCoin entry from the "stackables" map in a player record.
-	// Doesn't include gold in the bank — that's a deliberate choice; "gold" on the
-	// leaderboard tracks gold in your pocket.
+	// Sums the GoldCoin entries from both "stackables" (pocket) and "bank" maps.
+	// Total gold on the leaderboard reflects everything the player owns, regardless
+	// of where it's currently stored.
 	static int ComputeTotalGold( JsonElement record )
 	{
-		if ( !record.TryGetProperty( "stackables", out var stackablesEl ) || stackablesEl.ValueKind != JsonValueKind.Object )
-			return 0;
+		int total = 0;
 
-		if ( stackablesEl.TryGetProperty( "GoldCoin", out var goldEl ) && goldEl.ValueKind == JsonValueKind.Number )
+		if ( record.TryGetProperty( "stackables", out var stackablesEl ) && stackablesEl.ValueKind == JsonValueKind.Object )
 		{
-			return goldEl.GetInt32();
+			if ( stackablesEl.TryGetProperty( "GoldCoin", out var pocketGoldEl ) && pocketGoldEl.ValueKind == JsonValueKind.Number )
+				total += pocketGoldEl.GetInt32();
 		}
 
-		return 0;
+		if ( record.TryGetProperty( "bank", out var bankEl ) && bankEl.ValueKind == JsonValueKind.Object )
+		{
+			if ( bankEl.TryGetProperty( "GoldCoin", out var bankGoldEl ) && bankGoldEl.ValueKind == JsonValueKind.Number )
+				total += bankGoldEl.GetInt32();
+		}
+
+		return total;
 	}
 
 	// Sums all kill counts across every monster type from the "kills" object.

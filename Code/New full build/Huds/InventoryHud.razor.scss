@@ -25,10 +25,14 @@ root {
 
 	&.ui-open {
 		pointer-events: all;
+		border-color: #c9a84c;
+		box-shadow: 0 4px 28px #00000088, 0 0 14px #c9a84c66;
 	}
 
 	&.chat-open {
 		pointer-events: all;
+		border-color: #c9a84c;
+		box-shadow: 0 4px 28px #00000088, 0 0 14px #c9a84c66;
 	}
 }
 
@@ -108,6 +112,8 @@ root {
 
 	&.ui-open {
 		pointer-events: all;
+		border-color: #c9a84c;
+		box-shadow: 0 4px 28px #00000088, 0 0 14px #c9a84c66;
 	}
 }
 
@@ -178,7 +184,7 @@ root {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	font-size: 14px;
+	font-size: 15px;
 	font-weight: 600;
 	color: #fff;
 	text-shadow: 0 1px 3px #000;
@@ -210,7 +216,7 @@ root {
 }
 
 .buff-timer {
-	font-size: 12px;
+	font-size: 13px;
 	font-weight: 600;
 	color: #ffffff;
 	text-shadow: 0 1px 3px #000000cc;
@@ -226,7 +232,7 @@ root {
 	border: 1px solid #c9a84c40;
 	border-radius: 4px;
 	padding: 4px 10px;
-	font-size: 14px;
+	font-size: 15px;
 	color: #d4cfc0;
 	white-space: nowrap;
 	z-index: 100;
@@ -301,6 +307,13 @@ root {
 	justify-content: center;
 }
 
+@keyframes just-received-bump {
+	0%   { transform: scale(1); }
+	30%  { transform: scale(1.18); }
+	60%  { transform: scale(0.96); }
+	100% { transform: scale(1); }
+}
+
 .item-slot {
 	width: 82px;
 	height: 82px;
@@ -345,6 +358,10 @@ root {
 			box-shadow: 0 0 8px #d44a4a33;
 		}
 	}
+
+	&.just-received {
+		animation: just-received-bump 0.6s ease-out;
+	}
 }
 
 .item-icon {
@@ -371,7 +388,15 @@ root {
 	font-size: 18px;
 	font-weight: 700;
 	color: #c9a84c;
-	text-shadow: 0 1px 3px #000;
+	text-shadow:
+		-1px -1px 0 #000,
+		 0   -1px 0 #000,
+		 1px -1px 0 #000,
+		 1px  0   0 #000,
+		 1px  1px 0 #000,
+		 0    1px 0 #000,
+		-1px  1px 0 #000,
+		-1px  0   0 #000;
 }
 
 .item-enchant {
@@ -379,11 +404,19 @@ root {
 	bottom: 1px;
 	left: 2px;
 	right: 2px;
-	font-size: 11px;
+	font-size: 13px;
 	font-weight: 600;
 	color: #a080d0;
 	text-align: center;
-	text-shadow: 0 1px 3px #000000cc;
+	text-shadow:
+		-1px -1px 0 #000,
+		 0   -1px 0 #000,
+		 1px -1px 0 #000,
+		 1px  0   0 #000,
+		 1px  1px 0 #000,
+		 0    1px 0 #000,
+		-1px  1px 0 #000,
+		-1px  0   0 #000;
 	white-space: nowrap;
 	overflow: hidden;
 }
@@ -409,7 +442,7 @@ root {
 }
 
 .tooltip-hint {
-	font-size: 14px;
+	font-size: 15px;
 	color: #c9a84c;
 	font-style: italic;
 }
@@ -441,7 +474,7 @@ root {
 }
 
 .equip-label {
-	font-size: 15px;
+	font-size: 16px;
 	color: #c9a84c;
 	width: 76px;
 	letter-spacing: 0.5px;
@@ -466,19 +499,19 @@ root {
 }
 
 .equip-name {
-	font-size: 18px;
+	font-size: 19px;
 	color: #c9a84c;
 	flex: 1;
 
 	&.empty {
 		color: #3a3020;
-		font-size: 15px;
+		font-size: 16px;
 		font-style: italic;
 	}
 }
 
 .equip-enchant {
-	font-size: 14px;
+	font-size: 15px;
 	color: #a89060;
 	background: #3a2a1866;
 	padding: 3px 8px;
@@ -524,7 +557,7 @@ root {
 }
 
 .skill-name {
-	font-size: 15px;
+	font-size: 17px;
 	color: #a89060;
 	text-align: center;
 	padding-bottom: 8px;
