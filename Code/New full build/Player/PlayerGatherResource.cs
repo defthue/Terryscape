@@ -35,19 +35,25 @@ public sealed class PlayerGatherResource : Component
 		if ( IsProxy )
 			return;
 
+		bool anyHudOpenNow =
+			ShopStation.ActiveShop != null ||
+			ShopStation.ShowingChoice ||
+			BankStation.ActiveBank != null ||
+			CraftingStation.ActiveStation != null ||
+			EnchantingStation.ActiveStation != null ||
+			TeleportStone.ActiveStone != null ||
+			JournalStation.IsOpen ||
+			LeaderboardStation.IsOpen ||
+			NpcInteract.ActiveNpc != null ||
+			MinimapState.IsFullMapOpen ||
+			WelcomeHudState.IsOpen;
+
+		if ( UIOpen && anyHudOpenNow )
+			UIOpen = false;
+
 		if ( Input.Pressed( "inventory" ) )
 		{
-			bool anyHudOpen =
-				ShopStation.ActiveShop != null ||
-				ShopStation.ShowingChoice ||
-				BankStation.ActiveBank != null ||
-				CraftingStation.ActiveStation != null ||
-				EnchantingStation.ActiveStation != null ||
-				TeleportStone.ActiveStone != null ||
-				JournalStation.IsOpen ||
-				LeaderboardStation.IsOpen ||
-				NpcInteract.ActiveNpc != null ||
-				MinimapState.IsFullMapOpen;
+			bool anyHudOpen = anyHudOpenNow;
 
 			if ( UIOpen || anyHudOpen )
 			{
@@ -77,6 +83,9 @@ public sealed class PlayerGatherResource : Component
 
 				if ( MinimapState.IsFullMapOpen )
 					MinimapState.IsFullMapOpen = false;
+
+				if ( WelcomeHudState.IsOpen )
+					WelcomeHudState.IsOpen = false;
 
 				UIOpen = false;
 				Mouse.Visibility = MouseVisibility.Hidden;
@@ -116,6 +125,9 @@ public sealed class PlayerGatherResource : Component
 			return;
 
 		if ( MinimapState.IsFullMapOpen )
+			return;
+
+		if ( WelcomeHudState.IsOpen )
 			return;
 
 		var potionSystem = GameObject.Components.Get<PotionSystem>();

@@ -103,11 +103,7 @@ public sealed class Skills : Component
 
 	public void AddCombatXp( SkillType combatStyle, int amount )
 	{
-		int styleXp = (int)(amount * 0.7f);
-		int defenceXp = amount - styleXp;
-
-		AddXp( combatStyle, styleXp );
-		AddXp( SkillType.Defence, defenceXp );
+		AddXp( combatStyle, amount );
 	}
 
 	public bool MeetsRequirement( SkillType skill, int level )

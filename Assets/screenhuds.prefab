@@ -219,7 +219,6 @@
         "__enabled": true,
         "Flags": 0,
         "FlipY": true,
-        "MapImagePath": "/Map/FullMap.png",
         "OnComponentDestroy": null,
         "OnComponentDisabled": null,
         "OnComponentEnabled": null,

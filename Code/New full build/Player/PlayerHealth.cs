@@ -97,6 +97,13 @@ public sealed class PlayerHealth : Component
 
 		GameLog.Add( $"You took {damage} damage. ({CurrentHealth}/{MaxHealth} HP left)", "#c86464" );
 
+		if ( CurrentHealth > 0 )
+		{
+			var skills = Components.Get<Skills>();
+			if ( skills != null && damage > 0 )
+				skills.AddXp( SkillType.Defence, damage * 1 );
+		}
+
 		if ( CurrentHealth <= 0 )
 			Die();
 	}
@@ -124,37 +131,19 @@ public sealed class PlayerHealth : Component
 
 	void ApplyDeathPenalty( Inventory inventory )
 	{
-		var items = new Dictionary<ItemId, int>( inventory.GetAllItems() );
-		int totalLost = 0;
+		int currentGold = inventory.GetItemCount( ItemId.GoldCoin );
+		if ( currentGold <= 0 )
+			return;
 
-		foreach ( var kv in items )
-		{
-			var def = ItemDatabase.Get( kv.Key );
-			if ( def == null )
-				continue;
+		float lossPercent = Game.Random.Float( 0.10f, 0.20f );
+		int goldLost = (int)( currentGold * lossPercent );
+		if ( goldLost <= 0 )
+			goldLost = 1;
+		if ( goldLost > currentGold )
+			goldLost = currentGold;
 
-			if ( def.Type == ItemType.Potion )
-			{
-				if ( kv.Value > 0 )
-				{
-					inventory.RemoveItem( kv.Key, kv.Value );
-					GameLog.Add( $"Lost {kv.Value}x {def.Name}.", "#c86464" );
-					totalLost += kv.Value;
-				}
-				continue;
-			}
-
-			int halfAmount = kv.Value / 2;
-			if ( halfAmount > 0 )
-			{
-				inventory.RemoveItem( kv.Key, halfAmount );
-				GameLog.Add( $"Lost {halfAmount}x {def.Name}.", "#c86464" );
-				totalLost += halfAmount;
-			}
-		}
-
-		if ( totalLost > 0 )
-			GameLog.Add( $"You lost items on death. Equipment and bank are safe.", "#c86464" );
+		inventory.RemoveItem( ItemId.GoldCoin, goldLost );
+		GameLog.Add( $"You lost {goldLost} gold on death. ({(int)(lossPercent * 100f)}%)", "#c86464" );
 	}
 
 	void Respawn()
@@ -172,5 +161,9 @@ public sealed class PlayerHealth : Component
 			GameObject.WorldPosition = RespawnPoint.WorldPosition;
 
 		GameLog.Add( $"You respawned with full health. ({CurrentHealth}/{MaxHealth} HP)", "#6db8f0" );
+
+		var persistence = Components.Get<PlayerPersistence>();
+		if ( persistence != null )
+			persistence.RequestSaveNow();
 	}
 }

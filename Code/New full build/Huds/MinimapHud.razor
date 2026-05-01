@@ -1,11 +1,23 @@
 @using Sandbox;
 @using Sandbox.UI;
+@using System.Collections.Generic;
 @inherits PanelComponent
 
 <root>
 	<div class="minimap-container">
 		<div class="minimap-window">
-			<div class="minimap-image" style="background-image: url(@MapImagePath); width: @(ZoomLevel * 100)%; height: @(ZoomLevel * 100)%; left: @(MinimapImageLeft)%; top: @(MinimapImageTop)%;"></div>
+			<img class="minimap-image" src="/Map/FullMap.vtex" style="width: @(ZoomLevel * 100)%; height: @(ZoomLevel * 100)%; left: @(MinimapImageLeft)%; top: @(MinimapImageTop)%;" />
+
+			@foreach ( var m in MinimapMarkers )
+			{
+				<div class="map-marker @m.CssClass" style="left: @(m.X)%; top: @(m.Y)%; z-index: @m.ZIndex;">
+					@if ( !string.IsNullOrEmpty( m.Glyph ) )
+					{
+						<span class="marker-glyph">@m.Glyph</span>
+					}
+				</div>
+			}
+
 			<div class="minimap-dot"></div>
 		</div>
 	</div>
@@ -15,7 +27,19 @@
 		<div class="fullmap-backdrop" onclick="@(() => CloseFullMap())"></div>
 		<div class="fullmap-overlay">
 			<div class="fullmap-popup">
-				<div class="fullmap-body" style="background-image: url(@MapImagePath);">
+				<div class="fullmap-body">
+					<img class="fullmap-image" src="/Map/FullMap.vtex" />
+
+					@foreach ( var m in FullmapMarkers )
+					{
+						<div class="map-marker @m.CssClass" style="left: @(m.X)%; top: @(m.Y)%; z-index: @m.ZIndex;">
+							@if ( !string.IsNullOrEmpty( m.Glyph ) )
+							{
+								<span class="marker-glyph">@m.Glyph</span>
+							}
+						</div>
+					}
+
 					<div class="fullmap-dot" style="left: @(FullDotX)%; top: @(FullDotY)%;"></div>
 				</div>
 			</div>
@@ -27,9 +51,9 @@
 {
 	[Property] public Vector2 WorldMin { get; set; } = new Vector2( 0f, 0f );
 	[Property] public Vector2 WorldMax { get; set; } = new Vector2( 39936f, 39936f );
-	[Property] public string MapImagePath { get; set; } = "/ui/FullMap.png";
 	[Property] public float ZoomLevel { get; set; } = 6f;
 	[Property] public bool FlipY { get; set; } = true;
+	[Property] public float MonsterMinimapRadius { get; set; } = 3000f;
 
 	public static bool IsFullMapOpen
 	{
@@ -43,12 +67,20 @@
 	float FullDotX { get; set; } = 50f;
 	float FullDotY { get; set; } = 50f;
 
+	struct Marker
+	{
+		public float X;
+		public float Y;
+		public string CssClass;
+		public string Glyph;
+		public int ZIndex;
+	}
+
+	List<Marker> MinimapMarkers { get; set; } = new();
+	List<Marker> FullmapMarkers { get; set; } = new();
+
 	protected override void OnUpdate()
 	{
-		if ( !PlayerHelper.IsLocalPlayer( GameObject.Root ) && PlayerHelper.GetLocalPlayer() != null )
-		{
-		}
-
 		if ( Input.Pressed( "Map" ) )
 		{
 			IsFullMapOpen = !IsFullMapOpen;
@@ -62,22 +94,16 @@
 		IsFullMapOpen = false;
 	}
 
-	(float u, float v) ComputeUV()
+	(float u, float v) WorldToUV( Vector3 worldPos )
 	{
-		var player = PlayerHelper.GetLocalPlayer();
-		if ( player == null )
-			return (0.5f, 0.5f);
-
-		var pos = player.WorldPosition;
-
 		float rangeX = WorldMax.x - WorldMin.x;
 		float rangeY = WorldMax.y - WorldMin.y;
 
 		if ( rangeX <= 0f || rangeY <= 0f )
 			return (0.5f, 0.5f);
 
-		float u = (pos.x - WorldMin.x) / rangeX;
-		float v = (pos.y - WorldMin.y) / rangeY;
+		float u = (worldPos.x - WorldMin.x) / rangeX;
+		float v = (worldPos.y - WorldMin.y) / rangeY;
 
 		if ( FlipY )
 			v = 1f - v;
@@ -85,9 +111,161 @@
 		return (u, v);
 	}
 
+	(float xPercent, float yPercent) MinimapMarkerPosition( Vector3 worldPos, float playerU, float playerV )
+	{
+		var (u, v) = WorldToUV( worldPos );
+
+		float xPercent = 50f + (u - playerU) * ZoomLevel * 100f;
+		float yPercent = 50f + (v - playerV) * ZoomLevel * 100f;
+
+		return (xPercent, yPercent);
+	}
+
+	void AddMarker( List<Marker> list, float x, float y, string cssClass, string glyph, int zIndex )
+	{
+		if ( x < -5f || x > 105f || y < -5f || y > 105f )
+			return;
+
+		list.Add( new Marker { X = x, Y = y, CssClass = cssClass, Glyph = glyph, ZIndex = zIndex } );
+	}
+
+	(string cssClass, string glyph) ResolveStationMarker( GameObject obj )
+	{
+		var bank = obj.Components.Get<BankStation>();
+		if ( bank != null )
+			return ("marker-bank", "B");
+
+		var crafting = obj.Components.Get<CraftingStation>();
+		if ( crafting != null )
+		{
+			switch ( crafting.Station )
+			{
+				case StationType.Anvil: return ("marker-anvil", "S");
+				case StationType.Furnace: return ("marker-furnace", "F");
+				case StationType.Workbench: return ("marker-workbench", "C");
+				case StationType.AlchemyTable: return ("marker-alchemy", "A");
+				case StationType.EnchantingAltar: return ("marker-enchant", "E");
+			}
+		}
+
+		var enchant = obj.Components.Get<EnchantingStation>();
+		if ( enchant != null )
+			return ("marker-enchant", "E");
+
+		var teleport = obj.Components.Get<TeleportStone>();
+		if ( teleport != null )
+			return ("marker-teleport", "T");
+
+		return (null, null);
+	}
+
+	void RebuildMarkers()
+	{
+		MinimapMarkers.Clear();
+		FullmapMarkers.Clear();
+
+		var player = PlayerHelper.GetLocalPlayer();
+		if ( player == null )
+			return;
+
+		var (playerU, playerV) = WorldToUV( player.WorldPosition );
+
+		int stationZ = 1000;
+		int questZ = 2000;
+		int monsterZ = 3000;
+
+		var stationGameObjects = new HashSet<GameObject>();
+
+		foreach ( var b in Scene.GetAllComponents<BankStation>() )
+			stationGameObjects.Add( b.GameObject );
+		foreach ( var c in Scene.GetAllComponents<CraftingStation>() )
+			stationGameObjects.Add( c.GameObject );
+		foreach ( var e in Scene.GetAllComponents<EnchantingStation>() )
+			stationGameObjects.Add( e.GameObject );
+		foreach ( var t in Scene.GetAllComponents<TeleportStone>() )
+			stationGameObjects.Add( t.GameObject );
+
+		foreach ( var obj in stationGameObjects )
+		{
+			var (cls, glyph) = ResolveStationMarker( obj );
+			if ( cls == null )
+				continue;
+
+			var (u, v) = WorldToUV( obj.WorldPosition );
+			float fx = u * 100f;
+			float fy = v * 100f;
+			var (mx, my) = MinimapMarkerPosition( obj.WorldPosition, playerU, playerV );
+
+			AddMarker( FullmapMarkers, fx, fy, cls, glyph, stationZ );
+			AddMarker( MinimapMarkers, mx, my, cls, glyph, stationZ );
+			stationZ++;
+		}
+
+		var npcGameObjects = new HashSet<GameObject>();
+		foreach ( var n in Scene.GetAllComponents<NpcInteract>() )
+			npcGameObjects.Add( n.GameObject );
+
+		foreach ( var obj in npcGameObjects )
+		{
+			var shop = obj.Components.Get<ShopStation>();
+			bool hasQuest = NpcInteract.NpcHasAvailableQuest( obj );
+
+			string cls = null;
+			string glyph = null;
+			int z = stationZ;
+
+			if ( shop != null )
+			{
+				cls = "marker-shop";
+				glyph = "$";
+				z = stationZ;
+				stationZ++;
+			}
+			else if ( hasQuest )
+			{
+				cls = "marker-quest";
+				glyph = "!";
+				z = questZ;
+				questZ++;
+			}
+
+			if ( cls == null )
+				continue;
+
+			var (u, v) = WorldToUV( obj.WorldPosition );
+			float fx = u * 100f;
+			float fy = v * 100f;
+			var (mx, my) = MinimapMarkerPosition( obj.WorldPosition, playerU, playerV );
+
+			AddMarker( FullmapMarkers, fx, fy, cls, glyph, z );
+			AddMarker( MinimapMarkers, mx, my, cls, glyph, z );
+		}
+
+		var playerWorld = player.WorldPosition;
+		float radiusSq = MonsterMinimapRadius * MonsterMinimapRadius;
+
+		foreach ( var monster in Scene.GetAllComponents<Monster>() )
+		{
+			if ( !monster.IsValid() )
+				continue;
+
+			var pos = monster.WorldPosition;
+			float dx = pos.x - playerWorld.x;
+			float dy = pos.y - playerWorld.y;
+
+			if ( dx * dx + dy * dy > radiusSq )
+				continue;
+
+			var (mx, my) = MinimapMarkerPosition( pos, playerU, playerV );
+			AddMarker( MinimapMarkers, mx, my, "marker-monster", null, monsterZ );
+			monsterZ++;
+		}
+	}
+
 	protected override int BuildHash()
 	{
-		var (u, v) = ComputeUV();
+		var player = PlayerHelper.GetLocalPlayer();
+		var (u, v) = player != null ? WorldToUV( player.WorldPosition ) : (0.5f, 0.5f);
 
 		MinimapImageLeft = 50f - u * ZoomLevel * 100f;
 		MinimapImageTop = 50f - v * ZoomLevel * 100f;
@@ -95,6 +273,8 @@
 		FullDotX = u * 100f;
 		FullDotY = v * 100f;
 
-		return ((int)(u * 10000f), (int)(v * 10000f), IsFullMapOpen).GetHashCode();
+		RebuildMarkers();
+
+		return ((int)(u * 10000f), (int)(v * 10000f), IsFullMapOpen, MinimapMarkers.Count, FullmapMarkers.Count).GetHashCode();
 	}
 }

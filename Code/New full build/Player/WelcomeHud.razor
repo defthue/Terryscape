@@ -53,6 +53,14 @@
 									<div class="welcome-key">SPACE</div>
 									<div class="welcome-action">Jump</div>
 								</div>
+								<div class="welcome-control-row">
+									<div class="welcome-key">M</div>
+									<div class="welcome-action">Open World Map</div>
+								</div>
+								<div class="welcome-control-row">
+									<div class="welcome-key">H</div>
+									<div class="welcome-action">Open Help / Controls</div>
+								</div>
 							</div>
 						</div>
 					}
@@ -217,14 +225,30 @@
 	const string DiscordUrl = "https://discord.gg/sBFvneAt";
 
 	int CurrentPage { get; set; } = 0;
-	bool IsOpen { get; set; } = true;
+	bool IsOpen
+	{
+		get => WelcomeHudState.IsOpen;
+		set => WelcomeHudState.IsOpen = value;
+	}
 	bool CopiedToClipboard { get; set; } = false;
 
 	string DiscordButtonText => CopiedToClipboard ? "Copied! Paste in your browser" : "Click to copy invite link";
 
 	protected override void OnStart()
 	{
+		IsOpen = true;
 		Mouse.Visibility = MouseVisibility.Visible;
+	}
+
+	protected override void OnUpdate()
+	{
+		if ( Input.Pressed( "Help" ) )
+		{
+			if ( IsOpen )
+				OnCloseClick();
+			else
+				IsOpen = true;
+		}
 	}
 
 	string GetPageTitle()

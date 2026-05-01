@@ -182,12 +182,25 @@ public sealed class Inventory : Component
 			return false;
 		}
 
+		if ( _equippedAmmoId == ammoId )
+		{
+			_equippedAmmoCount += count;
+			_items.Remove( ammoId );
+
+			GameLog.Add( $"Equipped {count}x {def.Name}.", "#c9a84c" );
+			SoundLibrary.PlayEquip();
+			return true;
+		}
+
 		if ( _equippedAmmoId != ItemId.None )
 		{
 			_suppressUnequipSound = true;
 			UnequipAmmo();
 			_suppressUnequipSound = false;
 		}
+
+		if ( !_items.TryGetValue( ammoId, out count ) || count <= 0 )
+			return false;
 
 		_equippedAmmoId = ammoId;
 		_equippedAmmoCount = count;

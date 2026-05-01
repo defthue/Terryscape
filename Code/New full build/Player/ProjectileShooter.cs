@@ -211,6 +211,8 @@ public sealed class ProjectileShooter : Component
 
 		GameLog.Add( $"You fire an arrow! ({damage} power)", "#a8c8a8" );
 
+		skills.AddXp( SkillType.Archery, 2 );
+
 		SoundLibrary.PlayBowRelease( spawnPos );
 	}
 }
