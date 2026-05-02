@@ -46,10 +46,23 @@ public sealed class PlayerGatherResource : Component
 			LeaderboardStation.IsOpen ||
 			NpcInteract.ActiveNpc != null ||
 			MinimapState.IsFullMapOpen ||
-			WelcomeHudState.IsOpen;
+			WelcomeHudState.IsOpen ||
+			BlackjackSeat.LocalSeat != null;
 
 		if ( UIOpen && anyHudOpenNow )
 			UIOpen = false;
+
+		if ( BlackjackSeat.LocalSeat != null )
+		{
+			if ( Input.Pressed( "inventory" ) )
+			{
+				if ( Mouse.Visibility == MouseVisibility.Visible )
+					Mouse.Visibility = MouseVisibility.Hidden;
+				else
+					Mouse.Visibility = MouseVisibility.Visible;
+			}
+			return;
+		}
 
 		if ( Input.Pressed( "inventory" ) )
 		{
@@ -128,6 +141,9 @@ public sealed class PlayerGatherResource : Component
 			return;
 
 		if ( WelcomeHudState.IsOpen )
+			return;
+
+		if ( BlackjackSeat.LocalSeat != null )
 			return;
 
 		var potionSystem = GameObject.Components.Get<PotionSystem>();

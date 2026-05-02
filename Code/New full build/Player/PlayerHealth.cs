@@ -101,7 +101,7 @@ public sealed class PlayerHealth : Component
 		{
 			var skills = Components.Get<Skills>();
 			if ( skills != null && damage > 0 )
-				skills.AddXp( SkillType.Defence, damage * 1 );
+				skills.AddXp( SkillType.Defence, damage * 4 );
 		}
 
 		if ( CurrentHealth <= 0 )

@@ -1,0 +1,338 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using System.Linq;
+@inherits PanelComponent
+
+<root>
+	@if ( Seat != null && Table != null )
+	{
+		<div class="blackjack-hud">
+			<div class="bj-header">
+				<div class="bj-phase">@PhaseLabel</div>
+				<div class="bj-timer">@($"{Table.PhaseTimeRemaining:0}s")</div>
+				<div class="bj-hint">Press Q to toggle camera</div>
+				<div class="bj-gold">💰 @CurrentGold g</div>
+			</div>
+
+			@if ( Table.CurrentPhase == BlackjackTable.Phase.Betting )
+			{
+				<div class="bj-betting">
+					@if ( BetPlaced )
+					{
+						<div class="bj-status placed">
+							<span class="status-label">Bet placed:</span>
+							<span class="status-value">@CurrentBet g</span>
+						</div>
+					}
+					else
+					{
+						<div class="bj-status unplaced">
+							<span class="status-label">No bet placed</span>
+						</div>
+					}
+
+					<div class="bj-betting-label">Adjust bet (min @Table.MinBet g)</div>
+					<div class="bj-bet-row">
+						<div class="bj-bet-btn" onclick=@(() => AdjustBet(-100))>-100</div>
+						<div class="bj-bet-btn" onclick=@(() => AdjustBet(-10))>-10</div>
+						<div class="bj-bet-btn" onclick=@(() => AdjustBet(-1))>-1</div>
+						<div class="bj-bet-display">@PendingBet</div>
+						<div class="bj-bet-btn" onclick=@(() => AdjustBet(1))>+1</div>
+						<div class="bj-bet-btn" onclick=@(() => AdjustBet(10))>+10</div>
+						<div class="bj-bet-btn" onclick=@(() => AdjustBet(100))>+100</div>
+					</div>
+					<div class="bj-bet-actions">
+						<div class="bj-place-btn @(CanPlaceBet ? "enabled" : "disabled")" onclick=@(() => PlaceBet())>
+							@(BetPlaced ? "Update Bet" : "Place Bet")
+						</div>
+						@if ( BetPlaced )
+						{
+							<div class="bj-clear-btn" onclick=@(() => ClearBet())>Clear Bet</div>
+						}
+					</div>
+					@if ( !string.IsNullOrEmpty( BetError ) )
+					{
+						<div class="bj-bet-error">@BetError</div>
+					}
+				</div>
+			}
+
+			@if ( IsPlayingPhase )
+			{
+				<div class="bj-tables">
+					<div class="bj-dealer">
+						<div class="bj-label">Dealer</div>
+						<div class="bj-cards">
+							@for ( int i = 0; i < Table.DealerHand.Count; i++ )
+							{
+								if ( i == 1 && Table.DealerHoleHidden )
+								{
+									<div class="bj-card hidden">??</div>
+								}
+								else
+								{
+									var c = Card.Decode( Table.DealerHand[i] );
+									<div class="bj-card @SuitClass(c)">@c.RankName@SuitGlyph(c)</div>
+								}
+							}
+						</div>
+						<div class="bj-total">@DealerTotalText</div>
+					</div>
+
+					<div class="bj-player">
+						<div class="bj-label">Your Hand</div>
+						@for ( int handIndex = 0; handIndex < (Table.GetHasSplit(SeatIndex) ? 2 : 1); handIndex++ )
+						{
+							var hi = handIndex;
+							var hand = Table.GetHand( SeatIndex, hi );
+							var bet = Table.GetBet( SeatIndex, hi );
+							var isActiveHand = IsMyTurn && hi == Table.ActiveHandIndex;
+
+							<div class="bj-hand @(isActiveHand ? "active" : "")">
+								<div class="bj-cards">
+									@if ( hand != null )
+									{
+										@foreach ( var code in hand )
+										{
+											var c = Card.Decode( code );
+											<div class="bj-card @SuitClass(c)">@c.RankName@SuitGlyph(c)</div>
+										}
+									}
+								</div>
+								<div class="bj-handinfo">
+									<div class="bj-total">@($"Total: {(hand != null ? BlackjackTable.HandTotal(hand) : 0)}")</div>
+									<div class="bj-bet">Bet: @bet g</div>
+								</div>
+							</div>
+						}
+					</div>
+				</div>
+
+				<div class="bj-actions @(IsMyTurn ? "active" : "inactive")">
+					<div class="bj-action-btn @(CanHit ? "enabled" : "disabled")" onclick=@(() => OnHit())>Hit</div>
+					<div class="bj-action-btn @(CanStand ? "enabled" : "disabled")" onclick=@(() => OnStand())>Stand</div>
+					<div class="bj-action-btn @(CanDouble ? "enabled" : "disabled")" onclick=@(() => OnDouble())>Double</div>
+					<div class="bj-action-btn @(CanSplit ? "enabled" : "disabled")" onclick=@(() => OnSplit())>Split</div>
+				</div>
+			}
+
+			@if ( Table.CurrentPhase == BlackjackTable.Phase.Payout && !string.IsNullOrEmpty( Table.LastResultText ) )
+			{
+				<div class="bj-result">
+					<pre>@Table.LastResultText</pre>
+				</div>
+			}
+		</div>
+	}
+</root>
+
+@code
+{
+	BlackjackSeat Seat => BlackjackSeat.LocalSeat;
+	BlackjackTable Table => Seat?.Table;
+	int SeatIndex => Seat?.SeatIndex ?? -1;
+
+	int PendingBet { get; set; } = 5;
+	string BetError { get; set; } = "";
+
+	int CurrentGold
+	{
+		get
+		{
+			var player = PlayerHelper.GetLocalPlayer();
+			var inv = player?.Components.Get<Inventory>();
+			return inv?.GetItemCount( ItemId.GoldCoin ) ?? 0;
+		}
+	}
+
+	bool BetPlaced => Seat != null && Table != null && Table.GetBet( SeatIndex, 0 ) > 0;
+	int CurrentBet => Seat != null && Table != null ? Table.GetBet( SeatIndex, 0 ) : 0;
+
+	bool CanPlaceBet
+	{
+		get
+		{
+			if ( Table == null ) return false;
+			if ( PendingBet < Table.MinBet ) return false;
+			int delta = PendingBet - CurrentBet;
+			if ( delta > CurrentGold ) return false;
+			return PendingBet != CurrentBet;
+		}
+	}
+
+	bool IsPlayingPhase => Table != null && (
+		Table.CurrentPhase == BlackjackTable.Phase.Dealing ||
+		Table.CurrentPhase == BlackjackTable.Phase.PlayerTurns ||
+		Table.CurrentPhase == BlackjackTable.Phase.DealerTurn ||
+		Table.CurrentPhase == BlackjackTable.Phase.Payout );
+
+	bool IsMyTurn => Table != null && Table.CurrentPhase == BlackjackTable.Phase.PlayerTurns && Table.ActiveSeatIndex == SeatIndex;
+
+	bool CanHit
+	{
+		get
+		{
+			if ( !IsMyTurn ) return false;
+			var hand = Table.GetHand( SeatIndex, Table.ActiveHandIndex );
+			if ( hand == null ) return false;
+			if ( Table.GetHandDone( SeatIndex, Table.ActiveHandIndex ) ) return false;
+			return BlackjackTable.HandTotal( hand ) < 21;
+		}
+	}
+
+	bool CanStand => IsMyTurn && !Table.GetHandDone( SeatIndex, Table.ActiveHandIndex );
+
+	bool CanDouble
+	{
+		get
+		{
+			if ( !IsMyTurn ) return false;
+			var hand = Table.GetHand( SeatIndex, Table.ActiveHandIndex );
+			if ( hand == null || hand.Count != 2 ) return false;
+			int bet = Table.GetBet( SeatIndex, Table.ActiveHandIndex );
+			return CurrentGold >= bet;
+		}
+	}
+
+	bool CanSplit
+	{
+		get
+		{
+			if ( !IsMyTurn ) return false;
+			if ( Table.ActiveHandIndex != 0 ) return false;
+			if ( Table.GetHasSplit( SeatIndex ) ) return false;
+
+			var hand = Table.GetHand( SeatIndex, 0 );
+			if ( hand == null || hand.Count != 2 ) return false;
+
+			var c1 = Card.Decode( hand[0] );
+			var c2 = Card.Decode( hand[1] );
+			if ( c1.Rank != c2.Rank ) return false;
+
+			int bet = Table.GetBet( SeatIndex, 0 );
+			return CurrentGold >= bet;
+		}
+	}
+
+	string PhaseLabel => Table?.CurrentPhase switch
+	{
+		BlackjackTable.Phase.Waiting => "Waiting for players",
+		BlackjackTable.Phase.Betting => "Place your bet",
+		BlackjackTable.Phase.Dealing => "Dealing...",
+		BlackjackTable.Phase.PlayerTurns => Table.ActiveSeatIndex == SeatIndex ? "Your turn" : $"Seat {Table.ActiveSeatIndex + 1}'s turn",
+		BlackjackTable.Phase.DealerTurn => "Dealer plays",
+		BlackjackTable.Phase.Payout => "Payout",
+		BlackjackTable.Phase.Reset => "Next round...",
+		_ => ""
+	};
+
+	string DealerTotalText
+	{
+		get
+		{
+			if ( Table.DealerHoleHidden && Table.DealerHand.Count >= 1 )
+			{
+				var firstCard = Card.Decode( Table.DealerHand[0] );
+				return $"Showing: {firstCard.BlackjackValue}";
+			}
+			return $"Total: {BlackjackTable.HandTotal( Table.DealerHand )}";
+		}
+	}
+
+	string SuitClass( Card c ) => c.Suit == Suit.Hearts || c.Suit == Suit.Diamonds ? "red" : "black";
+
+	string SuitGlyph( Card c ) => c.Suit switch
+	{
+		Suit.Clubs => "♣",
+		Suit.Diamonds => "♦",
+		Suit.Hearts => "♥",
+		Suit.Spades => "♠",
+		_ => "?"
+	};
+
+	protected override void OnUpdate()
+	{
+		StateHasChanged();
+	}
+
+	void AdjustBet( int delta )
+	{
+		PendingBet += delta;
+		if ( PendingBet < 0 ) PendingBet = 0;
+		BetError = "";
+	}
+
+	void PlaceBet()
+	{
+		if ( Table == null ) return;
+
+		if ( PendingBet < Table.MinBet )
+		{
+			BetError = $"Minimum bet is {Table.MinBet}g";
+			return;
+		}
+
+		int delta = PendingBet - CurrentBet;
+		if ( delta > CurrentGold )
+		{
+			BetError = $"Not enough gold (need {delta}g)";
+			return;
+		}
+
+		if ( PendingBet == CurrentBet )
+		{
+			BetError = "";
+			return;
+		}
+
+		Log.Info( $"[BlackjackHud] PlaceBet clicked. PendingBet={PendingBet}, CanPlaceBet={CanPlaceBet}" );
+		Table.RpcPlaceBet( SeatIndex, PendingBet );
+		SoundLibrary.PlaySellBuy();
+		BetError = "";
+	}
+
+	void ClearBet()
+	{
+		Table.RpcPlaceBet( SeatIndex, 0 );
+		SoundLibrary.PlaySellBuy();
+		PendingBet = 0;
+	}
+
+	void OnHit()
+	{
+		if ( !CanHit ) return;
+		Table.RpcHit( SeatIndex );
+	}
+
+	void OnStand()
+	{
+		if ( !CanStand ) return;
+		Table.RpcStand( SeatIndex );
+	}
+
+	void OnDouble()
+	{
+		if ( !CanDouble ) return;
+		Table.RpcDouble( SeatIndex );
+	}
+
+	void OnSplit()
+	{
+		if ( !CanSplit ) return;
+		Table.RpcSplit( SeatIndex );
+	}
+
+	protected override int BuildHash()
+	{
+		if ( Table == null ) return 0;
+		return System.HashCode.Combine(
+			Table.CurrentPhase,
+			Table.ActiveSeatIndex,
+			Table.ActiveHandIndex,
+			Table.PhaseTimeRemaining.FloorToInt(),
+			Table.DealerHand.Count,
+			Table.DealerHoleHidden,
+			CurrentGold
+		);
+	}
+}

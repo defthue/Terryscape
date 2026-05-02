@@ -22,6 +22,10 @@ public sealed class SoundLibrary : Component
 	const string DARK_BLAST = "Sounds/DarkBlast.sound";
 	const string EQUIP = "Sounds/Equip.sound";
 	const string TELEPORT = "Sounds/TeleportSound.sound";
+	const string SMALL_MONSTER_ATTACK = "Sounds/SmallMonsterAttack.sound";
+	const string LARGE_MONSTER_ATTACK = "Sounds/LargeMonsterAttack.sound";
+	const string CARD_SHUFFLE = "Sounds/CardShuffle.sound";
+	const string CARD_DEALT = "Sounds/CardDealt.sound";
 
 	static SoundLibrary _instance;
 	static SoundHandle _furnaceLoopHandle;
@@ -153,6 +157,42 @@ public sealed class SoundLibrary : Component
 			return;
 
 		instance.BroadcastWorldSoundForAll( MONSTER_DEATH, position );
+	}
+
+	public static void PlaySmallMonsterAttack( Vector3 position )
+	{
+		var instance = GetInstance();
+		if ( instance == null )
+			return;
+
+		instance.BroadcastWorldSoundForAll( SMALL_MONSTER_ATTACK, position );
+	}
+
+	public static void PlayLargeMonsterAttack( Vector3 position )
+	{
+		var instance = GetInstance();
+		if ( instance == null )
+			return;
+
+		instance.BroadcastWorldSoundForAll( LARGE_MONSTER_ATTACK, position );
+	}
+
+	public static void PlayCardShuffle( Vector3 position )
+	{
+		var instance = GetInstance();
+		if ( instance == null )
+			return;
+
+		instance.BroadcastWorldSoundForAll( CARD_SHUFFLE, position );
+	}
+
+	public static void PlayCardDealt( Vector3 position )
+	{
+		var instance = GetInstance();
+		if ( instance == null )
+			return;
+
+		instance.BroadcastWorldSoundForAll( CARD_DEALT, position );
 	}
 
 	public static void PlayHitNothing()

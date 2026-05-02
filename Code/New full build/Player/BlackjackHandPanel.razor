@@ -1,0 +1,164 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using System.Collections.Generic;
+@inherits PanelComponent
+
+<root>
+	@if ( Table != null )
+	{
+		<div class="hand-panel">
+			@if ( SeatIndex == -1 )
+			{
+				<div class="seat-name">Dealer</div>
+				<div class="cards-row">
+					@for ( int i = 0; i < Table.DealerHand.Count; i++ )
+					{
+						if ( i == 1 && Table.DealerHoleHidden )
+						{
+							<div class="card-wrap"><img src="/Cards/back.vtex" /></div>
+						}
+						else
+						{
+							var c = Card.Decode( Table.DealerHand[i] );
+							<div class="card-wrap"><img src="@c.TexturePath" /></div>
+						}
+					}
+				</div>
+				@if ( Table.DealerHand.Count > 0 )
+				{
+					<div class="hand-info">
+						<span class="total">@DealerTotalText</span>
+					</div>
+				}
+			}
+			else
+			{
+				var seat = Table.Seats[SeatIndex];
+				bool occupied = seat != null && seat.OccupantPlayer.IsValid();
+
+				@if ( occupied )
+				{
+					<div class="seat-name">@SeatName(seat)</div>
+
+					@if ( Table.GetHasSplit( SeatIndex ) )
+					{
+						<div class="split-row">
+							<div class="hand-mini @(IsHandActive(0) ? "active" : "")">
+								<div class="cards-row">
+									@RenderHand( Table.GetHand( SeatIndex, 0 ) )
+								</div>
+								<div class="hand-info">
+									<span class="total">@HandTotalText( Table.GetHand( SeatIndex, 0 ) )</span>
+									<span class="bet">@(Table.GetBet( SeatIndex, 0 ))g</span>
+								</div>
+							</div>
+							<div class="hand-mini @(IsHandActive(1) ? "active" : "")">
+								<div class="cards-row">
+									@RenderHand( Table.GetHand( SeatIndex, 1 ) )
+								</div>
+								<div class="hand-info">
+									<span class="total">@HandTotalText( Table.GetHand( SeatIndex, 1 ) )</span>
+									<span class="bet">@(Table.GetBet( SeatIndex, 1 ))g</span>
+								</div>
+							</div>
+						</div>
+					}
+					else
+					{
+						<div class="hand-mini @(IsHandActive(0) ? "active" : "")">
+							<div class="cards-row">
+								@RenderHand( Table.GetHand( SeatIndex, 0 ) )
+							</div>
+							<div class="hand-info">
+								<span class="total">@HandTotalText( Table.GetHand( SeatIndex, 0 ) )</span>
+								@if ( Table.GetBet( SeatIndex, 0 ) > 0 )
+								{
+									<span class="bet">@(Table.GetBet( SeatIndex, 0 ))g</span>
+								}
+							</div>
+						</div>
+					}
+				}
+			}
+		</div>
+	}
+</root>
+
+@code
+{
+	[Property] public BlackjackTable Table { get; set; }
+	[Property] public int SeatIndex { get; set; } = -1;
+
+	RenderFragment RenderHand( NetList<int> hand ) => @<text>
+		@if ( hand != null )
+		{
+			@foreach ( var code in hand )
+			{
+				var c = Card.Decode( code );
+				<div class="card-wrap"><img src="@c.TexturePath" /></div>
+			}
+		}
+	</text>;
+
+	string SeatName( BlackjackSeat seat )
+	{
+		var go = seat?.OccupantPlayer;
+		if ( !go.IsValid() ) return "";
+		var owner = go.Network?.Owner;
+		if ( owner != null && !string.IsNullOrEmpty( owner.DisplayName ) )
+			return owner.DisplayName;
+		return go.Name ?? "Player";
+	}
+
+	bool IsHandActive( int handIdx )
+	{
+		return Table.CurrentPhase == BlackjackTable.Phase.PlayerTurns
+			&& Table.ActiveSeatIndex == SeatIndex
+			&& Table.ActiveHandIndex == handIdx;
+	}
+
+	string HandTotalText( NetList<int> hand )
+	{
+		if ( hand == null || hand.Count == 0 ) return "";
+		return BlackjackTable.HandTotal( hand ).ToString();
+	}
+
+	string DealerTotalText
+	{
+		get
+		{
+			if ( Table.DealerHoleHidden && Table.DealerHand.Count >= 1 )
+			{
+				var firstCard = Card.Decode( Table.DealerHand[0] );
+				return $"{firstCard.BlackjackValue}";
+			}
+			return BlackjackTable.HandTotal( Table.DealerHand ).ToString();
+		}
+	}
+
+	protected override void OnUpdate()
+	{
+		StateHasChanged();
+	}
+
+	protected override int BuildHash()
+	{
+		if ( Table == null ) return 0;
+		if ( SeatIndex == -1 )
+		{
+			return System.HashCode.Combine( Table.DealerHand.Count, Table.DealerHoleHidden, Table.CurrentPhase );
+		}
+		var ha = Table.GetHand( SeatIndex, 0 );
+		var hb = Table.GetHand( SeatIndex, 1 );
+		return System.HashCode.Combine(
+			ha?.Count ?? 0,
+			hb?.Count ?? 0,
+			Table.GetBet( SeatIndex, 0 ),
+			Table.GetBet( SeatIndex, 1 ),
+			Table.GetHasSplit( SeatIndex ),
+			Table.ActiveSeatIndex,
+			Table.ActiveHandIndex,
+			Table.CurrentPhase
+		);
+	}
+}

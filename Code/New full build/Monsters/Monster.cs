@@ -591,10 +591,12 @@ public sealed class Monster : Component
 		if ( IsRanged )
 		{
 			SpawnProjectile();
+			PlayRangedAttackSoundDelayed();
 			DealRangedDamageDelayed( playerHealth, finalDamage );
 			return;
 		}
 
+		PlayMeleeAttackSoundDelayed();
 		DealDamageDelayed( playerHealth, finalDamage );
 	}
 
@@ -711,6 +713,62 @@ public sealed class Monster : Component
 	{
 		ModelRenderer?.Set( "b_attack", true );
 		ResetAttackBool();
+	}
+
+	void PlayAttackSound()
+	{
+		var pos = WorldPosition;
+
+		if ( CombatStyle == CombatStyle.Ranged )
+		{
+			SoundLibrary.PlayBowRelease( pos );
+			return;
+		}
+
+		if ( CombatStyle == CombatStyle.Magic )
+		{
+			SoundLibrary.PlayFireball( pos );
+			return;
+		}
+
+		if ( MonsterType == "Troll" )
+			SoundLibrary.PlayLargeMonsterAttack( pos );
+		else
+			SoundLibrary.PlaySmallMonsterAttack( pos );
+	}
+
+	async void PlayMeleeAttackSoundDelayed()
+	{
+		bool isLarge = MonsterType == "Troll";
+		float lead = isLarge ? 0.4f : 0.2f;
+
+		float delay = DamageDelay - lead;
+		if ( delay < 0f ) delay = 0f;
+
+		await Task.DelaySeconds( delay );
+
+		if ( !IsValid || IsDead )
+			return;
+
+		var pos = WorldPosition;
+		if ( isLarge )
+			SoundLibrary.PlayLargeMonsterAttack( pos );
+		else
+			SoundLibrary.PlaySmallMonsterAttack( pos );
+	}
+
+	async void PlayRangedAttackSoundDelayed()
+	{
+		await Task.DelaySeconds( ProjectileCastDelay );
+
+		if ( !IsValid || IsDead )
+			return;
+
+		var pos = WorldPosition;
+		if ( CombatStyle == CombatStyle.Magic )
+			SoundLibrary.PlayFireball( pos );
+		else
+			SoundLibrary.PlayBowRelease( pos );
 	}
 
 	async void ResetAttackBool()

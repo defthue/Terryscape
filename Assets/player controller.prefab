@@ -167,6 +167,18 @@
         "Speed": 1
       },
       {
+        "__type": "Sandbox.Movement.SitMoveMode",
+        "__guid": "7ea44f2f-fd6a-4e0a-a989-8528bad5398c",
+        "__enabled": true,
+        "Flags": 0,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null
+      },
+      {
         "__type": "Sandbox.Dresser",
         "__guid": "d315cc36-3479-4cd3-a8b1-f688395540ba",
         "__enabled": true,
@@ -530,9 +542,12 @@
               },
               "ints": {
                 "holdtype_handedness": 0,
-                "holdtype": 6
+                "holdtype": 0,
+                "sit": 1
               },
-              "floats": {},
+              "floats": {
+                "scale_height": 1
+              },
               "vectors": {},
               "rotations": {}
             },

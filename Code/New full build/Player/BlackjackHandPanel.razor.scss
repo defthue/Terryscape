@@ -1,0 +1,92 @@
+.hand-panel {
+	width: 100%;
+	height: 100%;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+	font-family: Almendra;
+	color: #d4cfc0;
+	overflow: visible;
+}
+
+.seat-name {
+	font-size: 44px;
+	color: #c9a84c;
+	letter-spacing: 2px;
+	text-transform: uppercase;
+	text-stroke: 5px #000000;
+	text-shadow: 0 2px 6px rgba(0, 0, 0, 0.95);
+	transform: scaleY(1.4);
+}
+
+.cards-row {
+	flex-direction: row;
+	flex-wrap: nowrap;
+	justify-content: center;
+	align-items: flex-start;
+	flex-shrink: 0;
+}
+
+.split-row {
+	flex-direction: row;
+	gap: 24px;
+	align-items: flex-start;
+}
+
+.hand-mini {
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+	padding: 10px;
+	border-radius: 6px;
+	border: 3px solid transparent;
+	flex-shrink: 0;
+}
+
+.hand-mini.active {
+	border: 3px solid #c9a84c;
+	background: #c9a84c11;
+	box-shadow: 0 0 32px #c9a84c66;
+}
+
+.card-wrap {
+	width: 220px;
+	height: 308px;
+	border-radius: 8px;
+	overflow: hidden;
+	margin-left: -160px;
+	flex-shrink: 0;
+}
+
+.card-wrap:first-child {
+	margin-left: 0;
+}
+
+.card-wrap img {
+	width: 209.83%;
+	height: 150.58%;
+	object-fit: fill;
+	margin-left: -54.91%;
+	margin-top: -25.29%;
+}
+
+.hand-info {
+	flex-direction: row;
+	gap: 22px;
+	align-items: center;
+	font-size: 36px;
+	font-family: Almendra;
+	letter-spacing: 2px;
+	text-stroke: 5px #000000;
+	text-shadow: 0 2px 4px rgba(0, 0, 0, 0.95);
+	transform: scaleY(1.4);
+}
+
+.hand-info .total {
+	color: #d4cfc0;
+}
+
+.hand-info .bet {
+	color: #c9a84c;
+}

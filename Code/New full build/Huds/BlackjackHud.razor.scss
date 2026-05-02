@@ -1,0 +1,356 @@
+root {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	pointer-events: none;
+}
+
+.blackjack-hud {
+	position: absolute;
+	bottom: 40px;
+	left: 50%;
+	transform: translateX(-50%);
+	width: 760px;
+	flex-direction: column;
+	background: linear-gradient(180deg, #2a2218f2, #1a1510fa);
+	border: 2px solid #5a4a30;
+	border-radius: 5px;
+	box-shadow: 0 4px 28px #00000088;
+	padding: 16px 20px;
+	font-family: Almendra;
+	font-smooth: auto;
+	color: #d4cfc0;
+	gap: 12px;
+	pointer-events: all;
+}
+
+.bj-header {
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+	padding: 4px 4px 10px 4px;
+	border-bottom: 1px solid #5a4a3066;
+}
+
+.bj-phase {
+	font-size: 22px;
+	color: #c9a84c;
+	letter-spacing: 1px;
+	text-transform: uppercase;
+}
+
+.bj-timer {
+	font-size: 26px;
+	color: #c9a84c;
+	font-weight: 600;
+}
+
+.bj-hint {
+	font-size: 18px;
+	color: #7a6a50;
+	letter-spacing: 1px;
+	text-transform: uppercase;
+}
+
+.bj-gold {
+	font-size: 18px;
+	color: #c9a84c;
+}
+
+.bj-status {
+	flex-direction: row;
+	justify-content: center;
+	align-items: center;
+	gap: 12px;
+	padding: 10px 16px;
+	border-radius: 4px;
+	font-size: 18px;
+	font-family: Almendra;
+	letter-spacing: 1px;
+	text-transform: uppercase;
+}
+
+.bj-status.placed {
+	background: #c9a84c22;
+	border: 1px solid #c9a84c66;
+}
+
+.bj-status.unplaced {
+	background: #1a150e88;
+	border: 1px solid #5a4a3044;
+}
+
+.bj-status .status-label {
+	color: #a0907a;
+}
+
+.bj-status.placed .status-label {
+	color: #c9a84c;
+}
+
+.bj-status .status-value {
+	color: #c9a84c;
+	font-size: 22px;
+	font-weight: 600;
+}
+
+.bj-betting {
+	flex-direction: column;
+	gap: 10px;
+	padding: 6px 4px;
+}
+
+.bj-betting-label {
+	font-size: 16px;
+	color: #a0907a;
+	letter-spacing: 1px;
+	text-transform: uppercase;
+}
+
+.bj-bet-row {
+	flex-direction: row;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+}
+
+.bj-bet-btn {
+	min-width: 50px;
+	height: 36px;
+	background: #1a150e;
+	border: 1px solid #5a4a3066;
+	border-radius: 4px;
+	align-items: center;
+	justify-content: center;
+	font-size: 16px;
+	color: #d4cfc0;
+	cursor: pointer;
+	transition: all 0.15s ease;
+}
+
+.bj-bet-btn:hover {
+	border-color: #c9a84c;
+	color: #c9a84c;
+	box-shadow: 0 0 8px #c9a84c33;
+}
+
+.bj-bet-input,
+.bj-bet-display {
+	width: 110px;
+	height: 36px;
+	background: #1a150ecc;
+	border: 1px solid #5a4a3066;
+	border-radius: 4px;
+	color: #c9a84c;
+	font-size: 22px;
+	font-family: Almendra;
+	text-align: center;
+	align-items: center;
+	justify-content: center;
+	padding: 4px 8px;
+}
+
+.bj-bet-actions {
+	flex-direction: row;
+	justify-content: center;
+	gap: 12px;
+	margin-top: 6px;
+}
+
+.bj-place-btn,
+.bj-clear-btn {
+	min-width: 140px;
+	height: 40px;
+	border-radius: 4px;
+	align-items: center;
+	justify-content: center;
+	font-size: 18px;
+	font-family: Almendra;
+	letter-spacing: 1px;
+	text-transform: uppercase;
+	cursor: pointer;
+	transition: all 0.15s ease;
+}
+
+.bj-place-btn.enabled {
+	background: #1a150e;
+	border: 1px solid #5a4a3066;
+	color: #d4cfc0;
+}
+
+.bj-place-btn.enabled:hover {
+	border-color: #c9a84c;
+	color: #c9a84c;
+	box-shadow: 0 0 8px #c9a84c33;
+}
+
+.bj-place-btn.disabled {
+	background: #1a150e44;
+	border: 1px solid #5a4a3033;
+	color: #5a4a30;
+	cursor: default;
+}
+
+.bj-clear-btn {
+	background: #1a150e;
+	border: 1px solid #5a4a3066;
+	color: #a0907a;
+}
+
+.bj-clear-btn:hover {
+	border-color: #8b3a3a;
+	color: #c47878;
+	box-shadow: 0 0 8px #8b3a3a33;
+}
+
+.bj-bet-error {
+	font-size: 16px;
+	color: #c47878;
+	font-family: Almendra;
+	letter-spacing: 1px;
+	text-align: center;
+	margin-top: 4px;
+	padding: 8px;
+	background: #8b3a3a22;
+	border: 1px solid #8b3a3a66;
+	border-radius: 4px;
+}
+
+.bj-tables {
+	flex-direction: column;
+	gap: 12px;
+	padding: 6px 4px;
+}
+
+.bj-dealer,
+.bj-player,
+.bj-hand {
+	flex-direction: column;
+	gap: 6px;
+}
+
+.bj-hand {
+	background: #1a150e88;
+	border: 2px solid transparent;
+	border-radius: 4px;
+	padding: 8px;
+}
+
+.bj-hand.active {
+	border: 2px solid #c9a84c;
+	background: #c9a84c11;
+	box-shadow: 0 0 16px #c9a84c33;
+}
+
+.bj-label {
+	font-size: 14px;
+	color: #7a6a50;
+	letter-spacing: 1px;
+	text-transform: uppercase;
+}
+
+.bj-cards {
+	flex-direction: row;
+	gap: 6px;
+	flex-wrap: wrap;
+}
+
+.bj-card {
+	width: 50px;
+	height: 68px;
+	background: #d4cfc0;
+	border-radius: 4px;
+	border: 1px solid #5a4a30;
+	align-items: center;
+	justify-content: center;
+	font-size: 20px;
+	font-weight: 600;
+	color: #1a1510;
+	font-family: Almendra;
+}
+
+.bj-card.red {
+	color: #a83232;
+}
+
+.bj-card.black {
+	color: #1a1510;
+}
+
+.bj-card.hidden {
+	background: #2a2218;
+	color: #c9a84c;
+	border: 1px solid #5a4a30;
+	font-size: 26px;
+}
+
+.bj-handinfo {
+	flex-direction: row;
+	gap: 18px;
+	font-size: 16px;
+	color: #d4cfc0;
+}
+
+.bj-bet {
+	color: #c9a84c;
+}
+
+.bj-actions {
+	flex-direction: row;
+	justify-content: center;
+	gap: 10px;
+	padding: 8px 4px;
+}
+
+.bj-actions.inactive {
+	opacity: 0.5;
+}
+
+.bj-action-btn {
+	min-width: 120px;
+	height: 44px;
+	border-radius: 4px;
+	align-items: center;
+	justify-content: center;
+	font-size: 18px;
+	font-family: Almendra;
+	letter-spacing: 1px;
+	text-transform: uppercase;
+	cursor: pointer;
+	transition: all 0.15s ease;
+}
+
+.bj-action-btn.enabled {
+	background: #1a150e;
+	border: 1px solid #5a4a3066;
+	color: #d4cfc0;
+}
+
+.bj-action-btn.enabled:hover {
+	border-color: #c9a84c;
+	color: #c9a84c;
+	box-shadow: 0 0 8px #c9a84c33;
+}
+
+.bj-action-btn.disabled {
+	background: #1a150e44;
+	border: 1px solid #5a4a3033;
+	color: #5a4a30;
+	cursor: default;
+}
+
+.bj-result {
+	background: #c9a84c11;
+	border: 1px solid #c9a84c66;
+	border-radius: 4px;
+	padding: 12px;
+}
+
+.bj-result pre {
+	font-size: 16px;
+	color: #c9a84c;
+	font-family: Almendra;
+	white-space: pre-line;
+}
