@@ -175,7 +175,7 @@ public sealed class BlackjackTable : Component
 
 	protected override void OnUpdate()
 	{
-		if ( IsProxy )
+		if ( !Networking.IsHost )
 			return;
 
 		if ( _phaseDuration > 0f )
@@ -681,6 +681,24 @@ public sealed class BlackjackTable : Component
 		}
 
 		seat.OccupantPlayer = null;
+	}
+
+	[Rpc.Host]
+	public void RpcRequestClaimSeat( int seatIndex, GameObject player )
+	{
+		if ( seatIndex < 0 || seatIndex >= Seats.Count ) return;
+		var seat = Seats[seatIndex];
+		if ( seat == null ) return;
+		TryClaimSeat( seat, player );
+	}
+
+	[Rpc.Host]
+	public void RpcRequestReleaseSeat( int seatIndex )
+	{
+		if ( seatIndex < 0 || seatIndex >= Seats.Count ) return;
+		var seat = Seats[seatIndex];
+		if ( seat == null ) return;
+		ReleaseSeat( seat );
 	}
 
 	[Rpc.Host]
