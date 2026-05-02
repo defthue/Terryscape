@@ -173,6 +173,11 @@ public sealed class BlackjackTable : Component
 		}
 	}
 
+	protected override void OnStart()
+	{
+		Log.Info( $"[BlackjackTable] OnStart on {(Networking.IsHost ? "HOST" : "CLIENT")}, IsProxy={IsProxy}, Network.Active={Network.Active}, GameObject.Id={GameObject.Id}" );
+	}
+
 	protected override void OnUpdate()
 	{
 		if ( !Networking.IsHost )
@@ -462,8 +467,8 @@ public sealed class BlackjackTable : Component
 					payout = bet;
 				}
 
-				if ( payout > 0 && inventory != null )
-					inventory.AddItem( ItemId.GoldCoin, payout );
+				if ( payout > 0 && player.IsValid() )
+					RpcAddPlayerGold( player.Id, payout );
 
 				int net = payout - bet;
 				seatNet += net;
@@ -701,9 +706,11 @@ public sealed class BlackjackTable : Component
 		ReleaseSeat( seat );
 	}
 
-	[Rpc.Host]
+	[Rpc.Broadcast]
 	public void RpcPlaceBet( int seatIndex, int amount )
 	{
+		if ( !Networking.IsHost ) return;
+
 		Log.Info( $"[Blackjack] RpcPlaceBet entered: seat={seatIndex}, amount={amount}, phase={CurrentPhase}" );
 
 		if ( CurrentPhase != Phase.Betting ) { Log.Info( "  -> wrong phase" ); return; }
@@ -716,29 +723,14 @@ public sealed class BlackjackTable : Component
 		var occ = seat.OccupantPlayer;
 		if ( !occ.IsValid() ) { Log.Info( "  -> occupant invalid" ); return; }
 
-		var inventory = occ.Components.Get<Inventory>();
-		if ( inventory == null ) { Log.Info( "  -> no inventory" ); return; }
-
-		int existingBet = GetBet( seatIndex, 0 );
-		int delta = amount - existingBet;
-
-		if ( delta > 0 )
-		{
-			if ( !inventory.HasItem( ItemId.GoldCoin, delta ) ) { Log.Info( $"  -> not enough gold (need {delta})" ); return; }
-			inventory.RemoveItem( ItemId.GoldCoin, delta );
-		}
-		else if ( delta < 0 )
-		{
-			inventory.AddItem( ItemId.GoldCoin, -delta );
-		}
-
 		SetBet( seatIndex, 0, amount );
 		Log.Info( $"[Blackjack] seat {seatIndex} bet set to {amount}g" );
 	}
 
-	[Rpc.Host]
+	[Rpc.Broadcast]
 	public void RpcHit( int seatIndex )
 	{
+		if ( !Networking.IsHost ) return;
 		if ( !ValidateActionCaller( seatIndex ) ) return;
 		if ( seatIndex != ActiveSeatIndex ) return;
 
@@ -756,9 +748,10 @@ public sealed class BlackjackTable : Component
 		}
 	}
 
-	[Rpc.Host]
+	[Rpc.Broadcast]
 	public void RpcStand( int seatIndex )
 	{
+		if ( !Networking.IsHost ) return;
 		if ( !ValidateActionCaller( seatIndex ) ) return;
 		if ( seatIndex != ActiveSeatIndex ) return;
 		if ( GetHandDone( ActiveSeatIndex, ActiveHandIndex ) ) return;
@@ -767,9 +760,10 @@ public sealed class BlackjackTable : Component
 		AdvanceTurn();
 	}
 
-	[Rpc.Host]
+	[Rpc.Broadcast]
 	public void RpcDouble( int seatIndex )
 	{
+		if ( !Networking.IsHost ) return;
 		if ( !ValidateActionCaller( seatIndex ) ) return;
 		if ( seatIndex != ActiveSeatIndex ) return;
 
@@ -777,17 +771,7 @@ public sealed class BlackjackTable : Component
 		if ( hand == null || hand.Count != 2 ) return;
 		if ( GetHandDone( ActiveSeatIndex, ActiveHandIndex ) ) return;
 
-		var seat = Seats[seatIndex];
-		var player = seat?.OccupantPlayer;
-		if ( !player.IsValid() ) return;
-
-		var inventory = player.Components.Get<Inventory>();
-		if ( inventory == null ) return;
-
 		int currentBet = GetBet( seatIndex, ActiveHandIndex );
-		if ( !inventory.HasItem( ItemId.GoldCoin, currentBet ) ) return;
-
-		inventory.RemoveItem( ItemId.GoldCoin, currentBet );
 		SetBet( seatIndex, ActiveHandIndex, currentBet * 2 );
 
 		DrawTo( hand, GetSeatHandPosition( ActiveSeatIndex ) );
@@ -795,9 +779,10 @@ public sealed class BlackjackTable : Component
 		SetHandDone( ActiveSeatIndex, ActiveHandIndex, true );
 	}
 
-	[Rpc.Host]
+	[Rpc.Broadcast]
 	public void RpcSplit( int seatIndex )
 	{
+		if ( !Networking.IsHost ) return;
 		if ( !ValidateActionCaller( seatIndex ) ) return;
 		if ( seatIndex != ActiveSeatIndex ) return;
 		if ( ActiveHandIndex != 0 ) return;
@@ -810,17 +795,7 @@ public sealed class BlackjackTable : Component
 		var c2 = Card.Decode( hand[1] );
 		if ( c1.Rank != c2.Rank ) return;
 
-		var seat = Seats[seatIndex];
-		var player = seat?.OccupantPlayer;
-		if ( !player.IsValid() ) return;
-
-		var inventory = player.Components.Get<Inventory>();
-		if ( inventory == null ) return;
-
 		int currentBet = GetBet( seatIndex, 0 );
-		if ( !inventory.HasItem( ItemId.GoldCoin, currentBet ) ) return;
-
-		inventory.RemoveItem( ItemId.GoldCoin, currentBet );
 		SetBet( seatIndex, 1, currentBet );
 
 		var hand1 = GetHand( seatIndex, 1 );
@@ -869,6 +844,20 @@ public sealed class BlackjackTable : Component
 				break;
 			}
 		}
+	}
+
+	[Rpc.Broadcast]
+	void RpcAddPlayerGold( Guid playerId, int amount )
+	{
+		var localPlayer = PlayerHelper.GetLocalPlayer();
+		if ( localPlayer == null ) return;
+		if ( localPlayer.Id != playerId ) return;
+
+		var inventory = localPlayer.Components.Get<Inventory>();
+		if ( inventory == null ) return;
+
+		inventory.AddItem( ItemId.GoldCoin, amount );
+		Log.Info( $"[Blackjack] Added {amount}g to local player" );
 	}
 
 	bool ValidateActionCaller( int seatIndex )

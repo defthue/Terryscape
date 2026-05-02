@@ -17,8 +17,8 @@ public sealed class BlackjackSeat : Component
 	}
 
 	bool _wasAtSeat;
-
 	bool _wasOccupant;
+	bool _localClaimed;
 
 	protected override void OnUpdate()
 	{
@@ -28,10 +28,10 @@ public sealed class BlackjackSeat : Component
 
 		bool isOurOccupant = OccupantPlayer == localPlayer;
 
-		if ( isOurOccupant )
+		if ( _localClaimed && isOurOccupant )
 			LocalSeat = this;
 
-		if ( isOurOccupant && !_wasOccupant )
+		if ( _localClaimed && isOurOccupant && !_wasOccupant )
 		{
 			Mouse.Visibility = MouseVisibility.Visible;
 		}
@@ -42,18 +42,20 @@ public sealed class BlackjackSeat : Component
 
 		if ( atSeatNow && !_wasAtSeat )
 		{
-			if ( !isOurOccupant && !OccupantPlayer.IsValid() && LocalSeat == null )
+			if ( !_localClaimed && !OccupantPlayer.IsValid() && LocalSeat == null )
 			{
 				if ( Table != null )
 				{
+					_localClaimed = true;
 					Table.RpcRequestClaimSeat( SeatIndex, localPlayer );
 				}
 			}
 		}
 		else if ( !atSeatNow && _wasAtSeat )
 		{
-			if ( isOurOccupant )
+			if ( _localClaimed )
 			{
+				_localClaimed = false;
 				if ( Table != null )
 					Table.RpcRequestReleaseSeat( SeatIndex );
 				if ( LocalSeat == this )

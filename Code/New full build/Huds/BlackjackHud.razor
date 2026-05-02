@@ -262,6 +262,15 @@
 		BetError = "";
 	}
 
+	Inventory LocalInventory
+	{
+		get
+		{
+			var player = PlayerHelper.GetLocalPlayer();
+			return player?.Components.Get<Inventory>();
+		}
+	}
+
 	void PlaceBet()
 	{
 		if ( Table == null ) return;
@@ -285,7 +294,24 @@
 			return;
 		}
 
-		Log.Info( $"[BlackjackHud] PlaceBet clicked. PendingBet={PendingBet}, CanPlaceBet={CanPlaceBet}" );
+		var inv = LocalInventory;
+		if ( inv == null ) return;
+
+		if ( delta > 0 )
+		{
+			if ( !inv.HasItem( ItemId.GoldCoin, delta ) )
+			{
+				BetError = $"Not enough gold (need {delta}g)";
+				return;
+			}
+			inv.RemoveItem( ItemId.GoldCoin, delta );
+		}
+		else if ( delta < 0 )
+		{
+			inv.AddItem( ItemId.GoldCoin, -delta );
+		}
+
+		Log.Info( $"[BlackjackHud] PlaceBet clicked. PendingBet={PendingBet}, delta={delta}" );
 		Table.RpcPlaceBet( SeatIndex, PendingBet );
 		SoundLibrary.PlaySellBuy();
 		BetError = "";
@@ -293,6 +319,10 @@
 
 	void ClearBet()
 	{
+		var inv = LocalInventory;
+		if ( inv != null && CurrentBet > 0 )
+			inv.AddItem( ItemId.GoldCoin, CurrentBet );
+
 		Table.RpcPlaceBet( SeatIndex, 0 );
 		SoundLibrary.PlaySellBuy();
 		PendingBet = 0;
@@ -313,12 +343,24 @@
 	void OnDouble()
 	{
 		if ( !CanDouble ) return;
+
+		var inv = LocalInventory;
+		int currentBet = Table.GetBet( SeatIndex, Table.ActiveHandIndex );
+		if ( inv == null || !inv.HasItem( ItemId.GoldCoin, currentBet ) ) return;
+
+		inv.RemoveItem( ItemId.GoldCoin, currentBet );
 		Table.RpcDouble( SeatIndex );
 	}
 
 	void OnSplit()
 	{
 		if ( !CanSplit ) return;
+
+		var inv = LocalInventory;
+		int currentBet = Table.GetBet( SeatIndex, 0 );
+		if ( inv == null || !inv.HasItem( ItemId.GoldCoin, currentBet ) ) return;
+
+		inv.RemoveItem( ItemId.GoldCoin, currentBet );
 		Table.RpcSplit( SeatIndex );
 	}
 
