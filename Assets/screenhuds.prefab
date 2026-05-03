@@ -232,7 +232,7 @@
       },
       {
         "__type": "Sandbox.Huds.BlackjackHud",
-        "__guid": "ca1da7ad-a5cf-4baf-95cf-85d1679e7e56",
+        "__guid": "41e9e2c1-8c25-400d-ade9-be78bb51af6f",
         "__enabled": true,
         "Flags": 0,
         "OnComponentDestroy": null,
