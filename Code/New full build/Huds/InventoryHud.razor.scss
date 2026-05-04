@@ -303,7 +303,9 @@ root {
 	flex-wrap: wrap;
 	gap: 5px;
 	padding: 8px;
-	overflow: visible;
+	overflow-y: auto;
+	overflow-x: hidden;
+	max-height: 460px;
 	justify-content: center;
 }
 
@@ -439,6 +441,7 @@ root {
 	flex-direction: column;
 	align-items: center;
 	gap: 2px;
+	pointer-events: none;
 }
 
 .tooltip-hint {

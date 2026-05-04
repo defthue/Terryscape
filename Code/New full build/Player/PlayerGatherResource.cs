@@ -24,6 +24,8 @@ public sealed class PlayerGatherResource : Component
 
 	Dictionary<ResourceNode, int> _localNodeHealth = new();
 
+	ResourceNode _autoGatherNode = null;
+
 	public static void ForceCloseUI()
 	{
 		UIOpen = false;
@@ -110,6 +112,39 @@ public sealed class PlayerGatherResource : Component
 			}
 		}
 
+		if ( _cooldownRemaining > 0f )
+			_cooldownRemaining -= Time.Delta;
+
+		if ( _punchStanceTimer > 0f )
+		{
+			_punchStanceTimer -= Time.Delta;
+
+			if ( _punchStanceTimer <= 0f )
+			{
+				IsForaging = false;
+				ResetToIdle();
+			}
+		}
+
+		var potionSystemComp = GameObject.Components.Get<PotionSystem>();
+		bool drinking = potionSystemComp != null && potionSystemComp.IsDrinking;
+
+		var shooterComp = GameObject.Components.Get<ProjectileShooter>();
+		bool drawing = shooterComp != null && shooterComp.IsDrawing;
+
+		if ( _autoGatherNode != null && !drinking && !drawing && _cooldownRemaining <= 0f )
+		{
+			if ( !_autoGatherNode.IsValid() || _autoGatherNode.IsBroken )
+			{
+				_autoGatherNode = null;
+			}
+			else
+			{
+				_cooldownRemaining = SwingCooldown;
+				Punch();
+			}
+		}
+
 		if ( UIOpen )
 			return;
 
@@ -146,35 +181,19 @@ public sealed class PlayerGatherResource : Component
 		if ( BlackjackSeat.LocalSeat != null )
 			return;
 
-		var potionSystem = GameObject.Components.Get<PotionSystem>();
-		if ( potionSystem != null && potionSystem.IsDrinking )
+		if ( drinking )
 			return;
 
-		var shooter = GameObject.Components.Get<ProjectileShooter>();
-		if ( shooter != null && shooter.IsDrawing )
+		if ( drawing )
 			return;
-
-		if ( _cooldownRemaining > 0f )
-			_cooldownRemaining -= Time.Delta;
-
-		if ( _punchStanceTimer > 0f )
-		{
-			_punchStanceTimer -= Time.Delta;
-
-			if ( _punchStanceTimer <= 0f )
-			{
-				IsForaging = false;
-				ResetToIdle();
-			}
-		}
 
 		if ( Input.Pressed( "attack1" ) )
 		{
 			var inventory = GameObject.Components.Get<Inventory>();
 			if ( inventory != null && inventory.IsWeaponRanged() )
 			{
-				if ( shooter != null )
-					shooter.StartDraw();
+				if ( shooterComp != null )
+					shooterComp.StartDraw();
 				return;
 			}
 
@@ -294,6 +313,7 @@ public sealed class PlayerGatherResource : Component
 
 		if ( !trace.Hit )
 		{
+			_autoGatherNode = null;
 			TriggerSwingAnimation( false );
 			GameLog.Add( "You swing but hit nothing.", "#6a6a6a" );
 			SoundLibrary.PlayHitNothing();
@@ -323,6 +343,7 @@ public sealed class PlayerGatherResource : Component
 
 			if ( node == null && monster == null && boss == null )
 			{
+				_autoGatherNode = null;
 				TriggerSwingAnimation( false );
 				GameLog.Add( "You swing but hit nothing.", "#6a6a6a" );
 				SoundLibrary.PlayHitNothing();
@@ -338,6 +359,7 @@ public sealed class PlayerGatherResource : Component
 
 		if ( boss != null )
 		{
+			_autoGatherNode = null;
 			TriggerSwingAnimation( false );
 			HandleBossHit( boss, inventory, skills );
 			return;
@@ -345,6 +367,7 @@ public sealed class PlayerGatherResource : Component
 
 		if ( monster != null )
 		{
+			_autoGatherNode = null;
 			TriggerSwingAnimation( false );
 			HandleCombatHit( monster, inventory, skills );
 			return;
@@ -450,6 +473,7 @@ public sealed class PlayerGatherResource : Component
 		{
 			if ( !bareHanded )
 			{
+				_autoGatherNode = null;
 				GameLog.Add( "You need empty hands to forage.", "#c86464" );
 				TriggerSwingAnimation( false );
 				SoundLibrary.PlayHitNothing();
@@ -458,6 +482,7 @@ public sealed class PlayerGatherResource : Component
 
 			if ( !skills.MeetsRequirement( SkillType.Enchanting, node.RequiredLevel ) )
 			{
+				_autoGatherNode = null;
 				GameLog.Add( $"You need Enchanting level {node.RequiredLevel} to gather this.", "#c86464" );
 				TriggerSwingAnimation( false );
 				SoundLibrary.PlayHitNothing();
@@ -468,12 +493,14 @@ public sealed class PlayerGatherResource : Component
 			int totalDamage = (int)skillBonus;
 			if ( totalDamage < 1 ) totalDamage = 1;
 
+			_autoGatherNode = node;
 			HitNode( node, totalDamage, inventory, skills );
 			return;
 		}
 
 		if ( weaponDef != null && ( weaponDef.Type == ItemType.MeleeWeapon || weaponDef.Type == ItemType.RangedWeapon || weaponDef.Type == ItemType.MagicWeapon ) )
 		{
+			_autoGatherNode = null;
 			GameLog.Add( "You can't harvest resources with a weapon!", "#c86464" );
 			TriggerSwingAnimation( false );
 			SoundLibrary.PlayHitNothing();
@@ -484,6 +511,7 @@ public sealed class PlayerGatherResource : Component
 		{
 			if ( node.RequiresHatchet() && !inventory.IsWeaponHatchet() )
 			{
+				_autoGatherNode = null;
 				GameLog.Add( "You need a hatchet to harvest this.", "#c86464" );
 				TriggerSwingAnimation( false );
 				SoundLibrary.PlayHitNothing();
@@ -492,6 +520,7 @@ public sealed class PlayerGatherResource : Component
 
 			if ( node.RequiresPickaxe() && !inventory.IsWeaponPickaxe() )
 			{
+				_autoGatherNode = null;
 				GameLog.Add( "You need a pickaxe to harvest this.", "#c86464" );
 				TriggerSwingAnimation( false );
 				SoundLibrary.PlayHitNothing();
@@ -501,6 +530,7 @@ public sealed class PlayerGatherResource : Component
 			int requiredToolTier = node.Tier - 1;
 			if ( requiredToolTier > 0 && weaponDef != null && weaponDef.Tier < requiredToolTier )
 			{
+				_autoGatherNode = null;
 				GameLog.Add( $"You need a tier {requiredToolTier}+ tool to harvest this.", "#c86464" );
 				TriggerSwingAnimation( false );
 				SoundLibrary.PlayHitNothing();
@@ -509,6 +539,7 @@ public sealed class PlayerGatherResource : Component
 
 			if ( node.RequiredLevel > 1 && !skills.MeetsRequirement( node.GetSkillType(), node.RequiredLevel ) )
 			{
+				_autoGatherNode = null;
 				GameLog.Add( $"You need {node.GetSkillType()} level {node.RequiredLevel} to harvest this.", "#c86464" );
 				TriggerSwingAnimation( false );
 				SoundLibrary.PlayHitNothing();
@@ -520,6 +551,7 @@ public sealed class PlayerGatherResource : Component
 		{
 			if ( node.GatherSkill == GatherType.Woodcutting && inventory.IsWeaponPickaxe() )
 			{
+				_autoGatherNode = null;
 				GameLog.Add( "You can't chop trees with a pickaxe.", "#c86464" );
 				TriggerSwingAnimation( false );
 				SoundLibrary.PlayHitNothing();
@@ -528,6 +560,7 @@ public sealed class PlayerGatherResource : Component
 
 			if ( node.GatherSkill == GatherType.Mining && inventory.IsWeaponHatchet() )
 			{
+				_autoGatherNode = null;
 				GameLog.Add( "You can't mine rocks with a hatchet.", "#c86464" );
 				TriggerSwingAnimation( false );
 				SoundLibrary.PlayHitNothing();
@@ -542,6 +575,7 @@ public sealed class PlayerGatherResource : Component
 		int damage = (int)( toolPower * gatherSkillBonus );
 		if ( damage < 1 ) damage = 1;
 
+		_autoGatherNode = node;
 		HitNode( node, damage, inventory, skills );
 	}
 
@@ -587,6 +621,7 @@ public sealed class PlayerGatherResource : Component
 			skills.AddXp( node.GetSkillType(), node.XpReward );
 
 			_localNodeHealth.Remove( node );
+			_autoGatherNode = null;
 		}
 	}
 }

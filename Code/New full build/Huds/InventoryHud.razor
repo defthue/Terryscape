@@ -1,5 +1,6 @@
 @using Sandbox;
 @using Sandbox.UI;
+@using System;
 @using System.Linq;
 @using System.Collections.Generic;
 @inherits PanelComponent
@@ -47,10 +48,17 @@
 			<div class="chat-entries">
 				@foreach ( var msg in GetChatMessages().AsEnumerable().Reverse() )
 				{
-					<div class="chat-entry">
-						<span style="color: #6db8f0; font-weight: bold;">@msg.Sender:</span>
-						<span style="color: #e8e8e8;"> @msg.Text</span>
-					</div>
+					@if ( !string.IsNullOrEmpty( msg.Sender ) )
+					{
+						<div class="chat-entry">
+							<span style="color: #6db8f0; font-weight: bold;">@msg.Sender:</span>
+							<span style="color: #e8e8e8;"> @msg.Text</span>
+						</div>
+					}
+					else
+					{
+						<div class="chat-entry" style="color: #f0c040;">@msg.Text</div>
+					}
 				}
 			</div>
 		}
@@ -272,6 +280,9 @@
 		var chats = GetChatMessages();
 		foreach ( var msg in chats )
 		{
+			if ( string.IsNullOrEmpty( msg.Sender ) )
+				continue;
+
 			feed.Add( new FeedEntry
 			{
 				IsChat = true,
@@ -327,7 +338,14 @@
 	List<SkillDisplay> SkillEntries { get; set; } = new();
 	List<EquipSlotDisplay> EquipmentSlots { get; set; } = new();
 
-	int TotalSlots => 20;
+	int TotalSlots
+	{
+		get
+		{
+			int needed = CachedUnique.Count + CachedItems.Count;
+			return needed > 20 ? needed : 20;
+		}
+	}
 
 	public class ItemSlotDisplay
 	{
@@ -608,20 +626,20 @@
 				} );
 			}
 
-			foreach ( var kvp in inventory.GetAllItems() )
+			foreach ( var stack in inventory.GetItemStacks() )
 			{
-				if ( kvp.Value <= 0 ) continue;
+				if ( stack.Count <= 0 ) continue;
 
-				var def = ItemDatabase.Get( kvp.Key );
-				string name = def != null ? def.Name : kvp.Key.ToString();
+				var def = ItemDatabase.Get( stack.ItemId );
+				string name = def != null ? def.Name : stack.ItemId.ToString();
 
 				CachedItems.Add( new ItemSlotDisplay
 				{
 					Name = name,
-					Color = GetItemColor( kvp.Key, def ),
-					Count = kvp.Value,
+					Color = GetItemColor( stack.ItemId, def ),
+					Count = stack.Count,
 					Equippable = false,
-					ItemId = kvp.Key
+					ItemId = stack.ItemId
 				} );
 			}
 
@@ -769,8 +787,11 @@
 			buffHash += (int)b.Type * 100 + (int)b.Remaining;
 
 		int itemHash = 0;
-		foreach ( var item in CachedItems )
-			itemHash += (int)item.ItemId * 1000 + item.Count;
+		for ( int i = 0; i < CachedItems.Count; i++ )
+		{
+			var item = CachedItems[i];
+			itemHash = HashCode.Combine( itemHash, item.ItemId, item.Count, i );
+		}
 
 		int chatCount = GameManager.Instance != null ? GameManager.Instance.ChatMessages.Count : 0;
 

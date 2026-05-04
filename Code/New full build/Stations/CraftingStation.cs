@@ -99,6 +99,51 @@ public sealed class CraftingStation : Component
 
 	public bool TryCraft( string recipeId )
 	{
+		return TryCraftInternal( recipeId, false );
+	}
+
+	public int TryCraftAll( string recipeId )
+	{
+		var inventory = GetPlayerInventory();
+		if ( inventory == null )
+			return 0;
+
+		var recipe = RecipeDatabase.GetById( recipeId );
+		if ( recipe == null )
+		{
+			GameLog.Add( "Unknown recipe.", "#c86464" );
+			return 0;
+		}
+
+		int crafted = 0;
+		int totalOutput = 0;
+
+		while ( TryCraftInternal( recipeId, true ) )
+		{
+			crafted++;
+			totalOutput += recipe.OutputAmount;
+		}
+
+		if ( crafted == 0 )
+			return 0;
+
+		var outputDef = ItemDatabase.Get( recipe.OutputItem );
+		string outputName = outputDef != null ? outputDef.Name : recipe.OutputItem.ToString();
+
+		GameLog.Add( $"You crafted {totalOutput}x {outputName}!", "#4caf78" );
+
+		switch ( Station )
+		{
+			case StationType.Workbench: SoundLibrary.PlayWorkbenchCraft(); break;
+			case StationType.Anvil: SoundLibrary.PlayAnvilCraft(); break;
+			case StationType.Furnace: SoundLibrary.PlayUseFurnace(); break;
+		}
+
+		return crafted;
+	}
+
+	bool TryCraftInternal( string recipeId, bool silent )
+	{
 		var inventory = GetPlayerInventory();
 		if ( inventory == null )
 			return false;
@@ -106,19 +151,22 @@ public sealed class CraftingStation : Component
 		var recipe = RecipeDatabase.GetById( recipeId );
 		if ( recipe == null )
 		{
-			GameLog.Add( "Unknown recipe.", "#c86464" );
+			if ( !silent )
+				GameLog.Add( "Unknown recipe.", "#c86464" );
 			return false;
 		}
 
 		if ( recipe.Station != Station )
 		{
-			GameLog.Add( "This recipe requires a different crafting station.", "#c86464" );
+			if ( !silent )
+				GameLog.Add( "This recipe requires a different crafting station.", "#c86464" );
 			return false;
 		}
 
 		if ( !inventory.IsRecipeUnlocked( recipeId ) )
 		{
-			GameLog.Add( "You haven't unlocked this recipe yet.", "#c86464" );
+			if ( !silent )
+				GameLog.Add( "You haven't unlocked this recipe yet.", "#c86464" );
 			return false;
 		}
 
@@ -132,13 +180,15 @@ public sealed class CraftingStation : Component
 
 		if ( !skills.MeetsRequirement( recipe.SkillRequired, recipe.LevelRequired ) )
 		{
-			GameLog.Add( $"You need {recipe.SkillRequired} level {recipe.LevelRequired} to craft {recipe.Name}.", "#c86464" );
+			if ( !silent )
+				GameLog.Add( $"You need {recipe.SkillRequired} level {recipe.LevelRequired} to craft {recipe.Name}.", "#c86464" );
 			return false;
 		}
 
 		if ( !inventory.HasIngredients( recipe ) )
 		{
-			GameLog.Add( $"You don't have the required materials for {recipe.Name}.", "#c86464" );
+			if ( !silent )
+				GameLog.Add( $"You don't have the required materials for {recipe.Name}.", "#c86464" );
 			return false;
 		}
 
@@ -148,18 +198,28 @@ public sealed class CraftingStation : Component
 		var outputDef = ItemDatabase.Get( recipe.OutputItem );
 		string outputName = outputDef != null ? outputDef.Name : recipe.OutputItem.ToString();
 
-		if ( recipe.OutputAmount > 1 )
-			GameLog.Add( $"You crafted {recipe.OutputAmount}x {outputName}!", "#4caf78" );
-		else
-			GameLog.Add( $"You crafted {outputName}!", "#4caf78" );
-
-		skills.AddXp( recipe.XpSkill, recipe.XpReward );
-
-		switch ( Station )
+		if ( !silent )
 		{
-			case StationType.Workbench: SoundLibrary.PlayWorkbenchCraft(); break;
-			case StationType.Anvil: SoundLibrary.PlayAnvilCraft(); break;
-			case StationType.Furnace: SoundLibrary.PlayUseFurnace(); break;
+			if ( recipe.OutputAmount > 1 )
+				GameLog.Add( $"You crafted {recipe.OutputAmount}x {outputName}!", "#4caf78" );
+			else
+				GameLog.Add( $"You crafted {outputName}!", "#4caf78" );
+		}
+
+		int xpAward = recipe.XpReward;
+		if ( recipe.XpSkill == SkillType.Crafting )
+			xpAward = (int)System.Math.Ceiling( xpAward * 1.25f );
+
+		skills.AddXp( recipe.XpSkill, xpAward );
+
+		if ( !silent )
+		{
+			switch ( Station )
+			{
+				case StationType.Workbench: SoundLibrary.PlayWorkbenchCraft(); break;
+				case StationType.Anvil: SoundLibrary.PlayAnvilCraft(); break;
+				case StationType.Furnace: SoundLibrary.PlayUseFurnace(); break;
+			}
 		}
 
 		return true;

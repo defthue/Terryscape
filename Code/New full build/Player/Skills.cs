@@ -92,7 +92,10 @@ public sealed class Skills : Component
 			leveledUp = true;
 
 			string skillName = skill.ToString();
-			GameLog.Add( $"{skillName} leveled up to {data.Level}!", "#f0c040" );
+			string text = $"{skillName} leveled up to {data.Level}!";
+			GameLog.Add( text, "#f0c040" );
+
+			GameManager.Instance?.AddLocalChatMessage( text );
 
 			required = GetXpRequired( data.Level );
 		}

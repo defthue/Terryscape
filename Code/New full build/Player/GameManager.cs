@@ -28,6 +28,20 @@ public sealed class GameManager : Component, Component.INetworkListener
 
 	static long _nextChatSequence = 0;
 
+	public void AddLocalChatMessage( string text )
+	{
+		ChatMessages.Add( new ChatMessage
+		{
+			Sender = null,
+			Text = text,
+			Created = 0,
+			Sequence = _nextChatSequence++
+		} );
+
+		if ( ChatMessages.Count > MaxChatMessages )
+			ChatMessages.RemoveAt( 0 );
+	}
+
 	protected override async void OnStart()
 	{
 		Instance = this;

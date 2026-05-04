@@ -4,7 +4,15 @@ using System.Linq;
 
 public sealed class Inventory : Component
 {
-	Dictionary<ItemId, int> _items = new();
+	[Sync] public ItemId EquippedWeapon { get; set; } = ItemId.None;
+	[Sync] public ItemId EquippedShield { get; set; } = ItemId.None;
+	[Sync] public ItemId EquippedHead { get; set; } = ItemId.None;
+	[Sync] public ItemId EquippedChest { get; set; } = ItemId.None;
+	[Sync] public ItemId EquippedLegs { get; set; } = ItemId.None;
+	[Sync] public ItemId EquippedRing { get; set; } = ItemId.None;
+	[Sync] public ItemId EquippedAmulet { get; set; } = ItemId.None;
+
+	List<ItemStack> _itemStacks = new();
 	List<ItemInstance> _uniqueItems = new();
 	Dictionary<EquipSlot, ItemInstance> _equippedUnique = new();
 	HashSet<string> _unlockedRecipes = new();
@@ -27,9 +35,21 @@ public sealed class Inventory : Component
 
 	void InitializeDefaults()
 	{
-		_items.Clear();
+		_itemStacks.Clear();
 		_uniqueItems.Clear();
 		_equippedUnique.Clear();
+
+		if ( !IsProxy )
+		{
+			EquippedWeapon = ItemId.None;
+			EquippedShield = ItemId.None;
+			EquippedHead = ItemId.None;
+			EquippedChest = ItemId.None;
+			EquippedLegs = ItemId.None;
+			EquippedRing = ItemId.None;
+			EquippedAmulet = ItemId.None;
+		}
+
 		_unlockedRecipes.Clear();
 		_discoveredStones.Clear();
 		_completedQuests.Clear();
@@ -69,10 +89,13 @@ public sealed class Inventory : Component
 			return count;
 		}
 
-		if ( _items.TryGetValue( id, out var stackCount ) )
-			return stackCount;
-
-		return 0;
+		int total = 0;
+		foreach ( var stack in _itemStacks )
+		{
+			if ( stack.ItemId == id )
+				total += stack.Count;
+		}
+		return total;
 	}
 
 	public bool HasItem( ItemId id, int amount = 1 )
@@ -80,10 +103,10 @@ public sealed class Inventory : Component
 		return GetItemCount( id ) >= amount;
 	}
 
-	public bool AddItem( ItemId id, int amount = 1 )
+	public int AddItem( ItemId id, int amount = 1 )
 	{
 		if ( id == ItemId.None || amount <= 0 )
-			return false;
+			return 0;
 
 		if ( IsEquipmentItem( id ) )
 		{
@@ -91,22 +114,37 @@ public sealed class Inventory : Component
 				_uniqueItems.Add( new ItemInstance( id ) );
 
 			PlayerPersistence.Local?.RequestSaveNow();
-			return true;
+			return amount;
 		}
 
 		var def = ItemDatabase.Get( id );
 		int maxStack = def != null ? def.MaxStack : 999;
+		if ( maxStack < 1 ) maxStack = 1;
 
-		int current = 0;
-		if ( _items.TryGetValue( id, out var existing ) )
-			current = existing;
+		int remaining = amount;
 
-		int newAmount = current + amount;
-		if ( newAmount > maxStack )
-			newAmount = maxStack;
+		for ( int i = 0; i < _itemStacks.Count && remaining > 0; i++ )
+		{
+			var stack = _itemStacks[i];
+			if ( stack.ItemId != id )
+				continue;
+			if ( stack.Count >= maxStack )
+				continue;
 
-		_items[id] = newAmount;
-		return true;
+			int room = maxStack - stack.Count;
+			int put = remaining < room ? remaining : room;
+			stack.Count += put;
+			remaining -= put;
+		}
+
+		while ( remaining > 0 )
+		{
+			int put = remaining < maxStack ? remaining : maxStack;
+			_itemStacks.Add( new ItemStack { ItemId = id, Count = put } );
+			remaining -= put;
+		}
+
+		return amount;
 	}
 
 	public bool RemoveItem( ItemId id, int amount = 1 )
@@ -128,17 +166,32 @@ public sealed class Inventory : Component
 			return removed >= amount;
 		}
 
-		int current = 0;
-		if ( _items.TryGetValue( id, out var existing ) )
-			current = existing;
+		int remaining = amount;
 
-		int newAmount = current - amount;
-		if ( newAmount <= 0 )
-			_items.Remove( id );
-		else
-			_items[id] = newAmount;
+		for ( int i = _itemStacks.Count - 1; i >= 0 && remaining > 0; i-- )
+		{
+			var stack = _itemStacks[i];
+			if ( stack.ItemId != id )
+				continue;
+
+			if ( stack.Count <= remaining )
+			{
+				remaining -= stack.Count;
+				_itemStacks.RemoveAt( i );
+			}
+			else
+			{
+				stack.Count -= remaining;
+				remaining = 0;
+			}
+		}
 
 		return true;
+	}
+
+	public IReadOnlyList<ItemStack> GetItemStacks()
+	{
+		return _itemStacks;
 	}
 
 	public void AddUniqueItem( ItemInstance instance )
@@ -172,7 +225,8 @@ public sealed class Inventory : Component
 		if ( def == null || def.Type != ItemType.Arrow )
 			return false;
 
-		if ( !_items.TryGetValue( ammoId, out var count ) || count <= 0 )
+		int count = GetItemCount( ammoId );
+		if ( count <= 0 )
 			return false;
 
 		var skills = Components.Get<Skills>();
@@ -185,7 +239,7 @@ public sealed class Inventory : Component
 		if ( _equippedAmmoId == ammoId )
 		{
 			_equippedAmmoCount += count;
-			_items.Remove( ammoId );
+			RemoveItem( ammoId, count );
 
 			GameLog.Add( $"Equipped {count}x {def.Name}.", "#c9a84c" );
 			SoundLibrary.PlayEquip();
@@ -199,12 +253,13 @@ public sealed class Inventory : Component
 			_suppressUnequipSound = false;
 		}
 
-		if ( !_items.TryGetValue( ammoId, out count ) || count <= 0 )
+		count = GetItemCount( ammoId );
+		if ( count <= 0 )
 			return false;
 
 		_equippedAmmoId = ammoId;
 		_equippedAmmoCount = count;
-		_items.Remove( ammoId );
+		RemoveItem( ammoId, count );
 
 		GameLog.Add( $"Equipped {count}x {def.Name}.", "#c9a84c" );
 		SoundLibrary.PlayEquip();
@@ -218,11 +273,7 @@ public sealed class Inventory : Component
 
 		if ( _equippedAmmoCount > 0 )
 		{
-			int current = 0;
-			if ( _items.TryGetValue( _equippedAmmoId, out var existing ) )
-				current = existing;
-
-			_items[_equippedAmmoId] = current + _equippedAmmoCount;
+			AddItem( _equippedAmmoId, _equippedAmmoCount );
 		}
 
 		var def = ItemDatabase.Get( _equippedAmmoId );
@@ -288,6 +339,7 @@ public sealed class Inventory : Component
 
 		_uniqueItems.RemoveAt( index );
 		_equippedUnique[def.Slot] = instance;
+		SyncEquippedSlot( def.Slot, instance.ItemId );
 
 		GameLog.Add( $"Equipped {instance.GetDisplayName()}.", "#c9a84c" );
 		SoundLibrary.PlayEquip();
@@ -301,6 +353,7 @@ public sealed class Inventory : Component
 
 		var instance = _equippedUnique[slot];
 		_equippedUnique.Remove( slot );
+		SyncEquippedSlot( slot, ItemId.None );
 		_uniqueItems.Add( instance );
 
 		GameLog.Add( $"Unequipped {instance.GetDisplayName()}.", "#c9a84c" );
@@ -313,6 +366,10 @@ public sealed class Inventory : Component
 	{
 		if ( _equippedUnique.TryGetValue( slot, out var instance ) )
 			return instance;
+
+		var syncedId = GetEquipped( slot );
+		if ( syncedId != ItemId.None && slot != EquipSlot.Ammo )
+			return new ItemInstance( syncedId );
 
 		return null;
 	}
@@ -343,13 +400,32 @@ public sealed class Inventory : Component
 
 	public ItemId GetEquipped( EquipSlot slot )
 	{
-		if ( slot == EquipSlot.Ammo )
-			return _equippedAmmoId;
+		switch ( slot )
+		{
+			case EquipSlot.Ammo: return _equippedAmmoId;
+			case EquipSlot.Weapon: return EquippedWeapon;
+			case EquipSlot.Shield: return EquippedShield;
+			case EquipSlot.Head: return EquippedHead;
+			case EquipSlot.Chest: return EquippedChest;
+			case EquipSlot.Legs: return EquippedLegs;
+			case EquipSlot.Ring: return EquippedRing;
+			case EquipSlot.Amulet: return EquippedAmulet;
+			default: return ItemId.None;
+		}
+	}
 
-		if ( _equippedUnique.TryGetValue( slot, out var instance ) )
-			return instance.ItemId;
-
-		return ItemId.None;
+	void SyncEquippedSlot( EquipSlot slot, ItemId id )
+	{
+		switch ( slot )
+		{
+			case EquipSlot.Weapon: EquippedWeapon = id; break;
+			case EquipSlot.Shield: EquippedShield = id; break;
+			case EquipSlot.Head: EquippedHead = id; break;
+			case EquipSlot.Chest: EquippedChest = id; break;
+			case EquipSlot.Legs: EquippedLegs = id; break;
+			case EquipSlot.Ring: EquippedRing = id; break;
+			case EquipSlot.Amulet: EquippedAmulet = id; break;
+		}
 	}
 
 	public bool IsEquippable( ItemId id )
@@ -524,7 +600,15 @@ public sealed class Inventory : Component
 
 	public Dictionary<ItemId, int> GetAllItems()
 	{
-		return _items;
+		var totals = new Dictionary<ItemId, int>();
+		foreach ( var stack in _itemStacks )
+		{
+			if ( totals.TryGetValue( stack.ItemId, out var existing ) )
+				totals[stack.ItemId] = existing + stack.Count;
+			else
+				totals[stack.ItemId] = stack.Count;
+		}
+		return totals;
 	}
 
 	public Dictionary<EquipSlot, ItemInstance> GetAllEquippedUnique()
@@ -640,8 +724,14 @@ public sealed class Inventory : Component
 	public PlayerSaveData ToSaveData( PlayerSaveData data )
 	{
 		data.Stackables = new Dictionary<string, int>();
-		foreach ( var kv in _items )
-			data.Stackables[kv.Key.ToString()] = kv.Value;
+		foreach ( var stack in _itemStacks )
+		{
+			string key = stack.ItemId.ToString();
+			if ( data.Stackables.TryGetValue( key, out var existing ) )
+				data.Stackables[key] = existing + stack.Count;
+			else
+				data.Stackables[key] = stack.Count;
+		}
 
 		data.UniqueItems = new List<PlayerSaveData.UniqueItemEntry>();
 		foreach ( var item in _uniqueItems )
@@ -674,8 +764,6 @@ public sealed class Inventory : Component
 		data.DiscoveredQuests = new List<string>( _discoveredQuests );
 		data.Kills = new Dictionary<string, int>( _killCounts );
 
-		// Leaderboard fields — keep nodesMined updated, the others are computed
-		// at save time in PlayerPersistence.SaveAsync from the source-of-truth fields.
 		data.NodesMined = _nodesMined;
 
 		return data;
@@ -695,7 +783,7 @@ public sealed class Inventory : Component
 			if ( id == ItemId.None )
 				continue;
 
-			_items[id] = kv.Value;
+			AddItem( id, kv.Value );
 		}
 
 		foreach ( var entry in data.UniqueItems )
@@ -724,6 +812,7 @@ public sealed class Inventory : Component
 			System.Enum.TryParse<EnchantmentType>( kv.Value.Enchantment, out enchant );
 
 			_equippedUnique[slot] = new ItemInstance( id, enchant, kv.Value.EnchantmentPercent );
+			SyncEquippedSlot( slot, id );
 		}
 
 		if ( System.Enum.TryParse<ItemId>( data.EquippedAmmoId, out var ammoId ) )
@@ -752,4 +841,10 @@ public sealed class Inventory : Component
 
 		_nodesMined = data.NodesMined;
 	}
+}
+
+public class ItemStack
+{
+	public ItemId ItemId;
+	public int Count;
 }

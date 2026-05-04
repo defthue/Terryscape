@@ -78,10 +78,14 @@
 								+@SelectedRecipe.XpReward @SelectedRecipe.XpSkill XP
 							</div>
 
-							<div class="craft-button-area">
+							<div class="craft-button-area" style="gap: 10px;">
 								<div class="craft-button @(CanCraft( SelectedRecipe ) ? "" : "disabled")"
 									 onclick="@(() => DoCraft())">
 									Craft
+								</div>
+								<div class="craft-button @(CanCraft( SelectedRecipe ) ? "" : "disabled")"
+									 onclick="@(() => DoCraftAll())">
+									Craft All
 								</div>
 							</div>
 						}
@@ -156,6 +160,20 @@
 			return;
 
 		CraftingStation.ActiveStation.TryCraft( SelectedRecipe.Id );
+	}
+
+	void DoCraftAll()
+	{
+		if ( CraftingStation.ActiveStation == null )
+			return;
+
+		if ( SelectedRecipe == null )
+			return;
+
+		if ( !CanCraft( SelectedRecipe ) )
+			return;
+
+		CraftingStation.ActiveStation.TryCraftAll( SelectedRecipe.Id );
 	}
 
 	void CloseCrafting()
