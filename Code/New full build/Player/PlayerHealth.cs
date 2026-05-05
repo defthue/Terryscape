@@ -116,6 +116,15 @@ public sealed class PlayerHealth : Component
 		CurrentHealth = Math.Min( CurrentHealth + amount, MaxHealth );
 	}
 
+	public void RefillToMax()
+	{
+		UpdateMaxHealth();
+		CurrentHealth = MaxHealth;
+		_wasHit = false;
+		_timeSinceLastHit = 0f;
+		_regenTimer = 0f;
+	}
+
 	void Die()
 	{
 		IsDead = true;

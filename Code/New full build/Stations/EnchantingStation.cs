@@ -36,6 +36,10 @@ public sealed class EnchantingStation : Component
 
 	[Property] public int CombineEssenceCost { get; set; } = 2;
 
+	[Property] public int RoughSalvageReturn { get; set; } = 2;
+	[Property] public int FineSalvageReturn { get; set; } = 3;
+	[Property] public int PristineSalvageReturn { get; set; } = 5;
+
 	public static EnchantingStation ActiveStation { get; private set; }
 
 	protected override void OnUpdate()
@@ -223,7 +227,7 @@ public sealed class EnchantingStation : Component
 		int essenceCost = GetEssenceCost( itemId );
 		if ( !inventory.HasItem( ItemId.ArcaneDust, essenceCost ) )
 		{
-			GameLog.Add( $"You need {essenceCost} Rune Essence to enchant this.", "#c86464" );
+			GameLog.Add( $"You need {essenceCost} Arcane Dust to enchant this.", "#c86464" );
 			return false;
 		}
 
@@ -287,13 +291,19 @@ public sealed class EnchantingStation : Component
 			return false;
 		}
 
-		if ( !inventory.HasItem( ItemId.ArcaneDust, CombineEssenceCost ) )
+		float maxCap = GetMaxCap( itemA.ItemId );
+		if ( itemA.EnchantmentPercent >= maxCap - 0.05f || itemB.EnchantmentPercent >= maxCap - 0.05f )
 		{
-			GameLog.Add( $"You need {CombineEssenceCost} Rune Essence to combine.", "#c86464" );
+			GameLog.Add( "This item is already at maximum enchantment.", "#c86464" );
 			return false;
 		}
 
-		float maxCap = GetMaxCap( itemA.ItemId );
+		if ( !inventory.HasItem( ItemId.ArcaneDust, CombineEssenceCost ) )
+		{
+			GameLog.Add( $"You need {CombineEssenceCost} Arcane Dust to combine.", "#c86464" );
+			return false;
+		}
+
 		float combined = itemA.EnchantmentPercent + itemB.EnchantmentPercent;
 		if ( combined > maxCap )
 			combined = maxCap;
@@ -315,6 +325,51 @@ public sealed class EnchantingStation : Component
 		var def = ItemDatabase.Get( itemA.ItemId );
 		string name = def != null ? def.Name : itemA.ItemId.ToString();
 		GameLog.Add( $"Combined into {name}: +{combined:F1}% {itemA.Enchantment}!", "#a080d0" );
+
+		return true;
+	}
+
+	public int GetSalvageReturn( ItemId itemId )
+	{
+		var def = ItemDatabase.Get( itemId );
+		if ( def == null )
+			return RoughSalvageReturn;
+
+		switch ( def.Tier )
+		{
+			case 1: return RoughSalvageReturn;
+			case 3: return FineSalvageReturn;
+			case 5: return PristineSalvageReturn;
+			default: return RoughSalvageReturn;
+		}
+	}
+
+	public bool TrySalvage( int uniqueIndex )
+	{
+		var inventory = GetPlayerInventory();
+		if ( inventory == null )
+			return false;
+
+		var items = inventory.GetUniqueItems();
+		if ( uniqueIndex < 0 || uniqueIndex >= items.Count )
+			return false;
+
+		var instance = items[uniqueIndex];
+
+		if ( !instance.IsEnchanted )
+		{
+			GameLog.Add( "Only enchanted items can be salvaged.", "#c86464" );
+			return false;
+		}
+
+		int dustReturn = GetSalvageReturn( instance.ItemId );
+
+		inventory.RemoveUniqueItem( uniqueIndex );
+		inventory.AddItem( ItemId.ArcaneDust, dustReturn );
+
+		var def = ItemDatabase.Get( instance.ItemId );
+		string name = def != null ? def.Name : instance.ItemId.ToString();
+		GameLog.Add( $"Salvaged {name} for {dustReturn} Arcane Dust.", "#a080d0" );
 
 		return true;
 	}

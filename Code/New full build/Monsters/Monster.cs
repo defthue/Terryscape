@@ -874,6 +874,7 @@ public sealed class Monster : Component
 			{
 				inventory.AddItem( loot1, amount1 );
 				ItemPickupEffect.Trigger( loot1 );
+				LogLoot( loot1, amount1 );
 				gainedAnyItem = true;
 			}
 
@@ -881,6 +882,7 @@ public sealed class Monster : Component
 			{
 				inventory.AddItem( loot2, amount2 );
 				ItemPickupEffect.Trigger( loot2 );
+				LogLoot( loot2, amount2 );
 				gainedAnyItem = true;
 			}
 
@@ -888,6 +890,7 @@ public sealed class Monster : Component
 			{
 				inventory.AddItem( loot3, amount3 );
 				ItemPickupEffect.Trigger( loot3 );
+				LogLoot( loot3, amount3 );
 				gainedAnyItem = true;
 			}
 		}
@@ -1216,5 +1219,12 @@ public sealed class Monster : Component
 		}
 
 		return nearestDist;
+	}
+
+	static void LogLoot( ItemId item, int amount )
+	{
+		var def = ItemDatabase.Get( item );
+		string name = def != null ? def.Name : item.ToString();
+		GameLog.Add( $"You looted {amount}x {name}.", "#6db8f0" );
 	}
 }

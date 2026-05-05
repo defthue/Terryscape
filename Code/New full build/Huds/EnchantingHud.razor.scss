@@ -148,6 +148,7 @@ root {
 	border: 1px solid #3a302044;
 	background: #1a150e;
 	transition: all 0.15s ease;
+	flex-shrink: 0;
 
 	&:hover {
 		border-color: #c9a84c;
@@ -253,5 +254,28 @@ root {
 			color: #d4cfc0;
 			box-shadow: none;
 		}
+	}
+}
+
+.salvage-warning {
+	background: #5a1f1faa;
+	border: 1px solid #c83030;
+	border-radius: 4px;
+	padding: 10px 14px;
+	color: #ffb0b0;
+	font-size: 16px;
+	margin-bottom: 8px;
+	text-align: center;
+}
+
+.salvage-button {
+	background: #5a1f1f;
+	border-color: #c83030;
+	color: #ffb0b0;
+
+	&:hover {
+		background: #7a2828;
+		border-color: #ff5050;
+		color: #fff;
 	}
 }

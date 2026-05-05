@@ -240,3 +240,41 @@ root {
 		}
 	}
 }
+
+.bank-section-header {
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+	align-items: center;
+	padding: 8px 12px;
+	flex-shrink: 0;
+}
+
+.bank-sort-buttons {
+	display: flex;
+	flex-direction: row;
+	gap: 6px;
+}
+
+.bank-sort-button {
+	padding: 4px 12px;
+	background: #1a150e;
+	border: 1px solid #5a4a3066;
+	border-radius: 4px;
+	color: #a89060;
+	font-size: 14px;
+	cursor: pointer;
+	transition: all 0.15s ease;
+	flex-shrink: 0;
+
+	&:hover {
+		border-color: #c9a84c;
+		color: #c9a84c;
+	}
+
+	&.selected {
+		background: #3a2a1844;
+		border-color: #c9a84c;
+		color: #c9a84c;
+	}
+}

@@ -18,13 +18,14 @@
 				<div class="tab-row">
 					<div class="tab-button @(Mode == 0 ? "active" : "")" onclick="@(() => SetMode(0))">Enchant</div>
 					<div class="tab-button @(Mode == 1 ? "active" : "")" onclick="@(() => SetMode(1))">Combine</div>
+					<div class="tab-button @(Mode == 2 ? "active" : "")" onclick="@(() => SetMode(2))">Salvage</div>
 				</div>
 
 				<div class="enchant-body">
 					@if ( Mode == 0 )
 					{
 						<div class="detail-section-label">Enchantable jewelry in inventory</div>
-						<div class="enchant-essence">Rune Essence: @ArcaneDustCount</div>
+						<div class="enchant-essence">Arcane Dust: @ArcaneDustCount</div>
 
 						@if ( EnchantableItems.Count == 0 )
 						{
@@ -47,8 +48,8 @@
 									<img class="recipe-icon-img" src="@GetIconPath( entry.ItemId )" />
 								</div>
 								<div class="recipe-info">
-									<div class="recipe-name">@name x@entry.Count</div>
-									<div class="recipe-sub">@cost essence — Lvl @levelReq</div>
+									<div class="recipe-name">@name x@(entry.Count)</div>
+									<div class="recipe-sub">@cost dust — Lvl @levelReq</div>
 								</div>
 								<div class="craft-button @(canEnchant ? "" : "disabled")"
 									 onclick="@(() => DoEnchant( entry.ItemId ))">
@@ -61,7 +62,7 @@
 					@if ( Mode == 1 )
 					{
 						<div class="detail-section-label">Select two enchanted items to combine</div>
-						<div class="enchant-essence">Rune Essence: @ArcaneDustCount (cost: @CombineEssenceCost)</div>
+						<div class="enchant-essence">Arcane Dust: @ArcaneDustCount (cost: @CombineEssenceCost)</div>
 
 						@if ( EnchantedItems.Count < 2 )
 						{
@@ -75,15 +76,18 @@
 							bool selectedA = CombineSlotA == idx;
 							bool selectedB = CombineSlotB == idx;
 							bool selected = selectedA || selectedB;
+							float maxCap = Station != null ? Station.GetMaxCap( item.Instance.ItemId ) : 0f;
+							bool isMaxed = item.Instance.EnchantmentPercent >= maxCap - 0.05f;
+							string rowClass = isMaxed ? "locked" : ( selected ? "selected" : "craftable" );
 
-							<div class="recipe-row @(selected ? "selected" : "craftable")"
+							<div class="recipe-row @rowClass"
 								 onclick="@(() => SelectCombineSlot( idx ))">
 								<div class="recipe-icon" style="background: #a080d0;">
 									<img class="recipe-icon-img" src="@GetIconPath( item.Instance.ItemId )" />
 								</div>
 								<div class="recipe-info">
 									<div class="recipe-name">@item.Instance.GetDisplayName()</div>
-									<div class="recipe-sub">@item.Instance.GetShortStat()</div>
+									<div class="recipe-sub">@item.Instance.GetShortStat() @(isMaxed ? "(MAX)" : "")</div>
 								</div>
 								@if ( selectedA )
 								{
@@ -102,6 +106,37 @@
 								<div class="craft-button @(CanCombine ? "" : "disabled")"
 									 onclick="@(() => DoCombine())">
 									Combine
+								</div>
+							</div>
+						}
+					}
+
+					@if ( Mode == 2 )
+					{
+						<div class="salvage-warning">⚠ Salvaging permanently destroys the item and returns some Arcane Dust.</div>
+
+						@if ( EnchantedItems.Count == 0 )
+						{
+							<div class="no-recipes">You have no enchanted items to salvage.</div>
+						}
+
+						@for ( int i = 0; i < EnchantedItems.Count; i++ )
+						{
+							var item = EnchantedItems[i];
+							var idx = item.OriginalIndex;
+							int dustReturn = Station?.GetSalvageReturn( item.Instance.ItemId ) ?? 0;
+
+							<div class="recipe-row craftable">
+								<div class="recipe-icon" style="background: #a080d0;">
+									<img class="recipe-icon-img" src="@GetIconPath( item.Instance.ItemId )" />
+								</div>
+								<div class="recipe-info">
+									<div class="recipe-name">@item.Instance.GetDisplayName()</div>
+									<div class="recipe-sub">Returns @dustReturn Arcane Dust</div>
+								</div>
+								<div class="craft-button salvage-button"
+									 onclick="@(() => DoSalvage( idx ))">
+									Salvage
 								</div>
 							</div>
 						}
@@ -199,6 +234,18 @@
 
 	void SelectCombineSlot( int index )
 	{
+		if ( PlayerInventory != null && Station != null )
+		{
+			var items = PlayerInventory.GetUniqueItems();
+			if ( index >= 0 && index < items.Count )
+			{
+				var instance = items[index];
+				float maxCap = Station.GetMaxCap( instance.ItemId );
+				if ( instance.EnchantmentPercent >= maxCap - 0.05f )
+					return;
+			}
+		}
+
 		if ( CombineSlotA == index )
 		{
 			CombineSlotA = -1;
@@ -243,6 +290,14 @@
 		Station.TryCombine( CombineSlotA, CombineSlotB );
 		CombineSlotA = -1;
 		CombineSlotB = -1;
+	}
+
+	void DoSalvage( int uniqueIndex )
+	{
+		if ( Station == null )
+			return;
+
+		Station.TrySalvage( uniqueIndex );
 	}
 
 	void CloseStation()

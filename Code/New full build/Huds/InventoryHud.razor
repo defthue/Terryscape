@@ -21,7 +21,7 @@
 					@if ( entry.IsChat )
 					{
 						<div class="chat-entry">
-							<span style="color: #6db8f0; font-weight: bold;">@entry.Sender:</span>
+							<span class="chat-sender">@entry.Sender:</span>
 							<span style="color: #e8e8e8;"> @entry.Text</span>
 						</div>
 					}
@@ -51,7 +51,7 @@
 					@if ( !string.IsNullOrEmpty( msg.Sender ) )
 					{
 						<div class="chat-entry">
-							<span style="color: #6db8f0; font-weight: bold;">@msg.Sender:</span>
+							<span class="chat-sender">@msg.Sender:</span>
 							<span style="color: #e8e8e8;"> @msg.Text</span>
 						</div>
 					}
@@ -683,11 +683,12 @@
 				{
 					var uDef = ItemDatabase.Get( equippedUnique.ItemId );
 					string color = equippedUnique.IsEnchanted ? "#a080d0" : GetItemColor( equippedUnique.ItemId, uDef );
+					string baseName = uDef != null ? uDef.Name : equippedUnique.ItemId.ToString();
 
 					EquipmentSlots.Add( new EquipSlotDisplay
 					{
 						Label = GetSlotLabel( slot ),
-						ItemName = equippedUnique.GetDisplayName(),
+						ItemName = baseName,
 						Color = color,
 						Slot = slot,
 						EnchantStat = equippedUnique.GetShortStat(),

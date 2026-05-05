@@ -848,3 +848,11 @@ public class ItemStack
 	public ItemId ItemId;
 	public int Count;
 }
+
+public enum SortMode
+{
+	ByType,
+	ByName,
+	ByTier,
+	ByAmount
+}

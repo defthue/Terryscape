@@ -114,15 +114,29 @@
 
 							@if ( IsBuyMode && SelectedPrice > 0 )
 							{
+								int totalCost = SelectedPrice * BuyQuantity;
+								bool canAfford = HasEnoughGold( totalCost );
+
+								int invCount = PlayerInventory != null ? PlayerInventory.GetItemCount( SelectedItem ) : 0;
+
 								<div class="detail-section-label">Cost</div>
-								<div class="ingredient-row @(HasEnoughGold( SelectedPrice ) ? "have" : "need")">
-									<div class="ingredient-name">Gold</div>
-									<div class="ingredient-count">@PlayerGold / @SelectedPrice</div>
+								<div class="cost-row">
+									<div class="cost-amount">Have: <span class="cost-gold">@PlayerGold g</span></div>
+									<div class="cost-amount">Cost: <span class="@(canAfford ? "cost-gold" : "cost-low")">@totalCost g</span></div>
+								</div>
+								<div class="cost-row">
+									<div class="cost-amount">Inventory: <span class="cost-gold">@invCount</span></div>
+								</div>
+
+								<div class="quantity-selector">
+									<div class="quantity-button @(BuyQuantity == 1 ? "selected" : "")" onclick="@(() => SetBuyQuantity( 1 ))">1</div>
+									<div class="quantity-button @(BuyQuantity == 10 ? "selected" : "")" onclick="@(() => SetBuyQuantity( 10 ))">10</div>
+									<div class="quantity-button @(BuyQuantity == 100 ? "selected" : "")" onclick="@(() => SetBuyQuantity( 100 ))">100</div>
 								</div>
 
 								<div class="craft-button-area">
-									<div class="craft-button @(CanAffordSelected() ? "" : "disabled")"
-										 onclick="@(() => DoBuy())">
+									<div class="craft-button @(canAfford ? "" : "disabled")"
+										 onclick="@(() => DoBuyAction())">
 										Buy
 									</div>
 								</div>
@@ -162,27 +176,42 @@
 				</div>
 			</div>
 
+				</div>
+			</div>
+
 			@if ( ShopStation.PendingSellAllItem != ItemId.None )
-			{
-				<div class="shop-backdrop confirm" onclick="@(() => CancelSellAll())"></div>
-				<div class="confirm-overlay">
-					<div class="confirm-popup">
-						<div class="confirm-title">Sell All?</div>
-						<div class="confirm-message">
-							Are you sure you want to sell <span class="confirm-amount">@ShopStation.PendingSellAllAmount</span>x
-							<span class="confirm-item">@GetItemName( ShopStation.PendingSellAllItem )</span>
-							for <span class="confirm-gold">@ShopStation.PendingSellAllTotalGold gold</span>?
+		{
+			var pendingDef = ItemDatabase.Get( ShopStation.PendingSellAllItem );
+
+			<div class="shop-backdrop confirm" onclick="@(() => CancelSellAll())"></div>
+			<div class="confirm-overlay">
+				<div class="confirm-popup">
+					<div class="confirm-title">Sell All?</div>
+
+					<div class="confirm-item-row">
+						<div class="confirm-icon" style="background: @GetItemColor( pendingDef );">
+							<img class="confirm-icon-img" src="@GetIconPath( ShopStation.PendingSellAllItem )" />
 						</div>
-						<div class="confirm-buttons">
-							<div class="craft-button" onclick="@(() => CancelSellAll())">Cancel</div>
-							<div class="craft-button confirm-yes" onclick="@(() => ConfirmSellAll())">Sell All</div>
+						<div class="confirm-item-info">
+							<div class="confirm-item-name">@GetItemName( ShopStation.PendingSellAllItem )</div>
+							<div class="confirm-item-qty">x@(ShopStation.PendingSellAllAmount)</div>
 						</div>
 					</div>
+
+					<div class="confirm-receive-row">
+						<div class="confirm-receive-label">You receive</div>
+						<div class="confirm-receive-gold">@ShopStation.PendingSellAllTotalGold gold</div>
+					</div>
+
+					<div class="confirm-buttons">
+						<div class="craft-button" onclick="@(() => CancelSellAll())">Cancel</div>
+						<div class="craft-button confirm-yes" onclick="@(() => ConfirmSellAll())">Sell All</div>
+					</div>
 				</div>
-			}
-		</div>
-	}
-</root>
+			</div>
+		}
+		}
+	</root>
 
 @code
 {
@@ -192,6 +221,7 @@
 	ItemId SelectedItem { get; set; } = ItemId.None;
 	int SelectedPrice { get; set; }
 	bool IsBuyMode { get; set; }
+	int BuyQuantity { get; set; } = 1;
 
 	bool SelectedIsUnique { get; set; }
 	int SelectedUniqueIndex { get; set; } = -1;
@@ -249,16 +279,12 @@
 		return HasEnoughGold( entry.Price );
 	}
 
-	bool CanAffordSelected()
-	{
-		return SelectedPrice > 0 && HasEnoughGold( SelectedPrice );
-	}
-
 	void SelectBuy( BuyListEntry entry )
 	{
 		SelectedItem = entry.Item;
 		SelectedPrice = entry.Price;
 		IsBuyMode = true;
+		BuyQuantity = 1;
 		SelectedIsUnique = false;
 		SelectedUniqueIndex = -1;
 	}
@@ -281,12 +307,20 @@
 		SelectedUniqueIndex = index;
 	}
 
-	void DoBuy()
+	void SetBuyQuantity( int qty )
+	{
+		BuyQuantity = qty;
+	}
+
+	void DoBuyAction()
 	{
 		if ( ShopStation.ActiveShop == null || SelectedItem == ItemId.None )
 			return;
 
-		ShopStation.ActiveShop.TryBuy( SelectedItem );
+		if ( BuyQuantity <= 1 )
+			ShopStation.ActiveShop.TryBuy( SelectedItem );
+		else
+			ShopStation.ActiveShop.TryBuyMany( SelectedItem, BuyQuantity );
 	}
 
 	void DoSell()
@@ -474,6 +508,7 @@
 			SelectedItem,
 			SelectedPrice,
 			IsBuyMode,
+			BuyQuantity,
 			SelectedIsUnique,
 			SelectedUniqueIndex,
 			invHash,

@@ -200,6 +200,38 @@ public sealed class ShopStation : Component
 		return true;
 	}
 
+	public bool TryBuyMany( ItemId item, int count )
+	{
+		if ( count <= 0 )
+			return false;
+
+		int price = GetSellPriceForPlayer( item );
+		if ( price <= 0 )
+			return false;
+
+		int total = price * count;
+
+		var inventory = GetPlayerInventory();
+		if ( inventory == null )
+			return false;
+
+		if ( !inventory.HasItem( ItemId.GoldCoin, total ) )
+		{
+			GameLog.Add( "You don't have enough gold.", "#c86464" );
+			return false;
+		}
+
+		inventory.RemoveItem( ItemId.GoldCoin, total );
+		inventory.AddItem( item, count );
+
+		var def = ItemDatabase.Get( item );
+		string name = def != null ? def.Name : item.ToString();
+		GameLog.Add( $"Bought {count}x {name} for {total} gold.", "#f0c040" );
+
+		SoundLibrary.PlaySellBuy();
+		return true;
+	}
+
 	public bool TrySell( ItemId item )
 	{
 		int price = GetBuyPriceFromPlayer( item );

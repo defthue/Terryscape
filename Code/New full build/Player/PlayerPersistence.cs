@@ -112,6 +112,10 @@ public sealed class PlayerPersistence : Component
 			if ( inventory != null )
 				inventory.GrantStarterKit();
 
+			var newHealth = FindComponentInPlayer<PlayerHealth>();
+			if ( newHealth != null )
+				newHealth.RefillToMax();
+
 			_loadComplete = true;
 			RefreshAllNpcQuestState();
 			return;
@@ -121,6 +125,10 @@ public sealed class PlayerPersistence : Component
 
 		if ( skills != null )
 			skills.ApplySaveData( save.Skills );
+
+		var health = FindComponentInPlayer<PlayerHealth>();
+		if ( health != null )
+			health.RefillToMax();
 
 		if ( inventory != null )
 			inventory.ApplySaveData( save );

@@ -18,6 +18,7 @@ root {
 
 	&.confirm {
 		background: #000000aa;
+		z-index: 100;
 	}
 }
 
@@ -281,6 +282,8 @@ root {
 	letter-spacing: 1px;
 	text-transform: uppercase;
 	transition: all 0.15s ease;
+	flex-shrink: 0;
+	white-space: nowrap;
 
 	&:hover {
 		border-color: #c9a84c;
@@ -321,17 +324,21 @@ root {
 	align-items: center;
 	justify-content: center;
 	pointer-events: none;
+	z-index: 101;
+	font-family: Almendra;
+	font-smooth: auto;
 }
 
 .confirm-popup {
-	width: 500px;
+	width: 440px;
 	background: linear-gradient(180deg, #2a2218f8, #1a1510fd);
 	border: 2px solid #c9a84c;
 	border-radius: 5px;
 	box-shadow: 0 4px 28px #000000cc;
-	padding: 32px;
+	padding: 28px;
+	display: flex;
 	flex-direction: column;
-	gap: 20px;
+	gap: 18px;
 	pointer-events: all;
 }
 
@@ -342,30 +349,140 @@ root {
 	text-align: center;
 }
 
-.confirm-message {
-	font-size: 18px;
-	color: #d4cfc0;
-	text-align: center;
+.confirm-item-row {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	gap: 14px;
+	padding: 12px 14px;
+	background: #1a150e;
+	border: 1px solid #5a4a3066;
+	border-radius: 4px;
 }
 
-.confirm-amount {
+.confirm-icon {
+	width: 56px;
+	height: 56px;
+	border-radius: 4px;
+	flex-shrink: 0;
+	border: 1px solid #5a4a3066;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	overflow: hidden;
+}
+
+.confirm-icon-img {
+	width: 100%;
+	height: 100%;
+}
+
+.confirm-item-info {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	gap: 4px;
+}
+
+.confirm-item-name {
+	font-size: 22px;
+	color: #d4cfc0;
+	font-weight: 600;
+}
+
+.confirm-item-qty {
+	font-size: 18px;
 	color: #c9a84c;
 	font-weight: 600;
 }
 
-.confirm-item {
+.confirm-receive-row {
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+	align-items: center;
+	padding: 10px 14px;
+	background: #1a150e;
+	border: 1px solid #3a302044;
+	border-radius: 4px;
+	font-size: 18px;
+}
+
+.confirm-receive-label {
 	color: #d4cfc0;
 	font-weight: 600;
 }
 
-.confirm-gold {
+.confirm-receive-gold {
 	color: #f0c040;
 	font-weight: 600;
+	font-size: 20px;
 }
 
 .confirm-buttons {
+	display: flex;
 	flex-direction: row;
 	justify-content: center;
 	gap: 12px;
-	margin-top: 8px;
+	margin-top: 6px;
+}
+
+.quantity-selector {
+	display: flex;
+	flex-direction: row;
+	gap: 8px;
+	margin-top: 12px;
+	justify-content: center;
+}
+
+.quantity-button {
+	min-width: 60px;
+	padding: 8px 14px;
+	background: #1a150e;
+	border: 1px solid #5a4a3066;
+	border-radius: 4px;
+	color: #a89060;
+	font-size: 18px;
+	font-weight: 600;
+	text-align: center;
+	cursor: pointer;
+	transition: all 0.15s ease;
+
+	&:hover {
+		border-color: #c9a84c;
+		color: #c9a84c;
+	}
+
+	&.selected {
+		background: #3a2a1844;
+		border-color: #c9a84c;
+		color: #c9a84c;
+		box-shadow: 0 0 8px #c9a84c33;
+	}
+}
+
+
+.cost-row {
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+	align-items: center;
+	padding: 6px 10px;
+	border-radius: 4px;
+	background: #1a150e;
+	border: 1px solid #3a302044;
+	font-size: 17px;
+}
+
+.cost-amount {
+	color: #d4cfc0;
+	font-weight: 600;
+}
+
+.cost-gold {
+	color: #f0c040;
+}
+
+.cost-low {
+	color: #c86464;
 }

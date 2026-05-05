@@ -17,38 +17,47 @@
 
 				<div class="crafting-body">
 					<div class="recipe-list">
-						<div class="detail-section-label" style="padding: 8px 12px;">Bank</div>
-						@if ( BankedItems.Count == 0 && BankedUnique.Count == 0 )
+						<div class="bank-section-header">
+							<div class="bank-sort-buttons">
+								<div class="bank-sort-button @(BankSortMode == SortMode.ByType ? "selected" : "")" onclick="@(() => SetBankSort( SortMode.ByType ))">Type</div>
+								<div class="bank-sort-button @(BankSortMode == SortMode.ByName ? "selected" : "")" onclick="@(() => SetBankSort( SortMode.ByName ))">Name</div>
+								<div class="bank-sort-button @(BankSortMode == SortMode.ByAmount ? "selected" : "")" onclick="@(() => SetBankSort( SortMode.ByAmount ))">Amount</div>
+							</div>
+						</div>
+						@if ( BankRows.Count == 0 )
 						{
 							<div class="no-recipes">Bank is empty.</div>
 						}
-						@foreach ( var kv in BankedItems )
+						@foreach ( var row in BankRows )
 						{
-							var def = ItemDatabase.Get( kv.Key );
-							string name = def != null ? def.Name : kv.Key.ToString();
+							if ( row.IsUnique )
+							{
+								var def = ItemDatabase.Get( row.UniqueInstance.ItemId );
+								string color = row.UniqueInstance.IsEnchanted ? "#a080d0" : GetItemColor( def );
 
-							<div class="recipe-row @(SelectedItem == kv.Key && SelectedIsBank && !SelectedIsUnique ? "selected" : "") craftable"
-								 onclick="@(() => Select( kv.Key, true, false, -1 ))">
-								<div class="recipe-icon" style="background: @GetItemColor( def );">
-									<img class="recipe-icon-img" src="@GetIconPath( kv.Key )" />
+								<div class="recipe-row @(SelectedIsBank && SelectedIsUnique && SelectedUniqueIndex == row.BankUniqueIndex ? "selected" : "") craftable"
+									 onclick="@(() => SelectUnique( true, row.BankUniqueIndex ))">
+									<div class="recipe-icon" style="background: @color;">
+										<img class="recipe-icon-img" src="@GetIconPath( row.UniqueInstance.ItemId )" />
+									</div>
+									<div class="recipe-name">@row.UniqueInstance.GetDisplayName()</div>
+									<div class="recipe-amount">1</div>
 								</div>
-								<div class="recipe-name">@name</div>
-								<div class="recipe-amount">@kv.Value</div>
-							</div>
-						}
-						@foreach ( var entry in BankedUnique )
-						{
-							var def = ItemDatabase.Get( entry.Instance.ItemId );
-							string color = entry.Instance.IsEnchanted ? "#a080d0" : GetItemColor( def );
+							}
+							else
+							{
+								var def = ItemDatabase.Get( row.StackId );
+								string name = def != null ? def.Name : row.StackId.ToString();
 
-							<div class="recipe-row @(SelectedIsBank && SelectedIsUnique && SelectedUniqueIndex == entry.BankIndex ? "selected" : "") craftable"
-								 onclick="@(() => SelectUnique( true, entry.BankIndex ))">
-								<div class="recipe-icon" style="background: @color;">
-									<img class="recipe-icon-img" src="@GetIconPath( entry.Instance.ItemId )" />
+								<div class="recipe-row @(SelectedItem == row.StackId && SelectedIsBank && !SelectedIsUnique ? "selected" : "") craftable"
+									 onclick="@(() => Select( row.StackId, true, false, -1 ))">
+									<div class="recipe-icon" style="background: @GetItemColor( def );">
+										<img class="recipe-icon-img" src="@GetIconPath( row.StackId )" />
+									</div>
+									<div class="recipe-name">@name</div>
+									<div class="recipe-amount">@row.StackCount</div>
 								</div>
-								<div class="recipe-name">@entry.Instance.GetDisplayName()</div>
-								<div class="recipe-amount">1</div>
-							</div>
+							}
 						}
 					</div>
 
@@ -174,6 +183,18 @@
 
 	Dictionary<ItemId, int> BankedItems { get; set; } = new();
 	Dictionary<ItemId, int> InventoryItems { get; set; } = new();
+	SortMode BankSortMode { get; set; } = SortMode.ByType;
+
+	public class BankRow
+	{
+		public bool IsUnique;
+		public ItemId StackId = ItemId.None;
+		public int StackCount;
+		public ItemInstance UniqueInstance;
+		public int BankUniqueIndex = -1;
+	}
+
+	List<BankRow> BankRows { get; set; } = new();
 
 	public class UniqueEntry
 	{
@@ -319,9 +340,23 @@
 			SelectedUniqueIndex = -1;
 		}
 
-		int bankHash = 0;
+		BankRows.Clear();
 		foreach ( var kv in BankedItems )
-			bankHash += (int)kv.Key * 100 + kv.Value;
+			BankRows.Add( new BankRow { IsUnique = false, StackId = kv.Key, StackCount = kv.Value } );
+
+		foreach ( var entry in BankedUnique )
+			BankRows.Add( new BankRow { IsUnique = true, UniqueInstance = entry.Instance, BankUniqueIndex = entry.BankIndex } );
+
+		BankRows.Sort( ( a, b ) => CompareBankRows( a, b, BankSortMode ) );
+
+		int bankHash = 0;
+		foreach ( var row in BankRows )
+		{
+			if ( row.IsUnique )
+				bankHash += (int)row.UniqueInstance.ItemId * 137 + row.BankUniqueIndex;
+			else
+				bankHash += (int)row.StackId * 100 + row.StackCount;
+		}
 
 		int invHash = 0;
 		foreach ( var kv in InventoryItems )
@@ -334,10 +369,53 @@
 			SelectedIsBank,
 			SelectedIsUnique,
 			SelectedUniqueIndex,
+			BankSortMode,
 			bankHash,
 			invHash,
 			BankedUnique.Count,
 			InventoryUnique.Count
 		).GetHashCode();
+	}
+
+	void SetBankSort( SortMode mode )
+	{
+		BankSortMode = mode;
+	}
+
+	static int CompareBankRows( BankRow a, BankRow b, SortMode mode )
+	{
+		ItemId idA = a.IsUnique ? a.UniqueInstance.ItemId : a.StackId;
+		ItemId idB = b.IsUnique ? b.UniqueInstance.ItemId : b.StackId;
+
+		var defA = ItemDatabase.Get( idA );
+		var defB = ItemDatabase.Get( idB );
+
+		string nameA = defA != null ? defA.Name : idA.ToString();
+		string nameB = defB != null ? defB.Name : idB.ToString();
+		int tierA = defA != null ? defA.Tier : 0;
+		int tierB = defB != null ? defB.Tier : 0;
+		int typeA = defA != null ? (int)defA.Type : 0;
+		int typeB = defB != null ? (int)defB.Type : 0;
+		int countA = a.IsUnique ? 1 : a.StackCount;
+		int countB = b.IsUnique ? 1 : b.StackCount;
+
+		switch ( mode )
+		{
+			case SortMode.ByType:
+				int typeCmp = typeA.CompareTo( typeB );
+				if ( typeCmp != 0 ) return typeCmp;
+				return string.Compare( nameA, nameB, System.StringComparison.OrdinalIgnoreCase );
+			case SortMode.ByTier:
+				int tierCmp = tierA.CompareTo( tierB );
+				if ( tierCmp != 0 ) return tierCmp;
+				return string.Compare( nameA, nameB, System.StringComparison.OrdinalIgnoreCase );
+			case SortMode.ByAmount:
+				int amountCmp = countB.CompareTo( countA );
+				if ( amountCmp != 0 ) return amountCmp;
+				return string.Compare( nameA, nameB, System.StringComparison.OrdinalIgnoreCase );
+			case SortMode.ByName:
+			default:
+				return string.Compare( nameA, nameB, System.StringComparison.OrdinalIgnoreCase );
+		}
 	}
 }

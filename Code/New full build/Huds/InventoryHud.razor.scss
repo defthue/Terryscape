@@ -76,6 +76,13 @@ root {
 	flex-shrink: 0;
 }
 
+.chat-sender {
+	display: inline-block;
+	color: #6db8f0;
+	font-weight: bold;
+	white-space: nowrap;
+}
+
 .chat-input-row {
 	padding: 6px 8px;
 	border-top: 1px solid #5a4a3066;
@@ -304,7 +311,7 @@ root {
 	gap: 5px;
 	padding: 8px;
 	overflow-y: auto;
-	overflow-x: hidden;
+	overflow-x: visible;
 	max-height: 460px;
 	justify-content: center;
 }
