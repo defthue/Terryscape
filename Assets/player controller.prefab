@@ -495,6 +495,37 @@
         "OnComponentUpdate": null,
         "RunSpeedMultiplier": 1.5,
         "WalkSpeedMultiplier": 1.75
+      },
+      {
+        "__type": "Sandbox.Huds.PlayerNameplatePanel",
+        "__guid": "18887de6-6fb4-4327-828d-72ee1f3a3dd0",
+        "__enabled": true,
+        "Flags": 0,
+        "MaxVisibleDistance": 2000,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "PlayerController": {
+          "_type": "component",
+          "component_id": "b5cd6d4a-68d9-4364-84c3-c008b41ed1c9",
+          "go": "43dc9686-8264-42d7-9f3e-17be6bb1f957",
+          "component_type": "PlayerController"
+        }
+      },
+      {
+        "__type": "ToolCycler",
+        "__guid": "78729401-d702-4bb3-9e3e-d9ea2e69a343",
+        "__enabled": true,
+        "Flags": 0,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null
       }
     ],
     "Children": [
@@ -542,8 +573,7 @@
               },
               "ints": {
                 "holdtype_handedness": 0,
-                "holdtype": 0,
-                "sit": 1
+                "holdtype": 0
               },
               "floats": {
                 "scale_height": 1
@@ -578,6 +608,7 @@
               "go": "c1f2a082-666f-46c2-963c-977b391ae411",
               "component_type": "SkinnedModelRenderer"
             },
+            "CameraOffset": "8,0,0",
             "OnComponentDestroy": null,
             "OnComponentDisabled": null,
             "OnComponentEnabled": null,
@@ -1047,6 +1078,68 @@
             "OnComponentFixedUpdate": null,
             "OnComponentStart": null,
             "OnComponentUpdate": null
+          }
+        ],
+        "Children": []
+      },
+      {
+        "__guid": "82a3581b-283c-4e75-a841-65bdebf99d05",
+        "__version": 2,
+        "Flags": 0,
+        "Name": "NameplateAnchor",
+        "Position": "0,0,90",
+        "Rotation": "0,0,0,1",
+        "Scale": "1,1,1",
+        "Tags": "",
+        "Enabled": true,
+        "NetworkMode": 1,
+        "NetworkFlags": 0,
+        "NetworkOrphaned": 0,
+        "NetworkTransmit": true,
+        "OwnerTransfer": 1,
+        "Components": [
+          {
+            "__type": "Sandbox.WorldPanel",
+            "__guid": "8c30b819-d741-4b85-af56-c972c2cc8dcb",
+            "__enabled": true,
+            "Flags": 0,
+            "HorizontalAlign": "Center",
+            "InteractionRange": 1000,
+            "LookAtCamera": true,
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "PanelSize": "300,120",
+            "RenderOptions": {
+              "GameLayer": true,
+              "OverlayLayer": false,
+              "BloomLayer": false,
+              "AfterUILayer": false
+            },
+            "RenderScale": 1,
+            "VerticalAlign": "Center"
+          },
+          {
+            "__type": "Sandbox.Huds.PlayerNameplatePanel",
+            "__guid": "11bfc0cc-14e0-48b9-a891-cd915beeaf33",
+            "__enabled": true,
+            "Flags": 0,
+            "MaxVisibleDistance": 2000,
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "PlayerController": {
+              "_type": "component",
+              "component_id": "b5cd6d4a-68d9-4364-84c3-c008b41ed1c9",
+              "go": "43dc9686-8264-42d7-9f3e-17be6bb1f957",
+              "component_type": "PlayerController"
+            }
           }
         ],
         "Children": []

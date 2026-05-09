@@ -7,11 +7,10 @@ public sealed class TeleportStone : Component
 	[Property] public string StoneId { get; set; } = "";
 	[Property] public string StoneName { get; set; } = "Teleport Stone";
 	[Property] public float InteractDistance { get; set; } = 150f;
+	[Property] public float AutoDiscoverRadius { get; set; } = 500f;
 	[Property] public int TeleportCost { get; set; } = 1;
 	[Property] public float CooldownDuration { get; set; } = 10f;
 
-	// How far above the stone the player spawns when teleporting in.
-	// Stones are typically tall, so without this you spawn inside the stone.
 	[Property] public float SpawnHeightOffset { get; set; } = 80f;
 
 	public static TeleportStone ActiveStone { get; private set; }
@@ -21,6 +20,8 @@ public sealed class TeleportStone : Component
 	{
 		if ( CooldownRemaining > 0f )
 			CooldownRemaining -= Time.Delta;
+
+		TryAutoDiscover();
 
 		if ( ActiveStone == this )
 		{
@@ -56,6 +57,26 @@ public sealed class TeleportStone : Component
 			return;
 
 		Open();
+	}
+
+	void TryAutoDiscover()
+	{
+		var inventory = GetPlayerInventory();
+		if ( inventory == null )
+			return;
+
+		if ( inventory.IsStoneDiscovered( StoneId ) )
+			return;
+
+		var player = PlayerHelper.GetLocalPlayer();
+		if ( player == null )
+			return;
+
+		if ( Vector3.DistanceBetween( WorldPosition, player.WorldPosition ) > AutoDiscoverRadius )
+			return;
+
+		inventory.DiscoverStone( StoneId );
+		GameLog.Add( $"Discovered teleport stone: {StoneName}!", "#a080d0" );
 	}
 
 	void Open()

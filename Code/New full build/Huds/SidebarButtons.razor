@@ -17,9 +17,19 @@
 
 @code
 {
+	protected override void OnUpdate()
+	{
+		if ( Input.Pressed( "Journal" ) )
+		{
+			if ( JournalStation.IsOpen )
+				JournalStation.Close();
+			else
+				OpenJournal();
+		}
+	}
+
 	void OpenJournal()
 	{
-		// Close any other open station-style HUDs first to avoid stacked overlays.
 		CloseAllOtherHuds();
 		JournalStation.Open();
 	}
@@ -50,8 +60,6 @@
 		if ( TeleportStone.ActiveStone != null )
 			TeleportStone.Close();
 
-		// Close the other sidebar HUD if it's open. E.g. clicking the leaderboard
-		// while the journal is open should swap them.
 		JournalStation.Close();
 		LeaderboardStation.Close();
 	}

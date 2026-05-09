@@ -6,34 +6,68 @@ using Sandbox;
 
 public static class TerryScapeBackend
 {
-	/// <summary>
-	/// Result of a load attempt. Success=false means the request failed (network error, etc).
-	/// Success=true with Save=null means the request succeeded but the player has no save yet.
-	/// Success=true with Save!=null means an existing save was loaded.
-	/// </summary>
 	public struct LoadResult
 	{
 		public bool Success;
 		public PlayerSaveData Save;
 	}
 
-	/// <summary>
-	/// Loads the calling player's save from the cloud.
-	/// Returns Success=false on failure (caller must NOT save afterward — would overwrite real data with empty state).
-	/// Returns Success=true, Save=null for a brand new player.
-	/// Returns Success=true, Save=<data> when an existing save was loaded.
-	/// </summary>
+	const int LoadMaxAttempts = 4;
+	const int SaveMaxAttempts = 2;
+
+	static readonly int[] BackoffDelaysMs = { 500, 1000, 2000, 4000 };
+
+	static async Task<JsonElement?> CallEndpointWithRetry( string endpoint, object payload, int maxAttempts )
+	{
+		Exception lastException = null;
+
+		for ( int attempt = 0; attempt < maxAttempts; attempt++ )
+		{
+			try
+			{
+				JsonElement? result;
+				if ( payload == null )
+					result = await NetworkStorage.CallEndpoint( endpoint );
+				else
+					result = await NetworkStorage.CallEndpoint( endpoint, payload );
+
+				if ( result.HasValue )
+					return result;
+
+				Log.Warning( $"[TerryScapeBackend] {endpoint} returned no value (attempt {attempt + 1}/{maxAttempts})." );
+			}
+			catch ( Exception ex )
+			{
+				lastException = ex;
+				Log.Warning( $"[TerryScapeBackend] {endpoint} threw on attempt {attempt + 1}/{maxAttempts}: {ex.Message}" );
+			}
+
+			if ( attempt < maxAttempts - 1 )
+			{
+				int delayMs = BackoffDelaysMs[Math.Min( attempt, BackoffDelaysMs.Length - 1 )];
+				await Task.Delay( delayMs );
+			}
+		}
+
+		if ( lastException != null )
+			Log.Warning( $"[TerryScapeBackend] {endpoint} failed after {maxAttempts} attempts. Last error: {lastException.Message}" );
+		else
+			Log.Warning( $"[TerryScapeBackend] {endpoint} failed after {maxAttempts} attempts (all returned no value)." );
+
+		return null;
+	}
+
 	public static async Task<LoadResult> LoadAsync()
 	{
 		NetworkStorageConfig.EnsureInitialized();
 
 		try
 		{
-			var result = await NetworkStorage.CallEndpoint( "load-player" );
+			var result = await CallEndpointWithRetry( "load-player", null, LoadMaxAttempts );
 			if ( !result.HasValue )
 			{
-				Log.Info( "[TerryScapeBackend] load-player returned no value (probably a brand new player)." );
-				return new LoadResult { Success = true, Save = null };
+				Log.Warning( "[TerryScapeBackend] load-player returned no value after retries — treating as failure to avoid overwriting real save with empty state." );
+				return new LoadResult { Success = false, Save = null };
 			}
 
 			var json = result.Value;
@@ -165,6 +199,15 @@ public static class TerryScapeBackend
 				}
 			}
 
+			if ( json.TryGetProperty( "chestClaims", out var chestEl ) && chestEl.ValueKind == JsonValueKind.Object )
+			{
+				foreach ( var prop in chestEl.EnumerateObject() )
+				{
+					if ( prop.Value.ValueKind == JsonValueKind.String )
+						save.ChestClaims[prop.Name] = prop.Value.GetString();
+				}
+			}
+
 			Log.Info( $"[TerryScapeBackend] Loaded save from {save.SavedAt}." );
 			return new LoadResult { Success = true, Save = save };
 		}
@@ -175,10 +218,6 @@ public static class TerryScapeBackend
 		}
 	}
 
-	/// <summary>
-	/// Saves the calling player's data to the cloud.
-	/// Returns true on success. Logs the error and returns false on failure.
-	/// </summary>
 	public static async Task<bool> SaveAsync( PlayerSaveData data )
 	{
 		if ( data == null )
@@ -211,13 +250,14 @@ public static class TerryScapeBackend
 				nodesMined = data.NodesMined,
 				totalLevel = data.TotalLevel,
 				totalGold = data.TotalGold,
-				totalKills = data.TotalKills
+				totalKills = data.TotalKills,
+				chestClaims = data.ChestClaims ?? new Dictionary<string, string>()
 			};
 
-			var result = await NetworkStorage.CallEndpoint( "save-player", payload );
+			var result = await CallEndpointWithRetry( "save-player", payload, SaveMaxAttempts );
 			if ( !result.HasValue )
 			{
-				Log.Warning( "[TerryScapeBackend] save-player returned no value." );
+				Log.Warning( "[TerryScapeBackend] save-player returned no value after retries." );
 				return false;
 			}
 

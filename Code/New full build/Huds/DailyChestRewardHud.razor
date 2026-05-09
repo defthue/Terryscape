@@ -1,0 +1,77 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using System.Linq;
+@using System.Collections.Generic;
+@inherits PanelComponent
+
+<root>
+	@if ( IsOpen )
+	{
+		<div class="reward-backdrop" onclick="@(() => CloseReward())"></div>
+		<div class="reward-overlay">
+			<div class="reward-popup">
+				<div class="reward-header">
+					<div class="reward-title">You found a loot chest!</div>
+					<div class="reward-close" onclick="@(() => CloseReward())">✕</div>
+				</div>
+
+				<div class="reward-subtitle">@ChestName</div>
+
+				<div class="reward-body">
+					@if ( Rewards.Count == 0 )
+					{
+						<div class="reward-empty">No items received.</div>
+					}
+					else
+					{
+						@foreach ( var entry in Rewards )
+						{
+							<div class="reward-row">
+								<div class="reward-icon">
+									<img class="reward-icon-img" src="@GetIconPath( entry.Item )" />
+								</div>
+								<div class="reward-name">@GetItemName( entry.Item )</div>
+								<div class="reward-amount">x@(entry.Amount)</div>
+							</div>
+						}
+					}
+				</div>
+
+				<div class="reward-footer">
+					<div class="reward-button" onclick="@(() => CloseReward())">Continue</div>
+				</div>
+			</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	bool IsOpen => DailyChest.RewardHudOpen;
+	string ChestName => DailyChest.LastRewardChestName ?? "";
+	List<DailyChestRewardEntry> Rewards => DailyChest.LastRewards ?? new List<DailyChestRewardEntry>();
+
+	void CloseReward()
+	{
+		DailyChest.CloseRewardHud();
+	}
+
+	string GetItemName( ItemId id )
+	{
+		var def = ItemDatabase.Get( id );
+		return def != null ? def.Name : id.ToString();
+	}
+
+	string GetIconPath( ItemId id )
+	{
+		if ( id == ItemId.None )
+			return "";
+
+		return $"/ItemIcons/{id}.vtex";
+	}
+
+	protected override int BuildHash()
+	{
+		return ( IsOpen, ChestName, Rewards.Count ).GetHashCode();
+	}
+}

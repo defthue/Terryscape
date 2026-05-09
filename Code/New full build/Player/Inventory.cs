@@ -20,6 +20,7 @@ public sealed class Inventory : Component
 	HashSet<string> _completedQuests = new();
 	HashSet<string> _discoveredQuests = new();
 	Dictionary<string, int> _killCounts = new();
+	Dictionary<string, string> _chestClaims = new();
 
 	int _nodesMined = 0;
 
@@ -55,6 +56,7 @@ public sealed class Inventory : Component
 		_completedQuests.Clear();
 		_discoveredQuests.Clear();
 		_killCounts.Clear();
+		_chestClaims.Clear();
 		_nodesMined = 0;
 		_equippedAmmoId = ItemId.None;
 		_equippedAmmoCount = 0;
@@ -655,8 +657,6 @@ public sealed class Inventory : Component
 		return _completedQuests;
 	}
 
-	// Marks a quest as discovered (player has opened the dialogue at least once).
-	// Used by the journal HUD to show quests the player knows about, before completion.
 	public void DiscoverQuest( string questId )
 	{
 		if ( string.IsNullOrEmpty( questId ) )
@@ -700,7 +700,6 @@ public sealed class Inventory : Component
 		return _killCounts;
 	}
 
-	// Total kills across all monster types — denormalized for leaderboard queries.
 	public int GetTotalKills()
 	{
 		int total = 0;
@@ -709,8 +708,6 @@ public sealed class Inventory : Component
 		return total;
 	}
 
-	// Total resource nodes harvested over the player's lifetime.
-	// Used by the leaderboard. Increments by 1 each time a node is broken.
 	public int GetNodesMined()
 	{
 		return _nodesMined;
@@ -719,6 +716,42 @@ public sealed class Inventory : Component
 	public void AddNodeMined()
 	{
 		_nodesMined++;
+	}
+
+	public bool IsChestOnCooldown( string chestId, float cooldownHours )
+	{
+		return GetChestCooldownHoursRemaining( chestId, cooldownHours ) > 0f;
+	}
+
+	public float GetChestCooldownHoursRemaining( string chestId, float cooldownHours )
+	{
+		if ( string.IsNullOrEmpty( chestId ) )
+			return 0f;
+
+		if ( !_chestClaims.TryGetValue( chestId, out var claimedAt ) )
+			return 0f;
+
+		if ( !System.DateTime.TryParse( claimedAt, null, System.Globalization.DateTimeStyles.RoundtripKind, out var claimedTime ) )
+			return 0f;
+
+		var elapsed = System.DateTime.UtcNow - claimedTime.ToUniversalTime();
+		float elapsedHours = (float)elapsed.TotalHours;
+		float remaining = cooldownHours - elapsedHours;
+
+		return remaining > 0f ? remaining : 0f;
+	}
+
+	public void MarkChestClaimed( string chestId )
+	{
+		if ( string.IsNullOrEmpty( chestId ) )
+			return;
+
+		_chestClaims[chestId] = System.DateTime.UtcNow.ToString( "o" );
+	}
+
+	public Dictionary<string, string> GetChestClaims()
+	{
+		return _chestClaims;
 	}
 
 	public PlayerSaveData ToSaveData( PlayerSaveData data )
@@ -763,6 +796,7 @@ public sealed class Inventory : Component
 		data.Quests = new List<string>( _completedQuests );
 		data.DiscoveredQuests = new List<string>( _discoveredQuests );
 		data.Kills = new Dictionary<string, int>( _killCounts );
+		data.ChestClaims = new Dictionary<string, string>( _chestClaims );
 
 		data.NodesMined = _nodesMined;
 
@@ -838,6 +872,12 @@ public sealed class Inventory : Component
 
 		foreach ( var kv in data.Kills )
 			_killCounts[kv.Key] = kv.Value;
+
+		if ( data.ChestClaims != null )
+		{
+			foreach ( var kv in data.ChestClaims )
+				_chestClaims[kv.Key] = kv.Value;
+		}
 
 		_nodesMined = data.NodesMined;
 	}

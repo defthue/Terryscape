@@ -1,0 +1,61 @@
+@using Sandbox;
+@using Sandbox.UI;
+@inherits PanelComponent
+
+<root>
+	@if ( ShouldShow() )
+	{
+		<div class="nameplate">
+			<div class="nameplate-text">@GetPlayerName()</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	[Property] public PlayerController PlayerController { get; set; }
+	[Property] public float MaxVisibleDistance { get; set; } = 2000f;
+
+	bool ShouldShow()
+	{
+		if ( PlayerController == null )
+			return false;
+
+		if ( PlayerHelper.IsLocalPlayer( PlayerController.GameObject ) )
+			return false;
+
+		var name = GetPlayerName();
+		if ( string.IsNullOrEmpty( name ) )
+			return false;
+
+		var camera = Scene.Camera;
+		if ( camera == null )
+			return false;
+
+		var worldPos = WorldPosition;
+
+		if ( Vector3.DistanceBetween( camera.WorldPosition, worldPos ) > MaxVisibleDistance )
+			return false;
+
+		var toPlayer = worldPos - camera.WorldPosition;
+		if ( Vector3.Dot( camera.WorldRotation.Forward, toPlayer ) <= 0f )
+			return false;
+
+		return true;
+	}
+
+	string GetPlayerName()
+	{
+		return PlayerController?.Network.Owner?.DisplayName ?? "";
+	}
+
+	protected override void OnUpdate()
+	{
+		StateHasChanged();
+	}
+
+	protected override int BuildHash()
+	{
+		return ( ShouldShow(), GetPlayerName() ).GetHashCode();
+	}
+}

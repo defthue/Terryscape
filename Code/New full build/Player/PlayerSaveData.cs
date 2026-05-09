@@ -40,6 +40,8 @@ public class PlayerSaveData
 	public int TotalGold { get; set; } = 0;
 	public int TotalKills { get; set; } = 0;
 
+	public Dictionary<string, string> ChestClaims { get; set; } = new();
+
 	public class SkillEntry
 	{
 		public int Level { get; set; } = 1;

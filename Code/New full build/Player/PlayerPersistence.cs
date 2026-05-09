@@ -26,10 +26,6 @@ public sealed class PlayerPersistence : Component
 
 	void ResetTransientHudState()
 	{
-		// Each Close() below is guarded so it only runs when the HUD was actually
-		// active. Avoids the side effect of HUD Close() methods setting the mouse
-		// to hidden — the WelcomeHud needs the mouse visible on fresh join.
-
 		JournalStation.Close();
 		LeaderboardStation.Close();
 
@@ -55,8 +51,6 @@ public sealed class PlayerPersistence : Component
 		if ( NpcInteract.ActiveNpc != null )
 			NpcInteract.ActiveNpc.CloseDialogue();
 
-		// The WelcomeHud opens on every join and needs the mouse visible so the player
-		// can navigate it. Restore mouse visible after the HUD resets above.
 		Mouse.Visibility = MouseVisibility.Visible;
 	}
 
@@ -96,6 +90,7 @@ public sealed class PlayerPersistence : Component
 		if ( !result.Success )
 		{
 			Log.Warning( "[PlayerPersistence] Load failed — saves are blocked for this session to prevent overwriting real data with empty state. Reconnect or restart to retry." );
+			GameLog.Add( "Could not load your save. Please rejoin the server — playing now will not save your progress.", "#e87878" );
 			return;
 		}
 

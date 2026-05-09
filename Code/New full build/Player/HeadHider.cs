@@ -7,6 +7,8 @@ public sealed class HeadHider : Component
 	[Property] public PlayerController PlayerController { get; set; }
 	[Property] public CameraComponent PlayerCamera { get; set; }
 
+	[Property, Group( "Camera Offset" )] public Vector3 CameraOffset { get; set; } = new Vector3( 8f, 0f, 0f );
+
 	List<ModelRenderer> _clothingRenderers = new();
 	bool _cachedClothing = false;
 
@@ -51,7 +53,7 @@ public sealed class HeadHider : Component
 
 				if ( cam != null )
 				{
-					cam.WorldPosition = headTransform.Position;
+					cam.WorldPosition = headTransform.Position + headTransform.Rotation * CameraOffset;
 					cam.ZNear = 3f;
 				}
 			}
