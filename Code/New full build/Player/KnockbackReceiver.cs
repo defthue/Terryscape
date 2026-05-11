@@ -3,16 +3,15 @@ using System;
 
 public sealed class KnockbackReceiver : Component
 {
-	[Property] public float FrictionPerSecond { get; set; } = 6f;
+	[Property] public float VerticalImpulse { get; set; } = 180f;
 
-	[Sync] public Vector3 KnockbackVelocity { get; set; }
 	[Sync] public float StunTimeRemaining { get; set; }
 	[Sync] public float TotalTimeRemaining { get; set; }
 
 	PlayerController _cachedController;
 
 	public bool IsStunned => StunTimeRemaining > 0f;
-	public bool IsKnockedBack => TotalTimeRemaining > 0f || KnockbackVelocity.LengthSquared > 0.01f;
+	public bool IsKnockedBack => TotalTimeRemaining > 0f;
 
 	PlayerController GetPlayerController()
 	{
@@ -27,9 +26,15 @@ public sealed class KnockbackReceiver : Component
 		if ( direction.LengthSquared < 0.0001f )
 			return;
 
-		KnockbackVelocity = direction.Normal * force;
+		var horizontal = direction.WithZ( 0f ).Normal * force;
+		var impulse = horizontal + Vector3.Up * VerticalImpulse;
+
 		StunTimeRemaining = MathF.Max( StunTimeRemaining, stunDuration );
 		TotalTimeRemaining = MathF.Max( TotalTimeRemaining, totalDuration );
+
+		var pc = GetPlayerController();
+		if ( pc != null )
+			pc.Jump( impulse );
 	}
 
 	protected override void OnFixedUpdate()
@@ -49,18 +54,10 @@ public sealed class KnockbackReceiver : Component
 		}
 
 		if ( TotalTimeRemaining > 0f )
-			TotalTimeRemaining -= Time.Delta;
-
-		if ( KnockbackVelocity.LengthSquared > 0.01f )
 		{
-			GameObject.WorldPosition += KnockbackVelocity * Time.Delta;
-
-			float drop = FrictionPerSecond * Time.Delta;
-			float newLen = MathF.Max( 0f, KnockbackVelocity.Length - KnockbackVelocity.Length * drop );
-			KnockbackVelocity = KnockbackVelocity.Normal * newLen;
-
-			if ( KnockbackVelocity.Length < 5f )
-				KnockbackVelocity = Vector3.Zero;
+			TotalTimeRemaining -= Time.Delta;
+			if ( TotalTimeRemaining < 0f )
+				TotalTimeRemaining = 0f;
 		}
 	}
 }

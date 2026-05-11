@@ -176,11 +176,14 @@ public sealed class Boss : Component
 	[Property, Group( "Beam" )] public float BeamSpeed { get; set; } = 1200f;
 	[Property, Group( "Beam" )] public float BeamRange { get; set; } = 800f;
 	[Property, Group( "Beam" )] public float BeamRadius { get; set; } = 40f;
+	[Property, Group( "Beam" )] public float BeamVerticalHitTolerance { get; set; } = 80f;
 	[Property, Group( "Beam" )] public float BeamVisualLength { get; set; } = 200f;
 	[Property, Group( "Beam" )] public Color BeamColor { get; set; } = new Color( 1f, 0.3f, 0.8f );
 	[Property, Group( "Beam" )] public float BeamDamageMultiplier { get; set; } = 1.5f;
 	[Property, Group( "Beam" )] public string BeamSpawnBone { get; set; } = "RightHand";
 	[Property, Group( "Beam" )] public float BeamSpawnForwardOffset { get; set; } = 40f;
+	[Property, Group( "Beam" )] public float BeamSpawnVerticalOffset { get; set; } = -30f;
+	[Property, Group( "Beam" )] public float BeamPlayerCenterHeight { get; set; } = 40f;
 
 	[Property, Group( "Weapon" )] public GameObject WeaponPrefab { get; set; }
 	[Property, Group( "Weapon" )] public string WeaponBone { get; set; } = "RightHand";
@@ -238,6 +241,8 @@ public sealed class Boss : Component
 	bool _wasMovingLastFrame;
 	float _deathAnimTimer;
 	bool _deathAnimFinished;
+
+	HashSet<ulong> _contributorSteamIds = new();
 
 	List<ActiveBeam> _activeBeams = new();
 
@@ -688,10 +693,10 @@ public sealed class Boss : Component
 		if ( SkinnedRenderer != null && SkinnedRenderer.SceneModel != null && !string.IsNullOrEmpty( BeamSpawnBone ) )
 		{
 			var boneTx = SkinnedRenderer.SceneModel.GetBoneWorldTransform( BeamSpawnBone );
-			return boneTx.Position + WorldRotation.Forward * BeamSpawnForwardOffset;
+			return boneTx.Position + WorldRotation.Forward * BeamSpawnForwardOffset + Vector3.Up * BeamSpawnVerticalOffset;
 		}
 
-		return WorldPosition + WorldRotation.Forward * ( BeamSpawnForwardOffset + 40f ) + Vector3.Up * 80f;
+		return WorldPosition + WorldRotation.Forward * ( BeamSpawnForwardOffset + 40f ) + Vector3.Up * ( 80f + BeamSpawnVerticalOffset );
 	}
 
 	GameObject CreateBeamVisual( Vector3 origin, Vector3 direction )
@@ -700,10 +705,38 @@ public sealed class Boss : Component
 		go.WorldPosition = origin;
 		go.WorldRotation = Rotation.LookAt( direction, Vector3.Up );
 
-		var renderer = go.Components.Create<ModelRenderer>();
-		renderer.Model = Model.Load( "models/citizen_props/crate01.vmdl" );
-		renderer.Tint = BeamColor;
-		renderer.LocalScale = new Vector3( BeamRadius / 50f, BeamRadius / 50f, BeamVisualLength / 50f );
+		var devBox = Model.Load( "models/dev/box.vmdl" );
+
+		float coreLength = BeamVisualLength;
+		float coreWidth = BeamRadius * 1.6f;
+		float coreHeight = BeamRadius * 0.5f;
+
+		var core = new GameObject( true, "Core" );
+		core.SetParent( go );
+		core.LocalPosition = Vector3.Zero;
+		core.LocalRotation = Rotation.Identity;
+		core.LocalScale = new Vector3( coreLength / 50f, coreWidth / 50f, coreHeight / 50f );
+		var coreRenderer = core.Components.Create<ModelRenderer>();
+		coreRenderer.Model = devBox;
+		coreRenderer.Tint = BeamColor;
+
+		var inner = new GameObject( true, "Inner" );
+		inner.SetParent( go );
+		inner.LocalPosition = Vector3.Zero;
+		inner.LocalRotation = Rotation.Identity;
+		inner.LocalScale = new Vector3( ( coreLength * 0.85f ) / 50f, ( coreWidth * 0.4f ) / 50f, ( coreHeight * 0.6f ) / 50f );
+		var innerRenderer = inner.Components.Create<ModelRenderer>();
+		innerRenderer.Model = devBox;
+		innerRenderer.Tint = Color.Lerp( BeamColor, Color.White, 0.7f );
+
+		var halo = new GameObject( true, "Halo" );
+		halo.SetParent( go );
+		halo.LocalPosition = Vector3.Zero;
+		halo.LocalRotation = Rotation.Identity;
+		halo.LocalScale = new Vector3( ( coreLength * 1.1f ) / 50f, ( coreWidth * 1.8f ) / 50f, ( coreHeight * 1.6f ) / 50f );
+		var haloRenderer = halo.Components.Create<ModelRenderer>();
+		haloRenderer.Model = devBox;
+		haloRenderer.Tint = BeamColor.WithAlpha( 0.25f );
 
 		return go;
 	}
@@ -748,14 +781,27 @@ public sealed class Boss : Component
 					if ( health == null || health.IsDead )
 						continue;
 
-					var toPlayer = playerObj.WorldPosition - prevPos;
-					float along = Vector3.Dot( toPlayer, beam.Direction );
-					if ( along < 0f || along > step )
+					var playerCenter = playerObj.WorldPosition + Vector3.Up * BeamPlayerCenterHeight;
+
+					var segDir = nextPos - prevPos;
+					float segLen = segDir.Length;
+					if ( segLen < 0.0001f )
 						continue;
 
-					var projected = prevPos + beam.Direction * along;
-					float radial = Vector3.DistanceBetween( projected, playerObj.WorldPosition );
-					if ( radial > BeamRadius )
+					var segNormal = segDir / segLen;
+					var toPlayer = playerCenter - prevPos;
+					float along = Vector3.Dot( toPlayer, segNormal );
+					along = MathF.Max( 0f, MathF.Min( segLen, along ) );
+
+					var closestPoint = prevPos + segNormal * along;
+					var diff = playerCenter - closestPoint;
+
+					float horiz = MathF.Sqrt( diff.x * diff.x + diff.y * diff.y );
+					float vert = MathF.Abs( diff.z );
+
+					if ( horiz > BeamRadius )
+						continue;
+					if ( vert > BeamVerticalHitTolerance )
 						continue;
 
 					ApplyBeamDamageToPlayer( playerObj, beam.Damage );
@@ -1071,6 +1117,7 @@ public sealed class Boss : Component
 		_deathAnimFinished = false;
 		_deathAnimTimer = 0f;
 		_state = BossState.Idle;
+		_contributorSteamIds.Clear();
 		BroadcastAnimBool( "b_death", false );
 		BroadcastRespawn();
 	}
@@ -1096,6 +1143,13 @@ public sealed class Boss : Component
 	{
 		if ( IsDead )
 			return;
+
+		if ( attacker != null && attacker.IsValid() )
+		{
+			var ownerConnection = attacker.Network.Owner;
+			if ( ownerConnection != null && ownerConnection.SteamId != 0 )
+				_contributorSteamIds.Add( ownerConnection.SteamId );
+		}
 
 		CurrentHealth -= damage;
 
@@ -1125,7 +1179,7 @@ public sealed class Boss : Component
 		_deathAnimFinished = false;
 		SetMoving( false, false );
 		BroadcastAnimBool( "b_death", true );
-		AwardLoot( killer );
+		AwardLootToContributors();
 		BroadcastDeathStart();
 	}
 
@@ -1146,25 +1200,105 @@ public sealed class Boss : Component
 			_weaponInstance.Enabled = false;
 	}
 
-	void AwardLoot( GameObject killer )
+	void AwardLootToContributors()
 	{
-		if ( killer == null || !killer.IsValid() )
-			return;
-
-		var inventory = killer.Components.Get<Inventory>();
-		if ( inventory == null )
+		if ( _contributorSteamIds.Count == 0 )
 			return;
 
 		int count = Math.Min( LootItems.Count, Math.Min( LootAmounts.Count, LootChances.Count ) );
-		var rng = new Random();
-		for ( int i = 0; i < count; i++ )
+		if ( count == 0 )
 		{
-			if ( LootItems[i] == ItemId.None )
+			_contributorSteamIds.Clear();
+			return;
+		}
+
+		var rng = new Random();
+
+		foreach ( var steamId in _contributorSteamIds )
+		{
+			var itemIds = new ItemId[count];
+			var amounts = new int[count];
+
+			bool any = false;
+			for ( int i = 0; i < count; i++ )
+			{
+				if ( LootItems[i] == ItemId.None )
+				{
+					itemIds[i] = ItemId.None;
+					amounts[i] = 0;
+					continue;
+				}
+
+				if ( (float)( rng.NextDouble() * 100.0 ) < LootChances[i] )
+				{
+					itemIds[i] = LootItems[i];
+					amounts[i] = LootAmounts[i];
+					any = true;
+				}
+				else
+				{
+					itemIds[i] = ItemId.None;
+					amounts[i] = 0;
+				}
+			}
+
+			if ( any )
+				BroadcastLootReward( steamId, itemIds, amounts );
+		}
+
+		_contributorSteamIds.Clear();
+	}
+
+	[Rpc.Broadcast]
+	void BroadcastLootReward( ulong recipientSteamId, ItemId[] items, int[] amounts )
+	{
+		if ( Connection.Local == null || Connection.Local.SteamId != recipientSteamId )
+			return;
+
+		var localPlayer = FindLocalPlayerForLoot();
+		if ( localPlayer == null )
+			return;
+
+		var inventory = localPlayer.Components.Get<Inventory>();
+		if ( inventory == null )
+			return;
+
+		bool gainedAny = false;
+
+		int len = Math.Min( items.Length, amounts.Length );
+		for ( int i = 0; i < len; i++ )
+		{
+			var id = items[i];
+			int amt = amounts[i];
+			if ( id == ItemId.None || amt <= 0 )
 				continue;
 
-			if ( (float)( rng.NextDouble() * 100.0 ) < LootChances[i] )
-				inventory.AddItem( LootItems[i], LootAmounts[i] );
+			inventory.AddItem( id, amt );
+			ItemPickupEffect.Trigger( id );
+			LogLoot( id, amt );
+			gainedAny = true;
 		}
+
+		if ( gainedAny )
+			SoundLibrary.PlayReceiveItem();
+	}
+
+	GameObject FindLocalPlayerForLoot()
+	{
+		foreach ( var pc in Scene.GetAllComponents<PlayerController>() )
+		{
+			var owner = pc.Network.Owner;
+			if ( owner != null && Connection.Local != null && owner.SteamId == Connection.Local.SteamId )
+				return pc.GameObject;
+		}
+		return null;
+	}
+
+	static void LogLoot( ItemId item, int amount )
+	{
+		var def = ItemDatabase.Get( item );
+		string name = def != null ? def.Name : item.ToString();
+		GameLog.Add( $"You looted {amount}x {name}.", "#6db8f0" );
 	}
 
 	void FaceTarget( Vector3 targetPos )
