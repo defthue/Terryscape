@@ -872,26 +872,35 @@ public sealed class Monster : Component
 
 			if ( loot1 != ItemId.None && amount1 > 0 )
 			{
-				inventory.AddItem( loot1, amount1 );
-				ItemPickupEffect.Trigger( loot1 );
-				LogLoot( loot1, amount1 );
-				gainedAnyItem = true;
+				var (placed, banked) = inventory.AddItemOrBank( loot1, amount1 );
+				if ( placed > 0 || banked > 0 )
+				{
+					ItemPickupEffect.Trigger( loot1 );
+					LogLootSplit( loot1, placed, banked );
+					gainedAnyItem = true;
+				}
 			}
 
 			if ( loot2 != ItemId.None && amount2 > 0 )
 			{
-				inventory.AddItem( loot2, amount2 );
-				ItemPickupEffect.Trigger( loot2 );
-				LogLoot( loot2, amount2 );
-				gainedAnyItem = true;
+				var (placed, banked) = inventory.AddItemOrBank( loot2, amount2 );
+				if ( placed > 0 || banked > 0 )
+				{
+					ItemPickupEffect.Trigger( loot2 );
+					LogLootSplit( loot2, placed, banked );
+					gainedAnyItem = true;
+				}
 			}
 
 			if ( loot3 != ItemId.None && amount3 > 0 )
 			{
-				inventory.AddItem( loot3, amount3 );
-				ItemPickupEffect.Trigger( loot3 );
-				LogLoot( loot3, amount3 );
-				gainedAnyItem = true;
+				var (placed, banked) = inventory.AddItemOrBank( loot3, amount3 );
+				if ( placed > 0 || banked > 0 )
+				{
+					ItemPickupEffect.Trigger( loot3 );
+					LogLootSplit( loot3, placed, banked );
+					gainedAnyItem = true;
+				}
 			}
 		}
 
@@ -1226,5 +1235,17 @@ public sealed class Monster : Component
 		var def = ItemDatabase.Get( item );
 		string name = def != null ? def.Name : item.ToString();
 		GameLog.Add( $"You looted {amount}x {name}.", "#6db8f0" );
+	}
+
+	static void LogLootSplit( ItemId item, int placed, int banked )
+	{
+		var def = ItemDatabase.Get( item );
+		string name = def != null ? def.Name : item.ToString();
+
+		if ( placed > 0 )
+			GameLog.Add( $"You looted {placed}x {name}.", "#6db8f0" );
+
+		if ( banked > 0 )
+			GameLog.Add( $"Inventory full — {banked}x {name} sent to your bank.", "#c9a84c" );
 	}
 }

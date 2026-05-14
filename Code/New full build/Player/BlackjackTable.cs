@@ -856,8 +856,11 @@ public sealed class BlackjackTable : Component
 		var inventory = localPlayer.Components.Get<Inventory>();
 		if ( inventory == null ) return;
 
-		inventory.AddItem( ItemId.GoldCoin, amount );
-		Log.Info( $"[Blackjack] Added {amount}g to local player" );
+		var (placed, banked) = inventory.AddItemOrBank( ItemId.GoldCoin, amount );
+		Log.Info( $"[Blackjack] Added {amount}g to local player (placed: {placed}, banked: {banked})" );
+
+		if ( banked > 0 )
+			GameLog.Add( $"Inventory full — {banked} gold sent to your bank.", "#c9a84c" );
 	}
 
 	bool ValidateActionCaller( int seatIndex )

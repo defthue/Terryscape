@@ -6,6 +6,11 @@
 @inherits PanelComponent
 
 <root>
+	@if ( IsUIOpen )
+	{
+		<div class="ui-backdrop" onclick="@OnBackdropClick"></div>
+	}
+
 	<div class="log-panel @(IsUIOpen ? "ui-open" : "") @(IsChatOpen ? "chat-open" : "")">
 		<div class="log-tabs">
 			<div class="log-tab @(LogTab == 0 ? "active" : "")" onclick="@(() => LogTab = 0)">All</div>
@@ -113,54 +118,98 @@
 				<div class="inventory-grid">
 					@for ( int i = 0; i < TotalSlots; i++ )
 					{
-						var unique = GetUniqueAtSlot( i );
-						var item = GetItemAtSlot( i );
+						var slotIndex = i;
+						var slotData = GetSlotData( slotIndex );
+						bool isHotbar = slotIndex < HotbarSize;
+						bool isPickedFrom = PickedUpSlotIndex == slotIndex;
+						bool isEquipped = slotData != null && slotData.IsEquipped;
+						string equipBadge = slotData != null ? slotData.EquipBadge : "";
 
-						@if ( unique != null )
+						@if ( slotData != null && slotData.IsUnique )
 						{
-							var def = ItemDatabase.Get( unique.Instance.ItemId );
-							string color = unique.Instance.IsEnchanted ? "#a080d0" : GetItemColor( unique.Instance.ItemId, def );
+							var inst = slotData.Unique;
+							var def = ItemDatabase.Get( inst.ItemId );
+							string color = inst.IsEnchanted ? "#a080d0" : GetItemColor( inst.ItemId, def );
 
-							<div class="item-slot filled equippable @(IsRecentlyReceived( unique.Instance.ItemId ) ? "just-received" : "")"
-								 onclick="@(() => OnUniqueSlotClick( unique ))">
-								<div class="item-icon" style="background: @color;">
-									<img class="item-icon-img" src="@GetIconPath( unique.Instance.ItemId )" />
-								</div>
-								@if ( unique.Instance.IsEnchanted )
+							<div class="item-slot filled equippable @(isHotbar ? "hotbar" : "") @(isPickedFrom ? "picked-up" : "") @(isEquipped ? "is-equipped" : "") @(IsRecentlyReceived( inst.ItemId ) ? "just-received" : "")"
+								 onclick="@(() => OnSlotLeftClick( slotIndex ))">
+								@if ( isHotbar )
 								{
-									<div class="item-enchant">@unique.Instance.GetShortStat()</div>
+									<div class="hotbar-key">@(slotIndex + 1)</div>
 								}
+								@if ( isEquipped )
+								{
+									<div class="equipped-badge">@equipBadge</div>
+								}
+								<div class="item-icon" style="background: @color;">
+									<img class="item-icon-img" src="@GetIconPath( inst.ItemId )" />
+								</div>
+								@if ( inst.IsEnchanted )
+								{
+									<div class="item-enchant">@inst.GetShortStat()</div>
+								}
+								<div class="use-button equip-button"
+									 onclick="@(() => OnUseButtonClick( slotIndex ))">⚡</div>
 								<div class="item-tooltip">
-									@unique.Instance.GetDisplayName()
-									<div class="tooltip-hint">Click to equip</div>
+									@inst.GetDisplayName()
+									<div class="tooltip-hint">Click slot to move · Click ⚡ to @(isEquipped ? "unequip" : "equip")</div>
 								</div>
 							</div>
 						}
-						else if ( item != null )
+						else if ( slotData != null && slotData.IsStack )
 						{
-							bool isPotion = item.ItemId != ItemId.None && ItemDatabase.Get( item.ItemId )?.Type == ItemType.Potion;
+							bool isPotion = ItemDatabase.Get( slotData.ItemId )?.Type == ItemType.Potion;
+							bool isArrow = ItemDatabase.Get( slotData.ItemId )?.Type == ItemType.Arrow;
+							bool hasUseBtn = isPotion || isArrow;
 
-							<div class="item-slot filled @(isPotion ? "potion-slot" : "") @(IsRecentlyReceived( item.ItemId ) ? "just-received" : "")"
-								 onclick="@(() => OnInventorySlotClick( item ))">
-								<div class="item-icon" style="background: @item.Color;">
-									<img class="item-icon-img" src="@GetIconPath( item.ItemId )" />
-								</div>
-								@if ( item.Count > 1 )
+							<div class="item-slot filled @(isPotion ? "potion-slot" : "") @(isHotbar ? "hotbar" : "") @(isPickedFrom ? "picked-up" : "") @(isEquipped ? "is-equipped" : "") @(IsRecentlyReceived( slotData.ItemId ) ? "just-received" : "")"
+								 onclick="@(() => OnSlotLeftClick( slotIndex ))">
+								@if ( isHotbar )
 								{
-									<div class="item-count">@item.Count</div>
+									<div class="hotbar-key">@(slotIndex + 1)</div>
+								}
+								@if ( isEquipped )
+								{
+									<div class="equipped-badge">@equipBadge</div>
+								}
+								<div class="item-icon" style="background: @slotData.Color;">
+									<img class="item-icon-img" src="@GetIconPath( slotData.ItemId )" />
+								</div>
+								@if ( slotData.Count > 1 )
+								{
+									<div class="item-count">@slotData.Count</div>
+								}
+								@if ( hasUseBtn )
+								{
+									<div class="use-button @(isPotion ? "potion-button" : "arrow-button")"
+										 onclick="@(() => OnUseButtonClick( slotIndex ))">@(isPotion ? "🍶" : "🏹")</div>
 								}
 								<div class="item-tooltip">
-									@item.Name x@(item.Count)
+									@slotData.Name x@(slotData.Count)
 									@if ( isPotion )
 									{
-										<div class="tooltip-hint">Click to drink</div>
+										<div class="tooltip-hint">Click slot to move · Click 🍶 to drink</div>
+									}
+									else if ( isArrow )
+									{
+										<div class="tooltip-hint">Click slot to move · Click 🏹 to @(isEquipped ? "unequip" : "equip")</div>
+									}
+									else
+									{
+										<div class="tooltip-hint">Click to pick up</div>
 									}
 								</div>
 							</div>
 						}
 						else
 						{
-							<div class="item-slot"></div>
+							<div class="item-slot @(isHotbar ? "hotbar" : "")"
+								 onclick="@(() => OnSlotLeftClick( slotIndex ))">
+								@if ( isHotbar )
+								{
+									<div class="hotbar-key">@(slotIndex + 1)</div>
+								}
+							</div>
 						}
 					}
 				</div>
@@ -216,13 +265,33 @@
 
 		</div>
 	</div>
+
+	@if ( PickedUpSlotIndex >= 0 && PickedUpGhost != null )
+	{
+		<div class="pickup-ghost" style="left: @(CursorXPercent.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%; top: @(CursorYPercent.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%; background: @PickedUpGhost.Color;">
+			<img class="pickup-ghost-img" src="@GetIconPath( PickedUpGhost.ItemId )" />
+			@if ( PickedUpGhost.Count > 1 )
+			{
+				<div class="pickup-ghost-count">@PickedUpGhost.Count</div>
+			}
+		</div>
+	}
 </root>
 
 @code
 {
+	const int HotbarSize = 5;
+
 	int ActiveTab { get; set; } = 1;
-	int LogTab { get; set; } = 0; // 0=All, 1=Log, 2=Chat
+	int LogTab { get; set; } = 0;
 	bool _hasInitialized = false;
+
+	int PickedUpSlotIndex { get; set; } = -1;
+	GhostDisplay PickedUpGhost { get; set; }
+	float CursorXPercent { get; set; } = 0;
+	float CursorYPercent { get; set; } = 0;
+
+	bool _suppressNextSlotClick = false;
 
 	bool IsUIOpen => PlayerGatherResource.UIOpen;
 
@@ -247,9 +316,6 @@
 		return gm.ChatMessages;
 	}
 
-	// Combined feed for the "All" tab.
-	// Sorted by Created (RealTimeSince) so log + chat messages interleave by arrival order.
-	// Older messages first, newest at the end (.Reverse() in the razor flips it for column-reverse layout).
 	public class FeedEntry
 	{
 		public bool IsChat;
@@ -333,33 +399,30 @@
 	bool IsHealTicking { get; set; }
 	List<ActiveBuff> ActiveBuffs { get; set; } = new();
 
-	List<ItemSlotDisplay> CachedItems { get; set; } = new();
-	List<UniqueSlotDisplay> CachedUnique { get; set; } = new();
+	List<SlotData> CachedSlots { get; set; } = new();
 	List<SkillDisplay> SkillEntries { get; set; } = new();
 	List<EquipSlotDisplay> EquipmentSlots { get; set; } = new();
 
-	int TotalSlots
-	{
-		get
-		{
-			int needed = CachedUnique.Count + CachedItems.Count;
-			return needed > 20 ? needed : 20;
-		}
-	}
+	int TotalSlots { get; set; } = 30;
 
-	public class ItemSlotDisplay
+	public class SlotData
 	{
+		public bool IsStack;
+		public bool IsUnique;
+		public ItemId ItemId;
+		public int Count;
 		public string Name;
 		public string Color;
-		public int Count;
-		public bool Equippable;
-		public ItemId ItemId;
+		public ItemInstance Unique;
+		public bool IsEquipped;
+		public string EquipBadge;
 	}
 
-	public class UniqueSlotDisplay
+	public class GhostDisplay
 	{
-		public ItemInstance Instance;
-		public int OriginalIndex;
+		public ItemId ItemId;
+		public int Count;
+		public string Color;
 	}
 
 	public class SkillDisplay
@@ -391,46 +454,183 @@
 		return $"/ItemIcons/{id}.vtex";
 	}
 
-	// True for a brief moment after the player receives this item from a node
-	// or monster — used to apply the "just-received" bump animation to the slot.
 	bool IsRecentlyReceived( ItemId id )
 	{
 		return ItemPickupEffect.IsRecentlyReceived( id );
 	}
 
-	void OnInventorySlotClick( ItemSlotDisplay item )
+	SlotData GetSlotData( int index )
 	{
-		if ( item == null )
-			return;
+		if ( index < 0 || index >= CachedSlots.Count )
+			return null;
 
-		var def = ItemDatabase.Get( item.ItemId );
-		if ( def != null && def.Type == ItemType.Potion )
-		{
-			var potionSystem = PlayerHelper.GetLocalPlayer()?.Components.Get<PotionSystem>();
-			if ( potionSystem != null )
-				potionSystem.TryDrinkPotion( item.ItemId );
-			return;
-		}
+		return CachedSlots[index];
+	}
 
-		if ( def != null && def.Type == ItemType.Arrow )
+	string GetBadgeForEquipSlot( EquipSlot slot )
+	{
+		switch ( slot )
 		{
-			var inventory = PlayerHelper.GetLocalInventory();
-			if ( inventory != null )
-				inventory.EquipAmmo( item.ItemId );
-			return;
+			case EquipSlot.Weapon: return "⚔";
+			case EquipSlot.Shield: return "🛡";
+			case EquipSlot.Head: return "⛑";
+			case EquipSlot.Chest: return "🎽";
+			case EquipSlot.Legs: return "👖";
+			case EquipSlot.Ring: return "💍";
+			case EquipSlot.Amulet: return "📿";
+			case EquipSlot.Ammo: return "🏹";
+			default: return "★";
 		}
 	}
 
-	void OnUniqueSlotClick( UniqueSlotDisplay unique )
+	void OnSlotLeftClick( int slotIndex )
 	{
-		if ( unique == null )
+		if ( _suppressNextSlotClick )
+		{
+			_suppressNextSlotClick = false;
 			return;
+		}
 
 		var inventory = PlayerHelper.GetLocalInventory();
 		if ( inventory == null )
 			return;
 
-		inventory.EquipUnique( unique.OriginalIndex );
+		if ( PickedUpSlotIndex < 0 )
+		{
+			var slot = inventory.GetSlot( slotIndex );
+			if ( slot == null || slot.IsEmpty )
+				return;
+
+			PickedUpSlotIndex = slotIndex;
+			RefreshGhost( inventory );
+			return;
+		}
+
+		if ( PickedUpSlotIndex == slotIndex )
+		{
+			ClearPickup();
+			return;
+		}
+
+		inventory.SwapSlots( PickedUpSlotIndex, slotIndex );
+		ClearPickup();
+	}
+
+	void OnUseButtonClick( int slotIndex )
+	{
+		_suppressNextSlotClick = true;
+
+		var inventory = PlayerHelper.GetLocalInventory();
+		if ( inventory == null )
+			return;
+
+		if ( PickedUpSlotIndex >= 0 )
+			ClearPickup();
+
+		var slot = inventory.GetSlot( slotIndex );
+		if ( slot == null || slot.IsEmpty )
+			return;
+
+		if ( slot.IsUnique )
+		{
+			if ( inventory.IsSlotEquipped( slotIndex ) )
+			{
+				var equipType = inventory.GetEquippedSlotTypeAt( slotIndex );
+				if ( equipType != EquipSlot.None )
+					inventory.UnequipUnique( equipType );
+			}
+			else
+			{
+				inventory.EquipUniqueAtSlot( slotIndex );
+			}
+			return;
+		}
+
+		var def = ItemDatabase.Get( slot.ItemId );
+		if ( def == null )
+			return;
+
+		if ( def.Type == ItemType.Potion )
+		{
+			var potionSystem = PlayerHelper.GetLocalPlayer()?.Components.Get<PotionSystem>();
+			if ( potionSystem != null )
+				potionSystem.TryDrinkPotionFromSlot( slotIndex );
+			return;
+		}
+
+		if ( def.Type == ItemType.Arrow )
+		{
+			if ( inventory.GetEquippedAmmoSlotIndex() == slotIndex )
+				inventory.UnequipAmmo();
+			else
+				inventory.EquipAmmoFromSlot( slotIndex );
+			return;
+		}
+	}
+
+	void ClearPickup()
+	{
+		PickedUpSlotIndex = -1;
+		PickedUpGhost = null;
+	}
+
+	void OnBackdropClick()
+	{
+		if ( PickedUpSlotIndex >= 0 )
+		{
+			ClearPickup();
+			return;
+		}
+
+		if ( ShopStation.ActiveShop != null || ShopStation.ShowingChoice ) return;
+		if ( BankStation.ActiveBank != null ) return;
+		if ( CraftingStation.ActiveStation != null ) return;
+		if ( EnchantingStation.ActiveStation != null ) return;
+		if ( TeleportStone.ActiveStone != null ) return;
+		if ( NpcInteract.ActiveNpc != null ) return;
+		if ( JournalStation.IsOpen ) return;
+		if ( LeaderboardStation.IsOpen ) return;
+		if ( MinimapState.IsFullMapOpen ) return;
+		if ( WelcomeHudState.IsOpen ) return;
+
+		PlayerGatherResource.ForceCloseUI();
+	}
+
+	void RefreshGhost( Inventory inventory )
+	{
+		if ( PickedUpSlotIndex < 0 )
+		{
+			PickedUpGhost = null;
+			return;
+		}
+
+		var slot = inventory.GetSlot( PickedUpSlotIndex );
+		if ( slot == null || slot.IsEmpty )
+		{
+			ClearPickup();
+			return;
+		}
+
+		if ( slot.IsUnique )
+		{
+			var def = ItemDatabase.Get( slot.Unique.ItemId );
+			string color = slot.Unique.IsEnchanted ? "#a080d0" : GetItemColor( slot.Unique.ItemId, def );
+			PickedUpGhost = new GhostDisplay
+			{
+				ItemId = slot.Unique.ItemId,
+				Count = 1,
+				Color = color
+			};
+			return;
+		}
+
+		var sdef = ItemDatabase.Get( slot.ItemId );
+		PickedUpGhost = new GhostDisplay
+		{
+			ItemId = slot.ItemId,
+			Count = slot.Count,
+			Color = GetItemColor( slot.ItemId, sdef )
+		};
 	}
 
 	void OnEquipSlotClick( EquipSlotDisplay slot )
@@ -461,22 +661,6 @@
 	List<GameLog.LogMessage> GetVisibleMessages()
 	{
 		return GameLog.Messages;
-	}
-
-	ItemSlotDisplay GetItemAtSlot( int index )
-	{
-		int uniqueCount = CachedUnique.Count;
-		int adjustedIndex = index - uniqueCount;
-
-		if ( index < uniqueCount )
-			return null;
-
-		return adjustedIndex < CachedItems.Count ? CachedItems[adjustedIndex] : null;
-	}
-
-	UniqueSlotDisplay GetUniqueAtSlot( int index )
-	{
-		return index < CachedUnique.Count ? CachedUnique[index] : null;
 	}
 
 	string GetItemColor( ItemId id, ItemDefinition def )
@@ -568,8 +752,7 @@
 
 	void RefreshData()
 	{
-		CachedItems.Clear();
-		CachedUnique.Clear();
+		CachedSlots.Clear();
 		SkillEntries.Clear();
 		EquipmentSlots.Clear();
 		ActiveBuffs.Clear();
@@ -616,35 +799,46 @@
 
 		if ( inventory != null )
 		{
-			var uniqueItems = inventory.GetUniqueItems();
-			for ( int i = 0; i < uniqueItems.Count; i++ )
+			TotalSlots = inventory.MaxSlots;
+
+			var rawSlots = inventory.GetSlots();
+			for ( int i = 0; i < inventory.MaxSlots; i++ )
 			{
-				CachedUnique.Add( new UniqueSlotDisplay
+				var src = rawSlots[i];
+				var data = new SlotData();
+
+				if ( src.IsUnique )
 				{
-					Instance = uniqueItems[i],
-					OriginalIndex = i
-				} );
+					data.IsUnique = true;
+					data.Unique = src.Unique;
+					data.ItemId = src.Unique.ItemId;
+					data.Count = 1;
+					var def = ItemDatabase.Get( src.Unique.ItemId );
+					data.Name = def != null ? def.Name : src.Unique.ItemId.ToString();
+					data.Color = src.Unique.IsEnchanted ? "#a080d0" : GetItemColor( src.Unique.ItemId, def );
+				}
+				else if ( src.IsStack )
+				{
+					data.IsStack = true;
+					data.ItemId = src.ItemId;
+					data.Count = src.Count;
+					var def = ItemDatabase.Get( src.ItemId );
+					data.Name = def != null ? def.Name : src.ItemId.ToString();
+					data.Color = GetItemColor( src.ItemId, def );
+				}
+
+				if ( inventory.IsSlotEquipped( i ) )
+				{
+					data.IsEquipped = true;
+					var equipType = inventory.GetEquippedSlotTypeAt( i );
+					data.EquipBadge = GetBadgeForEquipSlot( equipType );
+				}
+
+				CachedSlots.Add( data );
 			}
 
-			foreach ( var stack in inventory.GetItemStacks() )
-			{
-				if ( stack.Count <= 0 ) continue;
-
-				var def = ItemDatabase.Get( stack.ItemId );
-				string name = def != null ? def.Name : stack.ItemId.ToString();
-
-				CachedItems.Add( new ItemSlotDisplay
-				{
-					Name = name,
-					Color = GetItemColor( stack.ItemId, def ),
-					Count = stack.Count,
-					Equippable = false,
-					ItemId = stack.ItemId
-				} );
-			}
-
-			EquipSlot[] slots = { EquipSlot.Weapon, EquipSlot.Shield, EquipSlot.Head, EquipSlot.Chest, EquipSlot.Legs, EquipSlot.Ring, EquipSlot.Amulet, EquipSlot.Ammo };
-			foreach ( var slot in slots )
+			EquipSlot[] equipSlots = { EquipSlot.Weapon, EquipSlot.Shield, EquipSlot.Head, EquipSlot.Chest, EquipSlot.Legs, EquipSlot.Ring, EquipSlot.Amulet, EquipSlot.Ammo };
+			foreach ( var slot in equipSlots )
 			{
 				if ( slot == EquipSlot.Ammo )
 				{
@@ -707,6 +901,22 @@
 					ItemId = ItemId.None
 				} );
 			}
+
+			if ( PickedUpSlotIndex >= 0 )
+			{
+				if ( PickedUpSlotIndex >= inventory.MaxSlots )
+				{
+					ClearPickup();
+				}
+				else
+				{
+					var heldSlot = inventory.GetSlot( PickedUpSlotIndex );
+					if ( heldSlot == null || heldSlot.IsEmpty )
+						ClearPickup();
+					else
+						RefreshGhost( inventory );
+				}
+			}
 		}
 
 		if ( skills != null )
@@ -734,13 +944,53 @@
 		}
 	}
 
+	bool ShouldDropPickup()
+	{
+		if ( !IsUIOpen )
+			return true;
+
+		if ( ShopStation.ActiveShop != null || ShopStation.ShowingChoice )
+			return true;
+		if ( BankStation.ActiveBank != null )
+			return true;
+		if ( CraftingStation.ActiveStation != null )
+			return true;
+		if ( EnchantingStation.ActiveStation != null )
+			return true;
+		if ( TeleportStone.ActiveStone != null )
+			return true;
+		if ( NpcInteract.ActiveNpc != null )
+			return true;
+		if ( JournalStation.IsOpen )
+			return true;
+		if ( LeaderboardStation.IsOpen )
+			return true;
+		if ( MinimapState.IsFullMapOpen )
+			return true;
+		if ( WelcomeHudState.IsOpen )
+			return true;
+
+		return false;
+	}
+
 	protected override void OnUpdate()
 	{
-		// Force the panel to re-evaluate BuildHash and re-render every frame.
-		// Without this, joining clients (proxies) don't get polled aggressively enough
-		// and HUD elements like inventory, health, and chat go stale until something
-		// like opening the inventory triggers a manual refresh.
 		StateHasChanged();
+
+		if ( PickedUpSlotIndex >= 0 )
+		{
+			var mp = Mouse.Position;
+			float sw = Screen.Width;
+			float sh = Screen.Height;
+			if ( sw > 0f && sh > 0f )
+			{
+				CursorXPercent = ( mp.x / sw ) * 100f;
+				CursorYPercent = ( mp.y / sh ) * 100f;
+			}
+
+			if ( ShouldDropPickup() )
+				ClearPickup();
+		}
 
 		if ( IsChatOpen && ChatInputRef != null )
 			ChatInputRef.Focus();
@@ -753,8 +1003,6 @@
 			return;
 		}
 
-		// T key opens chat. If on Log tab (where chat isn't visible), switch to All so the
-		// player can see what they're typing about. Stay on All or Chat if already there.
 		if ( Input.Pressed( "Chat" ) )
 		{
 			if ( LogTab == 1 )
@@ -779,30 +1027,30 @@
 		foreach ( var s in SkillEntries )
 			skillHash += s.Level * 1000 + s.Xp;
 
-		int uniqueHash = 0;
-		foreach ( var u in CachedUnique )
-			uniqueHash += (int)u.Instance.ItemId * 100 + (int)(u.Instance.EnchantmentPercent * 10);
-
 		int buffHash = 0;
 		foreach ( var b in ActiveBuffs )
 			buffHash += (int)b.Type * 100 + (int)b.Remaining;
 
-		int itemHash = 0;
-		for ( int i = 0; i < CachedItems.Count; i++ )
+		int slotHash = 0;
+		for ( int i = 0; i < CachedSlots.Count; i++ )
 		{
-			var item = CachedItems[i];
-			itemHash = HashCode.Combine( itemHash, item.ItemId, item.Count, i );
+			var slot = CachedSlots[i];
+			int eq = slot.IsEquipped ? 1 : 0;
+			if ( slot.IsUnique )
+				slotHash = HashCode.Combine( slotHash, slot.ItemId, (int)( slot.Unique.EnchantmentPercent * 10 ), i, 1, eq );
+			else if ( slot.IsStack )
+				slotHash = HashCode.Combine( slotHash, slot.ItemId, slot.Count, i, 0, eq );
+			else
+				slotHash = HashCode.Combine( slotHash, i, -1 );
 		}
 
 		int chatCount = GameManager.Instance != null ? GameManager.Instance.ChatMessages.Count : 0;
 
 		return (
-			CachedItems.Count,
-			CachedUnique.Count,
+			TotalSlots,
+			slotHash,
 			skillHash,
-			uniqueHash,
 			buffHash,
-			itemHash,
 			CurrentHealth,
 			MaxHealth,
 			CurrentMana,
@@ -814,7 +1062,10 @@
 			GameLog.Messages.Count,
 			chatCount,
 			LogTab,
-			IsChatOpen
+			IsChatOpen,
+			PickedUpSlotIndex,
+			(int)CursorXPercent,
+			(int)CursorYPercent
 		).GetHashCode();
 	}
 }

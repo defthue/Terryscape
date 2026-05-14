@@ -12,9 +12,21 @@ public sealed class Inventory : Component
 	[Sync] public ItemId EquippedRing { get; set; } = ItemId.None;
 	[Sync] public ItemId EquippedAmulet { get; set; } = ItemId.None;
 
-	List<ItemStack> _itemStacks = new();
-	List<ItemInstance> _uniqueItems = new();
-	Dictionary<EquipSlot, ItemInstance> _equippedUnique = new();
+	public const int BaseSlots = 30;
+	public const int SlotsPerExpansion = 5;
+	public const int HotbarSize = 5;
+
+	int _expansions = 0;
+
+	public int MaxSlots => BaseSlots + _expansions * SlotsPerExpansion;
+	public int ExpansionCount => _expansions;
+
+	List<InventorySlot> _slots = new();
+
+	Dictionary<EquipSlot, int> _equippedSlotIndex = new();
+
+	int _equippedAmmoSlotIndex = -1;
+
 	HashSet<string> _unlockedRecipes = new();
 	HashSet<string> _discoveredStones = new();
 	HashSet<string> _completedQuests = new();
@@ -24,10 +36,35 @@ public sealed class Inventory : Component
 
 	int _nodesMined = 0;
 
-	ItemId _equippedAmmoId = ItemId.None;
-	int _equippedAmmoCount = 0;
-
 	bool _suppressUnequipSound = false;
+
+	public class InventorySlot
+	{
+		public ItemId ItemId = ItemId.None;
+		public int Count = 0;
+		public ItemInstance Unique;
+
+		public bool IsEmpty => ItemId == ItemId.None && Unique == null;
+		public bool IsStack => Unique == null && ItemId != ItemId.None && Count > 0;
+		public bool IsUnique => Unique != null;
+
+		public void Clear()
+		{
+			ItemId = ItemId.None;
+			Count = 0;
+			Unique = null;
+		}
+
+		public InventorySlot Clone()
+		{
+			return new InventorySlot
+			{
+				ItemId = ItemId,
+				Count = Count,
+				Unique = Unique
+			};
+		}
+	}
 
 	protected override void OnStart()
 	{
@@ -36,9 +73,11 @@ public sealed class Inventory : Component
 
 	void InitializeDefaults()
 	{
-		_itemStacks.Clear();
-		_uniqueItems.Clear();
-		_equippedUnique.Clear();
+		_slots.Clear();
+		EnsureSlotCapacity();
+
+		_equippedSlotIndex.Clear();
+		_equippedAmmoSlotIndex = -1;
 
 		if ( !IsProxy )
 		{
@@ -58,8 +97,12 @@ public sealed class Inventory : Component
 		_killCounts.Clear();
 		_chestClaims.Clear();
 		_nodesMined = 0;
-		_equippedAmmoId = ItemId.None;
-		_equippedAmmoCount = 0;
+	}
+
+	void EnsureSlotCapacity()
+	{
+		while ( _slots.Count < MaxSlots )
+			_slots.Add( new InventorySlot() );
 	}
 
 	public void GrantStarterKit()
@@ -80,25 +123,87 @@ public sealed class Inventory : Component
 		return def.Slot != EquipSlot.None;
 	}
 
-	public int GetItemCount( ItemId id )
+	public List<InventorySlot> GetSlots()
 	{
-		if ( IsEquipmentItem( id ) )
+		return _slots;
+	}
+
+	public InventorySlot GetSlot( int index )
+	{
+		if ( index < 0 || index >= _slots.Count )
+			return null;
+
+		return _slots[index];
+	}
+
+	public int CountEmptySlots()
+	{
+		int count = 0;
+		for ( int i = 0; i < MaxSlots; i++ )
 		{
-			int count = 0;
-			foreach ( var item in _uniqueItems )
-			{
-				if ( item.ItemId == id && !item.IsEnchanted )
-					count++;
-			}
-			return count;
+			if ( _slots[i].IsEmpty )
+				count++;
+		}
+		return count;
+	}
+
+	public bool HasEmptySlot()
+	{
+		return FindFirstEmptySlot() >= 0;
+	}
+
+	public bool CanFitStackable( ItemId id, int amount )
+	{
+		if ( id == ItemId.None || amount <= 0 )
+			return true;
+
+		var def = ItemDatabase.Get( id );
+		int maxStack = def != null ? def.MaxStack : 999;
+		if ( maxStack < 1 ) maxStack = 1;
+
+		int remaining = amount;
+
+		for ( int i = 0; i < MaxSlots && remaining > 0; i++ )
+		{
+			var slot = _slots[i];
+			if ( slot.IsStack && slot.ItemId == id )
+				remaining -= ( maxStack - slot.Count );
 		}
 
+		if ( remaining <= 0 )
+			return true;
+
+		int empties = CountEmptySlots();
+		remaining -= empties * maxStack;
+
+		return remaining <= 0;
+	}
+
+	public int GetItemCount( ItemId id )
+	{
+		if ( id == ItemId.None )
+			return 0;
+
 		int total = 0;
-		foreach ( var stack in _itemStacks )
+
+		if ( IsEquipmentItem( id ) )
 		{
-			if ( stack.ItemId == id )
-				total += stack.Count;
+			for ( int i = 0; i < MaxSlots; i++ )
+			{
+				var slot = _slots[i];
+				if ( slot.IsUnique && slot.Unique.ItemId == id && !slot.Unique.IsEnchanted )
+					total++;
+			}
+			return total;
 		}
+
+		for ( int i = 0; i < MaxSlots; i++ )
+		{
+			var slot = _slots[i];
+			if ( slot.IsStack && slot.ItemId == id )
+				total += slot.Count;
+		}
+
 		return total;
 	}
 
@@ -112,13 +217,76 @@ public sealed class Inventory : Component
 		if ( id == ItemId.None || amount <= 0 )
 			return 0;
 
+		return TryPlaceItem( id, amount );
+	}
+
+	public (int placed, int banked) AddItemOrBank( ItemId id, int amount = 1 )
+	{
+		if ( id == ItemId.None || amount <= 0 )
+			return (0, 0);
+
+		int placed = TryPlaceItem( id, amount );
+		int remaining = amount - placed;
+
+		int banked = 0;
+		if ( remaining > 0 )
+		{
+			var bank = Components.Get<BankStorage>();
+			if ( bank != null )
+			{
+				if ( IsEquipmentItem( id ) )
+				{
+					for ( int i = 0; i < remaining; i++ )
+						bank.DepositUnique( new ItemInstance( id ) );
+				}
+				else
+				{
+					bank.Deposit( id, remaining );
+				}
+				banked = remaining;
+			}
+		}
+
+		return (placed, banked);
+	}
+
+	public bool AddUniqueItemOrBank( ItemInstance instance )
+	{
+		if ( instance == null )
+			return false;
+
+		int slotIndex = FindFirstEmptySlot();
+		if ( slotIndex >= 0 )
+		{
+			_slots[slotIndex].Unique = instance;
+			return true;
+		}
+
+		var bank = Components.Get<BankStorage>();
+		if ( bank != null )
+		{
+			bank.DepositUnique( instance );
+			return false;
+		}
+
+		return false;
+	}
+
+	int TryPlaceItem( ItemId id, int amount )
+	{
 		if ( IsEquipmentItem( id ) )
 		{
-			for ( int i = 0; i < amount; i++ )
-				_uniqueItems.Add( new ItemInstance( id ) );
+			int placed = 0;
+			while ( placed < amount )
+			{
+				int slotIndex = FindFirstEmptySlot();
+				if ( slotIndex < 0 )
+					break;
 
-			PlayerPersistence.Local?.RequestSaveNow();
-			return amount;
+				_slots[slotIndex].Unique = new ItemInstance( id );
+				placed++;
+			}
+			return placed;
 		}
 
 		var def = ItemDatabase.Get( id );
@@ -127,28 +295,43 @@ public sealed class Inventory : Component
 
 		int remaining = amount;
 
-		for ( int i = 0; i < _itemStacks.Count && remaining > 0; i++ )
+		for ( int i = 0; i < MaxSlots && remaining > 0; i++ )
 		{
-			var stack = _itemStacks[i];
-			if ( stack.ItemId != id )
+			var slot = _slots[i];
+			if ( !slot.IsStack || slot.ItemId != id )
 				continue;
-			if ( stack.Count >= maxStack )
+			if ( slot.Count >= maxStack )
 				continue;
 
-			int room = maxStack - stack.Count;
+			int room = maxStack - slot.Count;
 			int put = remaining < room ? remaining : room;
-			stack.Count += put;
+			slot.Count += put;
 			remaining -= put;
 		}
 
 		while ( remaining > 0 )
 		{
+			int slotIndex = FindFirstEmptySlot();
+			if ( slotIndex < 0 )
+				break;
+
 			int put = remaining < maxStack ? remaining : maxStack;
-			_itemStacks.Add( new ItemStack { ItemId = id, Count = put } );
+			_slots[slotIndex].ItemId = id;
+			_slots[slotIndex].Count = put;
 			remaining -= put;
 		}
 
-		return amount;
+		return amount - remaining;
+	}
+
+	int FindFirstEmptySlot()
+	{
+		for ( int i = 0; i < MaxSlots; i++ )
+		{
+			if ( _slots[i].IsEmpty )
+				return i;
+		}
+		return -1;
 	}
 
 	public bool RemoveItem( ItemId id, int amount = 1 )
@@ -159,11 +342,12 @@ public sealed class Inventory : Component
 		if ( IsEquipmentItem( id ) )
 		{
 			int removed = 0;
-			for ( int i = _uniqueItems.Count - 1; i >= 0 && removed < amount; i-- )
+			for ( int i = MaxSlots - 1; i >= 0 && removed < amount; i-- )
 			{
-				if ( _uniqueItems[i].ItemId == id && !_uniqueItems[i].IsEnchanted )
+				var slot = _slots[i];
+				if ( slot.IsUnique && slot.Unique.ItemId == id && !slot.Unique.IsEnchanted )
 				{
-					_uniqueItems.RemoveAt( i );
+					ClearSlotAndUpdateEquipped( i );
 					removed++;
 				}
 			}
@@ -171,21 +355,20 @@ public sealed class Inventory : Component
 		}
 
 		int remaining = amount;
-
-		for ( int i = _itemStacks.Count - 1; i >= 0 && remaining > 0; i-- )
+		for ( int i = MaxSlots - 1; i >= 0 && remaining > 0; i-- )
 		{
-			var stack = _itemStacks[i];
-			if ( stack.ItemId != id )
+			var slot = _slots[i];
+			if ( !slot.IsStack || slot.ItemId != id )
 				continue;
 
-			if ( stack.Count <= remaining )
+			if ( slot.Count <= remaining )
 			{
-				remaining -= stack.Count;
-				_itemStacks.RemoveAt( i );
+				remaining -= slot.Count;
+				ClearSlotAndUpdateEquipped( i );
 			}
 			else
 			{
-				stack.Count -= remaining;
+				slot.Count -= remaining;
 				remaining = 0;
 			}
 		}
@@ -193,31 +376,228 @@ public sealed class Inventory : Component
 		return true;
 	}
 
+	public bool RemoveFromSlot( int slotIndex, int amount )
+	{
+		if ( slotIndex < 0 || slotIndex >= MaxSlots || amount <= 0 )
+			return false;
+
+		var slot = _slots[slotIndex];
+
+		if ( slot.IsUnique )
+		{
+			ClearSlotAndUpdateEquipped( slotIndex );
+			return true;
+		}
+
+		if ( !slot.IsStack )
+			return false;
+
+		if ( slot.Count <= amount )
+		{
+			ClearSlotAndUpdateEquipped( slotIndex );
+			return true;
+		}
+
+		slot.Count -= amount;
+		return true;
+	}
+
+	void ClearSlotAndUpdateEquipped( int slotIndex )
+	{
+		var keysToRemove = new List<EquipSlot>();
+		foreach ( var kv in _equippedSlotIndex )
+		{
+			if ( kv.Value == slotIndex )
+				keysToRemove.Add( kv.Key );
+		}
+
+		foreach ( var key in keysToRemove )
+		{
+			_equippedSlotIndex.Remove( key );
+			SyncEquippedSlot( key, ItemId.None );
+		}
+
+		if ( _equippedAmmoSlotIndex == slotIndex )
+			_equippedAmmoSlotIndex = -1;
+
+		_slots[slotIndex].Clear();
+	}
+
+	public bool SwapSlots( int indexA, int indexB )
+	{
+		if ( indexA == indexB )
+			return false;
+		if ( indexA < 0 || indexA >= MaxSlots )
+			return false;
+		if ( indexB < 0 || indexB >= MaxSlots )
+			return false;
+
+		var a = _slots[indexA];
+		var b = _slots[indexB];
+
+		if ( a.IsStack && b.IsStack && a.ItemId == b.ItemId )
+		{
+			var def = ItemDatabase.Get( a.ItemId );
+			int maxStack = def != null ? def.MaxStack : 999;
+			if ( maxStack < 1 ) maxStack = 1;
+
+			int room = maxStack - b.Count;
+			if ( room > 0 )
+			{
+				int move = a.Count < room ? a.Count : room;
+				b.Count += move;
+				a.Count -= move;
+
+				if ( a.Count <= 0 )
+					ClearSlotAndUpdateEquipped( indexA );
+
+				return true;
+			}
+		}
+
+		var temp = a.Clone();
+		a.ItemId = b.ItemId;
+		a.Count = b.Count;
+		a.Unique = b.Unique;
+		b.ItemId = temp.ItemId;
+		b.Count = temp.Count;
+		b.Unique = temp.Unique;
+
+		UpdateEquippedIndexOnSwap( indexA, indexB );
+
+		return true;
+	}
+
+	void UpdateEquippedIndexOnSwap( int indexA, int indexB )
+	{
+		var updates = new List<(EquipSlot key, int newValue)>();
+		foreach ( var kv in _equippedSlotIndex )
+		{
+			if ( kv.Value == indexA )
+				updates.Add( (kv.Key, indexB) );
+			else if ( kv.Value == indexB )
+				updates.Add( (kv.Key, indexA) );
+		}
+
+		foreach ( var u in updates )
+			_equippedSlotIndex[u.key] = u.newValue;
+
+		if ( _equippedAmmoSlotIndex == indexA )
+			_equippedAmmoSlotIndex = indexB;
+		else if ( _equippedAmmoSlotIndex == indexB )
+			_equippedAmmoSlotIndex = indexA;
+	}
+
+	public bool ExpandInventory()
+	{
+		_expansions++;
+		EnsureSlotCapacity();
+		PlayerPersistence.Local?.RequestSaveNow();
+		return true;
+	}
+
 	public IReadOnlyList<ItemStack> GetItemStacks()
 	{
-		return _itemStacks;
+		var list = new List<ItemStack>();
+		for ( int i = 0; i < MaxSlots; i++ )
+		{
+			var slot = _slots[i];
+			if ( slot.IsStack )
+				list.Add( new ItemStack { ItemId = slot.ItemId, Count = slot.Count } );
+		}
+		return list;
 	}
 
 	public void AddUniqueItem( ItemInstance instance )
 	{
-		_uniqueItems.Add( instance );
-		PlayerPersistence.Local?.RequestSaveNow();
+		AddUniqueItemOrBank( instance );
 	}
 
 	public void RemoveUniqueItem( int index )
 	{
-		if ( index >= 0 && index < _uniqueItems.Count )
-			_uniqueItems.RemoveAt( index );
+		var slotIndex = GetSlotIndexForUniqueByListIndex( index );
+		if ( slotIndex < 0 )
+			return;
+
+		ClearSlotAndUpdateEquipped( slotIndex );
+	}
+
+	int GetSlotIndexForUniqueByListIndex( int listIndex )
+	{
+		int counter = 0;
+		for ( int i = 0; i < MaxSlots; i++ )
+		{
+			if ( _slots[i].IsUnique )
+			{
+				if ( counter == listIndex )
+					return i;
+				counter++;
+			}
+		}
+		return -1;
 	}
 
 	public List<ItemInstance> GetUniqueItems()
 	{
-		return _uniqueItems;
+		var list = new List<ItemInstance>();
+		for ( int i = 0; i < MaxSlots; i++ )
+		{
+			if ( _slots[i].IsUnique )
+				list.Add( _slots[i].Unique );
+		}
+		return list;
 	}
 
 	public int GetUniqueItemCount()
 	{
-		return _uniqueItems.Count;
+		int count = 0;
+		for ( int i = 0; i < MaxSlots; i++ )
+		{
+			if ( _slots[i].IsUnique )
+				count++;
+		}
+		return count;
+	}
+
+	public int GetSlotIndexForUnique( ItemInstance instance )
+	{
+		if ( instance == null )
+			return -1;
+
+		for ( int i = 0; i < MaxSlots; i++ )
+		{
+			if ( _slots[i].Unique == instance )
+				return i;
+		}
+		return -1;
+	}
+
+	public bool IsSlotEquipped( int slotIndex )
+	{
+		foreach ( var kv in _equippedSlotIndex )
+		{
+			if ( kv.Value == slotIndex )
+				return true;
+		}
+
+		if ( _equippedAmmoSlotIndex == slotIndex )
+			return true;
+
+		return false;
+	}
+
+	public EquipSlot GetEquippedSlotTypeAt( int slotIndex )
+	{
+		foreach ( var kv in _equippedSlotIndex )
+		{
+			if ( kv.Value == slotIndex )
+				return kv.Key;
+		}
+
+		if ( _equippedAmmoSlotIndex == slotIndex )
+			return EquipSlot.Ammo;
+
+		return EquipSlot.None;
 	}
 
 	public bool EquipAmmo( ItemId ammoId )
@@ -225,12 +605,27 @@ public sealed class Inventory : Component
 		if ( ammoId == ItemId.None )
 			return false;
 
-		var def = ItemDatabase.Get( ammoId );
-		if ( def == null || def.Type != ItemType.Arrow )
+		for ( int i = 0; i < MaxSlots; i++ )
+		{
+			var slot = _slots[i];
+			if ( slot.IsStack && slot.ItemId == ammoId )
+				return EquipAmmoFromSlot( i );
+		}
+
+		return false;
+	}
+
+	public bool EquipAmmoFromSlot( int slotIndex )
+	{
+		if ( slotIndex < 0 || slotIndex >= MaxSlots )
 			return false;
 
-		int count = GetItemCount( ammoId );
-		if ( count <= 0 )
+		var slot = _slots[slotIndex];
+		if ( !slot.IsStack )
+			return false;
+
+		var def = ItemDatabase.Get( slot.ItemId );
+		if ( def == null || def.Type != ItemType.Arrow )
 			return false;
 
 		var skills = Components.Get<Skills>();
@@ -240,69 +635,47 @@ public sealed class Inventory : Component
 			return false;
 		}
 
-		if ( _equippedAmmoId == ammoId )
-		{
-			_equippedAmmoCount += count;
-			RemoveItem( ammoId, count );
+		_equippedAmmoSlotIndex = slotIndex;
 
-			GameLog.Add( $"Equipped {count}x {def.Name}.", "#c9a84c" );
-			SoundLibrary.PlayEquip();
-			return true;
-		}
-
-		if ( _equippedAmmoId != ItemId.None )
-		{
-			_suppressUnequipSound = true;
-			UnequipAmmo();
-			_suppressUnequipSound = false;
-		}
-
-		count = GetItemCount( ammoId );
-		if ( count <= 0 )
-			return false;
-
-		_equippedAmmoId = ammoId;
-		_equippedAmmoCount = count;
-		RemoveItem( ammoId, count );
-
-		GameLog.Add( $"Equipped {count}x {def.Name}.", "#c9a84c" );
+		GameLog.Add( $"Equipped {slot.Count}x {def.Name}.", "#c9a84c" );
 		SoundLibrary.PlayEquip();
 		return true;
 	}
 
-	public void UnequipAmmo()
+	public bool UnequipAmmo()
 	{
-		if ( _equippedAmmoId == ItemId.None )
-			return;
+		if ( _equippedAmmoSlotIndex < 0 )
+			return true;
 
-		if ( _equippedAmmoCount > 0 )
-		{
-			AddItem( _equippedAmmoId, _equippedAmmoCount );
-		}
+		var slot = _slots[_equippedAmmoSlotIndex];
+		var def = slot.IsStack ? ItemDatabase.Get( slot.ItemId ) : null;
+		string name = def != null ? def.Name : "ammo";
 
-		var def = ItemDatabase.Get( _equippedAmmoId );
-		string name = def != null ? def.Name : _equippedAmmoId.ToString();
+		_equippedAmmoSlotIndex = -1;
+
 		GameLog.Add( $"Unequipped {name}.", "#c9a84c" );
-
-		_equippedAmmoId = ItemId.None;
-		_equippedAmmoCount = 0;
 
 		if ( !_suppressUnequipSound )
 			SoundLibrary.PlayEquip();
+
+		return true;
 	}
 
 	public bool ConsumeAmmo( int amount = 1 )
 	{
-		if ( _equippedAmmoId == ItemId.None || _equippedAmmoCount < amount )
+		if ( _equippedAmmoSlotIndex < 0 )
 			return false;
 
-		_equippedAmmoCount -= amount;
+		var slot = _slots[_equippedAmmoSlotIndex];
+		if ( !slot.IsStack || slot.Count < amount )
+			return false;
 
-		if ( _equippedAmmoCount <= 0 )
+		slot.Count -= amount;
+
+		if ( slot.Count <= 0 )
 		{
 			GameLog.Add( "You've run out of arrows!", "#c86464" );
-			_equippedAmmoId = ItemId.None;
-			_equippedAmmoCount = 0;
+			ClearSlotAndUpdateEquipped( _equippedAmmoSlotIndex );
 		}
 
 		return true;
@@ -310,20 +683,49 @@ public sealed class Inventory : Component
 
 	public ItemId GetEquippedAmmoId()
 	{
-		return _equippedAmmoId;
+		if ( _equippedAmmoSlotIndex < 0 )
+			return ItemId.None;
+
+		var slot = _slots[_equippedAmmoSlotIndex];
+		if ( !slot.IsStack )
+			return ItemId.None;
+
+		return slot.ItemId;
 	}
 
 	public int GetEquippedAmmoCount()
 	{
-		return _equippedAmmoCount;
+		if ( _equippedAmmoSlotIndex < 0 )
+			return 0;
+
+		var slot = _slots[_equippedAmmoSlotIndex];
+		if ( !slot.IsStack )
+			return 0;
+
+		return slot.Count;
+	}
+
+	public int GetEquippedAmmoSlotIndex()
+	{
+		return _equippedAmmoSlotIndex;
 	}
 
 	public bool EquipUnique( int index )
 	{
-		if ( index < 0 || index >= _uniqueItems.Count )
+		int slotIndex = GetSlotIndexForUniqueByListIndex( index );
+		return EquipUniqueAtSlot( slotIndex );
+	}
+
+	public bool EquipUniqueAtSlot( int slotIndex )
+	{
+		if ( slotIndex < 0 || slotIndex >= MaxSlots )
 			return false;
 
-		var instance = _uniqueItems[index];
+		var slot = _slots[slotIndex];
+		if ( !slot.IsUnique )
+			return false;
+
+		var instance = slot.Unique;
 		var def = ItemDatabase.Get( instance.ItemId );
 		if ( def == null || def.Slot == EquipSlot.None )
 			return false;
@@ -335,14 +737,13 @@ public sealed class Inventory : Component
 			return false;
 		}
 
-		if ( _equippedUnique.TryGetValue( def.Slot, out var previous ) )
+		if ( _equippedSlotIndex.TryGetValue( def.Slot, out var previousSlotIndex ) && previousSlotIndex == slotIndex )
 		{
-			_uniqueItems.Add( previous );
-			_equippedUnique.Remove( def.Slot );
+			UnequipUnique( def.Slot );
+			return true;
 		}
 
-		_uniqueItems.RemoveAt( index );
-		_equippedUnique[def.Slot] = instance;
+		_equippedSlotIndex[def.Slot] = slotIndex;
 		SyncEquippedSlot( def.Slot, instance.ItemId );
 
 		GameLog.Add( $"Equipped {instance.GetDisplayName()}.", "#c9a84c" );
@@ -350,63 +751,87 @@ public sealed class Inventory : Component
 		return true;
 	}
 
-	public void UnequipUnique( EquipSlot slot )
+	public bool UnequipUnique( EquipSlot equipSlot )
 	{
-		if ( !_equippedUnique.ContainsKey( slot ) )
-			return;
+		if ( !_equippedSlotIndex.ContainsKey( equipSlot ) )
+			return true;
 
-		var instance = _equippedUnique[slot];
-		_equippedUnique.Remove( slot );
-		SyncEquippedSlot( slot, ItemId.None );
-		_uniqueItems.Add( instance );
+		int slotIndex = _equippedSlotIndex[equipSlot];
+		_equippedSlotIndex.Remove( equipSlot );
+		SyncEquippedSlot( equipSlot, ItemId.None );
 
-		GameLog.Add( $"Unequipped {instance.GetDisplayName()}.", "#c9a84c" );
+		string name = "item";
+		if ( slotIndex >= 0 && slotIndex < MaxSlots )
+		{
+			var slot = _slots[slotIndex];
+			if ( slot.IsUnique )
+				name = slot.Unique.GetDisplayName();
+		}
+
+		GameLog.Add( $"Unequipped {name}.", "#c9a84c" );
 
 		if ( !_suppressUnequipSound )
 			SoundLibrary.PlayEquip();
+
+		return true;
 	}
 
-	public ItemInstance GetEquippedUnique( EquipSlot slot )
+	public ItemInstance GetEquippedUnique( EquipSlot equipSlot )
 	{
-		if ( _equippedUnique.TryGetValue( slot, out var instance ) )
-			return instance;
+		if ( _equippedSlotIndex.TryGetValue( equipSlot, out var slotIndex ) )
+		{
+			if ( slotIndex >= 0 && slotIndex < MaxSlots )
+			{
+				var slot = _slots[slotIndex];
+				if ( slot.IsUnique )
+					return slot.Unique;
+			}
+		}
 
-		var syncedId = GetEquipped( slot );
-		if ( syncedId != ItemId.None && slot != EquipSlot.Ammo )
+		var syncedId = GetEquipped( equipSlot );
+		if ( syncedId != ItemId.None && equipSlot != EquipSlot.Ammo )
 			return new ItemInstance( syncedId );
 
 		return null;
 	}
 
-	public void Unequip( EquipSlot slot )
+	public int GetEquippedSlotIndex( EquipSlot equipSlot )
 	{
-		if ( slot == EquipSlot.Ammo )
+		if ( _equippedSlotIndex.TryGetValue( equipSlot, out var slotIndex ) )
+			return slotIndex;
+
+		return -1;
+	}
+
+	public void Unequip( EquipSlot equipSlot )
+	{
+		if ( equipSlot == EquipSlot.Ammo )
 		{
 			UnequipAmmo();
 			return;
 		}
 
-		if ( _equippedUnique.ContainsKey( slot ) )
+		if ( _equippedSlotIndex.ContainsKey( equipSlot ) )
 		{
-			UnequipUnique( slot );
+			UnequipUnique( equipSlot );
 			return;
 		}
 	}
 
 	public void UnequipAll()
 	{
-		var uniqueSlots = new List<EquipSlot>( _equippedUnique.Keys );
-		foreach ( var slot in uniqueSlots )
+		var equipSlots = new List<EquipSlot>( _equippedSlotIndex.Keys );
+		foreach ( var slot in equipSlots )
 			UnequipUnique( slot );
 
 		UnequipAmmo();
 	}
 
-	public ItemId GetEquipped( EquipSlot slot )
+	public ItemId GetEquipped( EquipSlot equipSlot )
 	{
-		switch ( slot )
+		switch ( equipSlot )
 		{
-			case EquipSlot.Ammo: return _equippedAmmoId;
+			case EquipSlot.Ammo: return GetEquippedAmmoId();
 			case EquipSlot.Weapon: return EquippedWeapon;
 			case EquipSlot.Shield: return EquippedShield;
 			case EquipSlot.Head: return EquippedHead;
@@ -418,9 +843,9 @@ public sealed class Inventory : Component
 		}
 	}
 
-	void SyncEquippedSlot( EquipSlot slot, ItemId id )
+	void SyncEquippedSlot( EquipSlot equipSlot, ItemId id )
 	{
-		switch ( slot )
+		switch ( equipSlot )
 		{
 			case EquipSlot.Weapon: EquippedWeapon = id; break;
 			case EquipSlot.Shield: EquippedShield = id; break;
@@ -509,9 +934,9 @@ public sealed class Inventory : Component
 		float total = 0f;
 		EquipSlot[] armorSlots = { EquipSlot.Head, EquipSlot.Chest, EquipSlot.Legs, EquipSlot.Shield };
 
-		foreach ( var slot in armorSlots )
+		foreach ( var es in armorSlots )
 		{
-			var id = GetEquipped( slot );
+			var id = GetEquipped( es );
 			if ( id == ItemId.None )
 				continue;
 
@@ -525,10 +950,11 @@ public sealed class Inventory : Component
 
 	public float GetArrowPower()
 	{
-		if ( _equippedAmmoId == ItemId.None )
+		var ammoId = GetEquippedAmmoId();
+		if ( ammoId == ItemId.None )
 			return 0f;
 
-		var def = ItemDatabase.Get( _equippedAmmoId );
+		var def = ItemDatabase.Get( ammoId );
 		if ( def == null )
 			return 0f;
 
@@ -539,10 +965,18 @@ public sealed class Inventory : Component
 	{
 		float total = 0f;
 
-		foreach ( var kv in _equippedUnique )
+		foreach ( var kv in _equippedSlotIndex )
 		{
-			if ( kv.Value.Enchantment == type )
-				total += kv.Value.EnchantmentPercent;
+			int idx = kv.Value;
+			if ( idx < 0 || idx >= MaxSlots )
+				continue;
+
+			var slot = _slots[idx];
+			if ( !slot.IsUnique )
+				continue;
+
+			if ( slot.Unique.Enchantment == type )
+				total += slot.Unique.EnchantmentPercent;
 		}
 
 		return total;
@@ -605,19 +1039,34 @@ public sealed class Inventory : Component
 	public Dictionary<ItemId, int> GetAllItems()
 	{
 		var totals = new Dictionary<ItemId, int>();
-		foreach ( var stack in _itemStacks )
+		for ( int i = 0; i < MaxSlots; i++ )
 		{
-			if ( totals.TryGetValue( stack.ItemId, out var existing ) )
-				totals[stack.ItemId] = existing + stack.Count;
+			var slot = _slots[i];
+			if ( !slot.IsStack )
+				continue;
+
+			if ( totals.TryGetValue( slot.ItemId, out var existing ) )
+				totals[slot.ItemId] = existing + slot.Count;
 			else
-				totals[stack.ItemId] = stack.Count;
+				totals[slot.ItemId] = slot.Count;
 		}
 		return totals;
 	}
 
 	public Dictionary<EquipSlot, ItemInstance> GetAllEquippedUnique()
 	{
-		return _equippedUnique;
+		var result = new Dictionary<EquipSlot, ItemInstance>();
+		foreach ( var kv in _equippedSlotIndex )
+		{
+			int idx = kv.Value;
+			if ( idx < 0 || idx >= MaxSlots )
+				continue;
+
+			var slot = _slots[idx];
+			if ( slot.IsUnique )
+				result[kv.Key] = slot.Unique;
+		}
+		return result;
 	}
 
 	public HashSet<string> GetUnlockedRecipes()
@@ -759,39 +1208,61 @@ public sealed class Inventory : Component
 	public PlayerSaveData ToSaveData( PlayerSaveData data )
 	{
 		data.Stackables = new Dictionary<string, int>();
-		foreach ( var stack in _itemStacks )
+		for ( int i = 0; i < MaxSlots; i++ )
 		{
-			string key = stack.ItemId.ToString();
+			var slot = _slots[i];
+			if ( !slot.IsStack )
+				continue;
+
+			string key = slot.ItemId.ToString();
 			if ( data.Stackables.TryGetValue( key, out var existing ) )
-				data.Stackables[key] = existing + stack.Count;
+				data.Stackables[key] = existing + slot.Count;
 			else
-				data.Stackables[key] = stack.Count;
+				data.Stackables[key] = slot.Count;
 		}
 
 		data.UniqueItems = new List<PlayerSaveData.UniqueItemEntry>();
-		foreach ( var item in _uniqueItems )
+		for ( int i = 0; i < MaxSlots; i++ )
 		{
+			var slot = _slots[i];
+			if ( !slot.IsUnique )
+				continue;
+
 			data.UniqueItems.Add( new PlayerSaveData.UniqueItemEntry
 			{
-				ItemId = item.ItemId.ToString(),
-				Enchantment = item.Enchantment.ToString(),
-				EnchantmentPercent = item.EnchantmentPercent
+				ItemId = slot.Unique.ItemId.ToString(),
+				Enchantment = slot.Unique.Enchantment.ToString(),
+				EnchantmentPercent = slot.Unique.EnchantmentPercent
 			} );
 		}
 
 		data.Equipped = new Dictionary<string, PlayerSaveData.UniqueItemEntry>();
-		foreach ( var kv in _equippedUnique )
+		data.EquippedSlotIndices = new Dictionary<string, int>();
+		foreach ( var kv in _equippedSlotIndex )
 		{
+			int idx = kv.Value;
+			if ( idx < 0 || idx >= MaxSlots )
+				continue;
+
+			var slot = _slots[idx];
+			if ( !slot.IsUnique )
+				continue;
+
 			data.Equipped[kv.Key.ToString()] = new PlayerSaveData.UniqueItemEntry
 			{
-				ItemId = kv.Value.ItemId.ToString(),
-				Enchantment = kv.Value.Enchantment.ToString(),
-				EnchantmentPercent = kv.Value.EnchantmentPercent
+				ItemId = slot.Unique.ItemId.ToString(),
+				Enchantment = slot.Unique.Enchantment.ToString(),
+				EnchantmentPercent = slot.Unique.EnchantmentPercent
 			};
+
+			data.EquippedSlotIndices[kv.Key.ToString()] = idx + 1;
 		}
 
-		data.EquippedAmmoId = _equippedAmmoId.ToString();
-		data.EquippedAmmoQty = _equippedAmmoCount;
+		var ammoId = GetEquippedAmmoId();
+		var ammoCount = GetEquippedAmmoCount();
+		data.EquippedAmmoId = ammoId.ToString();
+		data.EquippedAmmoQty = ammoCount;
+		data.EquippedAmmoSlotIndex = _equippedAmmoSlotIndex >= 0 ? _equippedAmmoSlotIndex + 1 : 0;
 
 		data.Recipes = new List<string>( _unlockedRecipes );
 		data.Stones = new List<string>( _discoveredStones );
@@ -801,6 +1272,40 @@ public sealed class Inventory : Component
 		data.ChestClaims = new Dictionary<string, string>( _chestClaims );
 
 		data.NodesMined = _nodesMined;
+
+		data.Slots = new List<PlayerSaveData.InventorySlotEntry>();
+		for ( int i = 0; i < MaxSlots; i++ )
+		{
+			var slot = _slots[i];
+			if ( slot.IsEmpty )
+				continue;
+
+			var entry = new PlayerSaveData.InventorySlotEntry
+			{
+				Slot = i + 1
+			};
+
+			if ( slot.IsUnique )
+			{
+				entry.IsUnique = true;
+				entry.ItemId = slot.Unique.ItemId.ToString();
+				entry.Enchantment = slot.Unique.Enchantment.ToString();
+				entry.EnchantmentPercent = slot.Unique.EnchantmentPercent;
+				entry.Count = 1;
+			}
+			else
+			{
+				entry.IsUnique = false;
+				entry.ItemId = slot.ItemId.ToString();
+				entry.Count = slot.Count;
+				entry.Enchantment = "None";
+				entry.EnchantmentPercent = 0f;
+			}
+
+			data.Slots.Add( entry );
+		}
+
+		data.InventoryExpansions = _expansions;
 
 		return data;
 	}
@@ -812,49 +1317,172 @@ public sealed class Inventory : Component
 		if ( data == null )
 			return;
 
-		foreach ( var kv in data.Stackables )
-		{
-			if ( !System.Enum.TryParse<ItemId>( kv.Key, out var id ) )
-				continue;
-			if ( id == ItemId.None )
-				continue;
+		_expansions = data.InventoryExpansions;
+		EnsureSlotCapacity();
 
-			AddItem( id, kv.Value );
+		bool hasSlotData = data.Slots != null && data.Slots.Count > 0;
+
+		if ( hasSlotData )
+		{
+			foreach ( var entry in data.Slots )
+			{
+				int idx = entry.Slot - 1;
+				if ( idx < 0 || idx >= MaxSlots )
+					continue;
+
+				if ( !System.Enum.TryParse<ItemId>( entry.ItemId, out var id ) )
+					continue;
+				if ( id == ItemId.None )
+					continue;
+
+				if ( entry.IsUnique )
+				{
+					var enchant = EnchantmentType.None;
+					System.Enum.TryParse<EnchantmentType>( entry.Enchantment, out enchant );
+
+					_slots[idx].Unique = new ItemInstance( id, enchant, entry.EnchantmentPercent );
+				}
+				else
+				{
+					int count = entry.Count > 0 ? entry.Count : 1;
+					_slots[idx].ItemId = id;
+					_slots[idx].Count = count;
+				}
+			}
+		}
+		else
+		{
+			foreach ( var kv in data.Stackables )
+			{
+				if ( !System.Enum.TryParse<ItemId>( kv.Key, out var id ) )
+					continue;
+				if ( id == ItemId.None )
+					continue;
+
+				TryPlaceItem( id, kv.Value );
+			}
+
+			foreach ( var entry in data.UniqueItems )
+			{
+				if ( !System.Enum.TryParse<ItemId>( entry.ItemId, out var id ) )
+					continue;
+				if ( id == ItemId.None )
+					continue;
+
+				var enchant = EnchantmentType.None;
+				System.Enum.TryParse<EnchantmentType>( entry.Enchantment, out enchant );
+
+				int slotIndex = FindFirstEmptySlot();
+				if ( slotIndex < 0 )
+					break;
+
+				_slots[slotIndex].Unique = new ItemInstance( id, enchant, entry.EnchantmentPercent );
+			}
+
+			if ( !string.IsNullOrEmpty( data.EquippedAmmoId ) && data.EquippedAmmoQty > 0 )
+			{
+				if ( System.Enum.TryParse<ItemId>( data.EquippedAmmoId, out var ammoId ) && ammoId != ItemId.None )
+				{
+					int ammoSlot = FindFirstEmptySlot();
+					if ( ammoSlot >= 0 )
+					{
+						_slots[ammoSlot].ItemId = ammoId;
+						_slots[ammoSlot].Count = data.EquippedAmmoQty;
+					}
+				}
+			}
 		}
 
-		foreach ( var entry in data.UniqueItems )
+		bool hasNewEquipped = data.EquippedSlotIndices != null && data.EquippedSlotIndices.Count > 0;
+
+		if ( hasNewEquipped )
 		{
-			if ( !System.Enum.TryParse<ItemId>( entry.ItemId, out var id ) )
-				continue;
-			if ( id == ItemId.None )
-				continue;
+			foreach ( var kv in data.EquippedSlotIndices )
+			{
+				if ( !System.Enum.TryParse<EquipSlot>( kv.Key, out var equipSlot ) )
+					continue;
 
-			var enchant = EnchantmentType.None;
-			System.Enum.TryParse<EnchantmentType>( entry.Enchantment, out enchant );
+				int idx = kv.Value - 1;
+				if ( idx < 0 || idx >= MaxSlots )
+					continue;
 
-			_uniqueItems.Add( new ItemInstance( id, enchant, entry.EnchantmentPercent ) );
+				var slot = _slots[idx];
+				if ( !slot.IsUnique )
+					continue;
+
+				_equippedSlotIndex[equipSlot] = idx;
+				SyncEquippedSlot( equipSlot, slot.Unique.ItemId );
+			}
+		}
+		else if ( data.Equipped != null )
+		{
+			foreach ( var kv in data.Equipped )
+			{
+				if ( !System.Enum.TryParse<EquipSlot>( kv.Key, out var equipSlot ) )
+					continue;
+				if ( !System.Enum.TryParse<ItemId>( kv.Value.ItemId, out var id ) )
+					continue;
+				if ( id == ItemId.None )
+					continue;
+
+				var enchant = EnchantmentType.None;
+				System.Enum.TryParse<EnchantmentType>( kv.Value.Enchantment, out enchant );
+
+				int foundSlot = -1;
+				for ( int i = 0; i < MaxSlots; i++ )
+				{
+					var s = _slots[i];
+					if ( !s.IsUnique )
+						continue;
+					if ( s.Unique.ItemId != id )
+						continue;
+					if ( s.Unique.Enchantment != enchant )
+						continue;
+					if ( System.MathF.Abs( s.Unique.EnchantmentPercent - kv.Value.EnchantmentPercent ) > 0.01f )
+						continue;
+
+					foundSlot = i;
+					break;
+				}
+
+				if ( foundSlot < 0 )
+				{
+					int empty = FindFirstEmptySlot();
+					if ( empty >= 0 )
+					{
+						_slots[empty].Unique = new ItemInstance( id, enchant, kv.Value.EnchantmentPercent );
+						foundSlot = empty;
+					}
+				}
+
+				if ( foundSlot >= 0 )
+				{
+					_equippedSlotIndex[equipSlot] = foundSlot;
+					SyncEquippedSlot( equipSlot, id );
+				}
+			}
 		}
 
-		foreach ( var kv in data.Equipped )
+		if ( data.EquippedAmmoSlotIndex > 0 )
 		{
-			if ( !System.Enum.TryParse<EquipSlot>( kv.Key, out var slot ) )
-				continue;
-			if ( !System.Enum.TryParse<ItemId>( kv.Value.ItemId, out var id ) )
-				continue;
-			if ( id == ItemId.None )
-				continue;
-
-			var enchant = EnchantmentType.None;
-			System.Enum.TryParse<EnchantmentType>( kv.Value.Enchantment, out enchant );
-
-			_equippedUnique[slot] = new ItemInstance( id, enchant, kv.Value.EnchantmentPercent );
-			SyncEquippedSlot( slot, id );
+			int idx = data.EquippedAmmoSlotIndex - 1;
+			if ( idx >= 0 && idx < MaxSlots && _slots[idx].IsStack )
+				_equippedAmmoSlotIndex = idx;
 		}
-
-		if ( System.Enum.TryParse<ItemId>( data.EquippedAmmoId, out var ammoId ) )
+		else if ( !string.IsNullOrEmpty( data.EquippedAmmoId ) && data.EquippedAmmoQty > 0 )
 		{
-			_equippedAmmoId = ammoId;
-			_equippedAmmoCount = data.EquippedAmmoQty;
+			if ( System.Enum.TryParse<ItemId>( data.EquippedAmmoId, out var ammoId ) && ammoId != ItemId.None )
+			{
+				for ( int i = 0; i < MaxSlots; i++ )
+				{
+					var s = _slots[i];
+					if ( s.IsStack && s.ItemId == ammoId )
+					{
+						_equippedAmmoSlotIndex = i;
+						break;
+					}
+				}
+			}
 		}
 
 		foreach ( var r in data.Recipes )

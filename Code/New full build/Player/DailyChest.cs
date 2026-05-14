@@ -92,7 +92,16 @@ public sealed class DailyChest : Component
 		}
 
 		foreach ( var reward in rewards )
-			inventory.AddItem( reward.Item, reward.Amount );
+		{
+			var (placed, banked) = inventory.AddItemOrBank( reward.Item, reward.Amount );
+
+			if ( banked > 0 )
+			{
+				var def = ItemDatabase.Get( reward.Item );
+				string name = def != null ? def.Name : reward.Item.ToString();
+				GameLog.Add( $"Inventory full — {banked}x {name} sent to your bank.", "#c9a84c" );
+			}
+		}
 
 		inventory.MarkChestClaimed( ChestId );
 

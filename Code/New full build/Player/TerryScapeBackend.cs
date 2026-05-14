@@ -87,6 +87,8 @@ public static class TerryScapeBackend
 				PlayerName = json.Str( "playerName", "" ),
 				EquippedAmmoId = json.Str( "equippedAmmoId", "None" ),
 				EquippedAmmoQty = json.Int( "equippedAmmoQty", 0 ),
+				EquippedAmmoSlotIndex = json.Int( "equippedAmmoSlotIndex", 0 ),
+				InventoryExpansions = json.Int( "inventoryExpansions", 0 ),
 				NodesMined = json.Int( "nodesMined", 0 ),
 				TotalLevel = json.Int( "totalLevel", 0 ),
 				TotalGold = json.Int( "totalGold", 0 ),
@@ -116,16 +118,34 @@ public static class TerryScapeBackend
 				}
 			}
 
-			if ( json.TryGetProperty( "uniqueItems", out var uniqueEl ) && uniqueEl.ValueKind == JsonValueKind.Array )
+			if ( json.TryGetProperty( "uniqueItems", out var uniqueEl ) )
 			{
-				foreach ( var item in uniqueEl.EnumerateArray() )
+				JsonElement? uniqueArr = null;
+				if ( uniqueEl.ValueKind == JsonValueKind.Array )
 				{
-					save.UniqueItems.Add( new PlayerSaveData.UniqueItemEntry
+					uniqueArr = uniqueEl;
+				}
+				else if ( uniqueEl.ValueKind == JsonValueKind.String )
+				{
+					var raw = uniqueEl.GetString();
+					if ( !string.IsNullOrEmpty( raw ) )
 					{
-						ItemId = item.Str( "itemId", "None" ),
-						Enchantment = item.Str( "enchantment", "None" ),
-						EnchantmentPercent = item.Float( "percent", 0f )
-					} );
+						try { uniqueArr = JsonDocument.Parse( raw ).RootElement; }
+						catch { }
+					}
+				}
+
+				if ( uniqueArr.HasValue && uniqueArr.Value.ValueKind == JsonValueKind.Array )
+				{
+					foreach ( var item in uniqueArr.Value.EnumerateArray() )
+					{
+						save.UniqueItems.Add( new PlayerSaveData.UniqueItemEntry
+						{
+							ItemId = item.Str( "itemId", "None" ),
+							Enchantment = item.Str( "enchantment", "None" ),
+							EnchantmentPercent = item.Float( "percent", 0f )
+						} );
+					}
 				}
 			}
 
@@ -139,6 +159,77 @@ public static class TerryScapeBackend
 						Enchantment = prop.Value.Str( "enchantment", "None" ),
 						EnchantmentPercent = prop.Value.Float( "percent", 0f )
 					};
+				}
+			}
+
+			if ( json.TryGetProperty( "equippedSlotIndices", out var equipIdxEl ) )
+			{
+				JsonElement? equipIdxObj = null;
+				if ( equipIdxEl.ValueKind == JsonValueKind.Object )
+				{
+					equipIdxObj = equipIdxEl;
+				}
+				else if ( equipIdxEl.ValueKind == JsonValueKind.String )
+				{
+					var raw = equipIdxEl.GetString();
+					if ( !string.IsNullOrEmpty( raw ) )
+					{
+						try { equipIdxObj = JsonDocument.Parse( raw ).RootElement; }
+						catch { }
+					}
+				}
+
+				if ( equipIdxObj.HasValue && equipIdxObj.Value.ValueKind == JsonValueKind.Object )
+				{
+					foreach ( var prop in equipIdxObj.Value.EnumerateObject() )
+					{
+						save.EquippedSlotIndices[prop.Name] = prop.Value.ValueKind == JsonValueKind.Number
+							? prop.Value.GetInt32()
+							: 0;
+					}
+				}
+			}
+
+			if ( json.TryGetProperty( "slots", out var slotsEl ) )
+			{
+				JsonElement? slotsArr = null;
+				if ( slotsEl.ValueKind == JsonValueKind.Array )
+				{
+					slotsArr = slotsEl;
+				}
+				else if ( slotsEl.ValueKind == JsonValueKind.String )
+				{
+					var raw = slotsEl.GetString();
+					if ( !string.IsNullOrEmpty( raw ) )
+					{
+						try { slotsArr = JsonDocument.Parse( raw ).RootElement; }
+						catch { }
+					}
+				}
+
+				if ( slotsArr.HasValue && slotsArr.Value.ValueKind == JsonValueKind.Array )
+				{
+					foreach ( var entry in slotsArr.Value.EnumerateArray() )
+					{
+						var slotEntry = new PlayerSaveData.InventorySlotEntry
+						{
+							Slot = entry.Int( "slot", 0 ),
+							ItemId = entry.Str( "itemId", "None" ),
+							Count = entry.Int( "count", 0 ),
+							Enchantment = entry.Str( "enchantment", "None" ),
+							EnchantmentPercent = entry.Float( "percent", 0f )
+						};
+
+						if ( entry.TryGetProperty( "isUnique", out var uProp ) )
+						{
+							if ( uProp.ValueKind == JsonValueKind.True )
+								slotEntry.IsUnique = true;
+							else if ( uProp.ValueKind == JsonValueKind.False )
+								slotEntry.IsUnique = false;
+						}
+
+						save.Slots.Add( slotEntry );
+					}
 				}
 			}
 
@@ -199,12 +290,30 @@ public static class TerryScapeBackend
 				}
 			}
 
-			if ( json.TryGetProperty( "chestClaims", out var chestEl ) && chestEl.ValueKind == JsonValueKind.Object )
+			if ( json.TryGetProperty( "chestClaims", out var chestEl ) )
 			{
-				foreach ( var prop in chestEl.EnumerateObject() )
+				JsonElement? chestObj = null;
+				if ( chestEl.ValueKind == JsonValueKind.Object )
 				{
-					if ( prop.Value.ValueKind == JsonValueKind.String )
-						save.ChestClaims[prop.Name] = prop.Value.GetString();
+					chestObj = chestEl;
+				}
+				else if ( chestEl.ValueKind == JsonValueKind.String )
+				{
+					var raw = chestEl.GetString();
+					if ( !string.IsNullOrEmpty( raw ) )
+					{
+						try { chestObj = JsonDocument.Parse( raw ).RootElement; }
+						catch { }
+					}
+				}
+
+				if ( chestObj.HasValue && chestObj.Value.ValueKind == JsonValueKind.Object )
+				{
+					foreach ( var prop in chestObj.Value.EnumerateObject() )
+					{
+						if ( prop.Value.ValueKind == JsonValueKind.String )
+							save.ChestClaims[prop.Name] = prop.Value.GetString();
+					}
 				}
 			}
 
@@ -229,6 +338,11 @@ public static class TerryScapeBackend
 		{
 			data.SavedAt = DateTime.UtcNow.ToString( "o" );
 
+			string slotsJson = JsonSerializer.Serialize( BuildSlotsPayload( data.Slots ) );
+			string uniqueItemsJson = JsonSerializer.Serialize( BuildUniqueItemsPayload( data.UniqueItems ) );
+			string equippedSlotIndicesJson = JsonSerializer.Serialize( data.EquippedSlotIndices ?? new Dictionary<string, int>() );
+			string chestClaimsJson = JsonSerializer.Serialize( data.ChestClaims ?? new Dictionary<string, string>() );
+
 			var payload = new
 			{
 				version = data.Version,
@@ -236,10 +350,14 @@ public static class TerryScapeBackend
 				playerName = data.PlayerName ?? "",
 				skills = BuildSkillsPayload( data.Skills ),
 				stackables = data.Stackables,
-				uniqueItems = BuildUniqueItemsPayload( data.UniqueItems ),
+				uniqueItems = uniqueItemsJson,
 				equipped = BuildEquippedPayload( data.Equipped ),
+				equippedSlotIndices = equippedSlotIndicesJson,
 				equippedAmmoId = data.EquippedAmmoId ?? "None",
 				equippedAmmoQty = data.EquippedAmmoQty,
+				equippedAmmoSlotIndex = data.EquippedAmmoSlotIndex,
+				slots = slotsJson,
+				inventoryExpansions = data.InventoryExpansions,
 				recipes = data.Recipes,
 				stones = data.Stones,
 				quests = data.Quests,
@@ -251,7 +369,7 @@ public static class TerryScapeBackend
 				totalLevel = data.TotalLevel,
 				totalGold = data.TotalGold,
 				totalKills = data.TotalKills,
-				chestClaims = data.ChestClaims ?? new Dictionary<string, string>()
+				chestClaims = chestClaimsJson
 			};
 
 			var result = await CallEndpointWithRetry( "save-player", payload, SaveMaxAttempts );
@@ -301,6 +419,9 @@ public static class TerryScapeBackend
 	static Dictionary<string, object> BuildEquippedPayload( Dictionary<string, PlayerSaveData.UniqueItemEntry> equipped )
 	{
 		var result = new Dictionary<string, object>();
+		if ( equipped == null )
+			return result;
+
 		foreach ( var kv in equipped )
 		{
 			result[kv.Key] = new
@@ -309,6 +430,27 @@ public static class TerryScapeBackend
 				enchantment = kv.Value.Enchantment ?? "None",
 				percent = kv.Value.EnchantmentPercent
 			};
+		}
+		return result;
+	}
+
+	static List<object> BuildSlotsPayload( List<PlayerSaveData.InventorySlotEntry> slots )
+	{
+		var result = new List<object>();
+		if ( slots == null )
+			return result;
+
+		foreach ( var entry in slots )
+		{
+			result.Add( new
+			{
+				slot = entry.Slot,
+				itemId = entry.ItemId ?? "None",
+				count = entry.Count,
+				isUnique = entry.IsUnique,
+				enchantment = entry.Enchantment ?? "None",
+				percent = entry.EnchantmentPercent
+			} );
 		}
 		return result;
 	}

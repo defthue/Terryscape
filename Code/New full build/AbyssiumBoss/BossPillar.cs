@@ -83,13 +83,49 @@ public sealed class BossPillar : Component
 		if ( LootItem == ItemId.None || LootChance <= 0f )
 			return;
 
-		var inventory = FirstAttacker.Components.Get<Inventory>();
+		var rng = new Random();
+		if ( (float)( rng.NextDouble() * 100.0 ) >= LootChance )
+			return;
+
+		ulong attackerSteamId = 0;
+		var ownerConnection = FirstAttacker.Network.Owner;
+		if ( ownerConnection != null )
+			attackerSteamId = ownerConnection.SteamId;
+
+		if ( attackerSteamId == 0 )
+			return;
+
+		BroadcastPillarLoot( attackerSteamId, LootItem, LootAmount );
+	}
+
+	[Rpc.Broadcast]
+	void BroadcastPillarLoot( ulong recipientSteamId, ItemId item, int amount )
+	{
+		if ( Connection.Local == null || Connection.Local.SteamId != recipientSteamId )
+			return;
+
+		var localPlayer = PlayerHelper.GetLocalPlayer();
+		if ( localPlayer == null )
+			return;
+
+		var inventory = localPlayer.Components.Get<Inventory>();
 		if ( inventory == null )
 			return;
 
-		var rng = new Random();
-		if ( (float)( rng.NextDouble() * 100.0 ) < LootChance )
-			inventory.AddItem( LootItem, LootAmount );
+		var (placed, banked) = inventory.AddItemOrBank( item, amount );
+		if ( placed <= 0 && banked <= 0 )
+			return;
+
+		ItemPickupEffect.Trigger( item );
+		SoundLibrary.PlayReceiveItem();
+
+		var def = ItemDatabase.Get( item );
+		string name = def != null ? def.Name : item.ToString();
+
+		if ( placed > 0 )
+			GameLog.Add( $"You looted {placed}x {name}.", "#6db8f0" );
+		if ( banked > 0 )
+			GameLog.Add( $"Inventory full — {banked}x {name} sent to your bank.", "#c9a84c" );
 	}
 
 	[Rpc.Broadcast]

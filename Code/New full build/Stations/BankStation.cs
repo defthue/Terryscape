@@ -104,14 +104,30 @@ public sealed class BankStation : Component
 		if ( have <= 0 )
 			return;
 
-		int actual = amount > have ? have : amount;
-
-		bank.Withdraw( item, actual );
-		inventory.AddItem( item, actual );
+		int requested = amount > have ? have : amount;
 
 		var def = ItemDatabase.Get( item );
 		string name = def != null ? def.Name : item.ToString();
-		GameLog.Add( $"Withdrew {actual}x {name}.", "#4caf78" );
+
+		bank.Withdraw( item, requested );
+		int placed = inventory.AddItem( item, requested );
+		int leftover = requested - placed;
+
+		if ( leftover > 0 )
+			bank.Deposit( item, leftover );
+
+		if ( placed > 0 && leftover > 0 )
+		{
+			GameLog.Add( $"Withdrew {placed}x {name}. Inventory full — {leftover}x stayed in your bank.", "#c9a84c" );
+		}
+		else if ( placed > 0 )
+		{
+			GameLog.Add( $"Withdrew {placed}x {name}.", "#4caf78" );
+		}
+		else
+		{
+			GameLog.Add( $"Inventory full — cannot withdraw {name}.", "#c86464" );
+		}
 	}
 
 	public void DoDepositUnique( int inventoryIndex )
@@ -138,6 +154,18 @@ public sealed class BankStation : Component
 		var bank = GetPlayerBank();
 		if ( inventory == null || bank == null )
 			return;
+
+		var bankedUnique = bank.GetBankedUnique();
+		if ( bankIndex < 0 || bankIndex >= bankedUnique.Count )
+			return;
+
+		var preview = bankedUnique[bankIndex];
+
+		if ( !inventory.HasEmptySlot() )
+		{
+			GameLog.Add( $"Inventory full — cannot withdraw {preview.GetDisplayName()}.", "#c86464" );
+			return;
+		}
 
 		var instance = bank.WithdrawUnique( bankIndex );
 		if ( instance == null )

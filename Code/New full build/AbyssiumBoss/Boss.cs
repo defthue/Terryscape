@@ -1273,9 +1273,20 @@ public sealed class Boss : Component
 			if ( id == ItemId.None || amt <= 0 )
 				continue;
 
-			inventory.AddItem( id, amt );
+			var (placed, banked) = inventory.AddItemOrBank( id, amt );
+			if ( placed <= 0 && banked <= 0 )
+				continue;
+
 			ItemPickupEffect.Trigger( id );
-			LogLoot( id, amt );
+
+			var def = ItemDatabase.Get( id );
+			string name = def != null ? def.Name : id.ToString();
+
+			if ( placed > 0 )
+				GameLog.Add( $"You looted {placed}x {name}.", "#6db8f0" );
+			if ( banked > 0 )
+				GameLog.Add( $"Inventory full — {banked}x {name} sent to your bank.", "#c9a84c" );
+
 			gainedAny = true;
 		}
 

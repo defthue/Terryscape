@@ -608,15 +608,24 @@ public sealed class PlayerGatherResource : Component
 		if ( willBreak )
 		{
 			int harvestAmount = node.GetHarvestAmount();
-			inventory.AddItem( node.ResourceItem, harvestAmount );
-			SoundLibrary.PlayReceiveItem();
-			ItemPickupEffect.Trigger( node.ResourceItem );
+			var (placed, banked) = inventory.AddItemOrBank( node.ResourceItem, harvestAmount );
+
+			if ( placed > 0 || banked > 0 )
+			{
+				SoundLibrary.PlayReceiveItem();
+				ItemPickupEffect.Trigger( node.ResourceItem );
+			}
 
 			inventory.AddNodeMined();
 
 			var def = ItemDatabase.Get( node.ResourceItem );
 			string itemName = def != null ? def.Name : node.ResourceItem.ToString();
-			GameLog.Add( $"You collected {harvestAmount}x {itemName} from {node.GetDisplayName()}.", "#6db8f0" );
+
+			if ( placed > 0 )
+				GameLog.Add( $"You collected {placed}x {itemName} from {node.GetDisplayName()}.", "#6db8f0" );
+
+			if ( banked > 0 )
+				GameLog.Add( $"Inventory full — {banked}x {itemName} sent to your bank.", "#c9a84c" );
 
 			skills.AddXp( node.GetSkillType(), node.XpReward );
 

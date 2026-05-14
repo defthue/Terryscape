@@ -36,9 +36,35 @@ public sealed class ManaSystem : Component
 
 	public bool TryDrinkManaPotion( ItemId potionId )
 	{
+		var inventory = Components.Get<Inventory>();
+		if ( inventory == null )
+			return false;
+
+		var slots = inventory.GetSlots();
+		for ( int i = 0; i < inventory.MaxSlots; i++ )
+		{
+			var slot = slots[i];
+			if ( slot.IsStack && slot.ItemId == potionId )
+				return TryDrinkManaPotionFromSlot( i );
+		}
+
+		return false;
+	}
+
+	public bool TryDrinkManaPotionFromSlot( int slotIndex )
+	{
 		if ( IsProxy )
 			return false;
 
+		var inventory = Components.Get<Inventory>();
+		if ( inventory == null )
+			return false;
+
+		var slot = inventory.GetSlot( slotIndex );
+		if ( slot == null || !slot.IsStack )
+			return false;
+
+		var potionId = slot.ItemId;
 		int newMax = 0;
 
 		switch ( potionId )
@@ -56,10 +82,6 @@ public sealed class ManaSystem : Component
 				return false;
 		}
 
-		var inventory = Components.Get<Inventory>();
-		if ( inventory == null || !inventory.HasItem( potionId, 1 ) )
-			return false;
-
 		var potionSystem = Components.Get<PotionSystem>();
 		if ( potionSystem != null && !potionSystem.CanDrink() )
 		{
@@ -67,7 +89,7 @@ public sealed class ManaSystem : Component
 			return false;
 		}
 
-		inventory.RemoveItem( potionId, 1 );
+		inventory.RemoveFromSlot( slotIndex, 1 );
 
 		if ( newMax > MaxMana )
 		{
