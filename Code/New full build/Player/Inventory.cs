@@ -64,6 +64,8 @@ public sealed class Inventory : Component
 
 	public void GrantStarterKit()
 	{
+		AddItem( ItemId.PrimitiveHatchet, 1 );
+		AddItem( ItemId.PrimitivePickaxe, 1 );
 	}
 
 	public static bool IsEquipmentItem( ItemId id )
