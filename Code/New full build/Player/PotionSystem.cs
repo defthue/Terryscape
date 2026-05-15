@@ -102,11 +102,38 @@ public sealed class PotionSystem : Component
 
 	public bool TryDrinkPotion( ItemId potionId )
 	{
+		var inventory = Components.Get<Inventory>();
+		if ( inventory == null )
+			return false;
+
+		var slots = inventory.GetSlots();
+		for ( int i = 0; i < inventory.MaxSlots; i++ )
+		{
+			var slot = slots[i];
+			if ( slot.IsStack && slot.ItemId == potionId )
+				return TryDrinkPotionFromSlot( i );
+		}
+
+		return false;
+	}
+
+	public bool TryDrinkPotionFromSlot( int slotIndex )
+	{
+		var inventory = Components.Get<Inventory>();
+		if ( inventory == null )
+			return false;
+
+		var slot = inventory.GetSlot( slotIndex );
+		if ( slot == null || !slot.IsStack )
+			return false;
+
+		var potionId = slot.ItemId;
+
 		if ( potionId == ItemId.LesserManaPotion || potionId == ItemId.ManaPotion || potionId == ItemId.GreaterManaPotion )
 		{
 			var manaSystem = Components.Get<ManaSystem>();
 			if ( manaSystem != null )
-				return manaSystem.TryDrinkManaPotion( potionId );
+				return manaSystem.TryDrinkManaPotionFromSlot( slotIndex );
 			return false;
 		}
 
@@ -116,15 +143,11 @@ public sealed class PotionSystem : Component
 			return false;
 		}
 
-		var inventory = Components.Get<Inventory>();
-		if ( inventory == null || !inventory.HasItem( potionId, 1 ) )
-			return false;
-
 		var def = ItemDatabase.Get( potionId );
 		if ( def == null || def.Type != ItemType.Potion )
 			return false;
 
-		inventory.RemoveItem( potionId, 1 );
+		inventory.RemoveFromSlot( slotIndex, 1 );
 
 		IsDrinking = true;
 		DrinkTimer = DrinkDuration;

@@ -449,13 +449,13 @@
         "__guid": "455b2e30-e60a-453a-84f7-733779e096f8",
         "__enabled": true,
         "Flags": 0,
-        "FrictionPerSecond": 6,
         "OnComponentDestroy": null,
         "OnComponentDisabled": null,
         "OnComponentEnabled": null,
         "OnComponentFixedUpdate": null,
         "OnComponentStart": null,
-        "OnComponentUpdate": null
+        "OnComponentUpdate": null,
+        "VerticalImpulse": 180
       },
       {
         "__type": "PlayerPersistence",
@@ -516,8 +516,8 @@
         }
       },
       {
-        "__type": "ToolCycler",
-        "__guid": "78729401-d702-4bb3-9e3e-d9ea2e69a343",
+        "__type": "HotbarInput",
+        "__guid": "18c11968-b596-482d-b68a-73978d9249ee",
         "__enabled": true,
         "Flags": 0,
         "OnComponentDestroy": null,
@@ -1087,7 +1087,7 @@
         "__version": 2,
         "Flags": 0,
         "Name": "NameplateAnchor",
-        "Position": "0,0,90",
+        "Position": "0,0,83.6791229",
         "Rotation": "0,0,0,1",
         "Scale": "1,1,1",
         "Tags": "",
@@ -1112,7 +1112,7 @@
             "OnComponentFixedUpdate": null,
             "OnComponentStart": null,
             "OnComponentUpdate": null,
-            "PanelSize": "300,120",
+            "PanelSize": "400,200",
             "RenderOptions": {
               "GameLayer": true,
               "OverlayLayer": false,

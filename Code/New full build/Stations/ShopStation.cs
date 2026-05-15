@@ -190,11 +190,14 @@ public sealed class ShopStation : Component
 		}
 
 		inventory.RemoveItem( ItemId.GoldCoin, price );
-		inventory.AddItem( item, 1 );
+		var (placed, banked) = inventory.AddItemOrBank( item, 1 );
 
 		var def = ItemDatabase.Get( item );
 		string name = def != null ? def.Name : item.ToString();
 		GameLog.Add( $"Bought {name} for {price} gold.", "#f0c040" );
+
+		if ( banked > 0 )
+			GameLog.Add( $"Inventory full — {banked}x {name} sent to your bank.", "#c9a84c" );
 
 		SoundLibrary.PlaySellBuy();
 		return true;
@@ -222,11 +225,14 @@ public sealed class ShopStation : Component
 		}
 
 		inventory.RemoveItem( ItemId.GoldCoin, total );
-		inventory.AddItem( item, count );
+		var (placed, banked) = inventory.AddItemOrBank( item, count );
 
 		var def = ItemDatabase.Get( item );
 		string name = def != null ? def.Name : item.ToString();
 		GameLog.Add( $"Bought {count}x {name} for {total} gold.", "#f0c040" );
+
+		if ( banked > 0 )
+			GameLog.Add( $"Inventory full — {banked}x {name} sent to your bank.", "#c9a84c" );
 
 		SoundLibrary.PlaySellBuy();
 		return true;
@@ -246,7 +252,10 @@ public sealed class ShopStation : Component
 			return false;
 
 		inventory.RemoveItem( item, 1 );
-		inventory.AddItem( ItemId.GoldCoin, price );
+		var (goldPlaced, goldBanked) = inventory.AddItemOrBank( ItemId.GoldCoin, price );
+
+		if ( goldBanked > 0 )
+			GameLog.Add( $"Inventory full — {goldBanked} gold sent to your bank.", "#c9a84c" );
 
 		var def = ItemDatabase.Get( item );
 		string name = def != null ? def.Name : item.ToString();

@@ -14,28 +14,25 @@ public class PlayerSaveData
 	public string EquippedAmmoId { get; set; } = "None";
 	public int EquippedAmmoQty { get; set; } = 0;
 
+	public Dictionary<string, int> EquippedSlotIndices { get; set; } = new();
+	public int EquippedAmmoSlotIndex { get; set; } = 0;
+
+	public List<InventorySlotEntry> Slots { get; set; } = new();
+	public int InventoryExpansions { get; set; } = 0;
+
 	public List<string> Recipes { get; set; } = new();
 	public List<string> Stones { get; set; } = new();
 	public List<string> Quests { get; set; } = new();
 
-	// NEW: Quest IDs the player has opened the dialogue for at least once.
-	// Used by the journal HUD to show quests the player knows about, including
-	// ones they haven't completed yet.
 	public List<string> DiscoveredQuests { get; set; } = new();
 
 	public Dictionary<string, int> Kills { get; set; } = new();
 
-	// Bank storage — stackable items and unique items kept separately, mirroring inventory.
 	public Dictionary<string, int> Bank { get; set; } = new();
 	public List<UniqueItemEntry> BankUnique { get; set; } = new();
 
-	// NEW: Total resource nodes harvested over the player's lifetime.
-	// Used by leaderboards. Increments by 1 every time a resource node is broken.
 	public int NodesMined { get; set; } = 0;
 
-	// NEW: Denormalized leaderboard fields. Computed at save time from the other fields,
-	// stored as flat top-level numbers so sbox.cool can sort/query them efficiently
-	// without needing to walk nested objects.
 	public int TotalLevel { get; set; } = 0;
 	public int TotalGold { get; set; } = 0;
 	public int TotalKills { get; set; } = 0;
@@ -51,6 +48,16 @@ public class PlayerSaveData
 	public class UniqueItemEntry
 	{
 		public string ItemId { get; set; } = "None";
+		public string Enchantment { get; set; } = "None";
+		public float EnchantmentPercent { get; set; } = 0f;
+	}
+
+	public class InventorySlotEntry
+	{
+		public int Slot { get; set; } = 0;
+		public string ItemId { get; set; } = "None";
+		public int Count { get; set; } = 0;
+		public bool IsUnique { get; set; } = false;
 		public string Enchantment { get; set; } = "None";
 		public float EnchantmentPercent { get; set; } = 0f;
 	}

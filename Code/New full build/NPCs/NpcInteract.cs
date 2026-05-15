@@ -405,10 +405,14 @@ public sealed class NpcInteract : Component
 		int rewCount = Math.Min( RewardItemIds.Count, RewardItemAmounts.Count );
 		for ( int i = 0; i < rewCount; i++ )
 		{
-			inventory.AddItem( RewardItemIds[i], RewardItemAmounts[i] );
+			var (placed, banked) = inventory.AddItemOrBank( RewardItemIds[i], RewardItemAmounts[i] );
 			var def = ItemDatabase.Get( RewardItemIds[i] );
 			string name = def != null ? def.Name : RewardItemIds[i].ToString();
-			GameLog.Add( $"Received {RewardItemAmounts[i]}x {name}!", "#f0c040" );
+
+			if ( placed > 0 )
+				GameLog.Add( $"Received {placed}x {name}!", "#f0c040" );
+			if ( banked > 0 )
+				GameLog.Add( $"Inventory full — {banked}x {name} sent to your bank.", "#c9a84c" );
 		}
 
 		if ( !string.IsNullOrEmpty( UnlocksRecipe ) )

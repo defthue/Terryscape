@@ -99,7 +99,7 @@ public sealed class CraftingStation : Component
 
 	public bool TryCraft( string recipeId )
 	{
-		return TryCraftInternal( recipeId, false );
+		return TryCraftInternal( recipeId, false, out _ );
 	}
 
 	public int TryCraftAll( string recipeId )
@@ -117,11 +117,13 @@ public sealed class CraftingStation : Component
 
 		int crafted = 0;
 		int totalOutput = 0;
+		int totalBanked = 0;
 
-		while ( TryCraftInternal( recipeId, true ) )
+		while ( TryCraftInternal( recipeId, true, out int bankedThisIter ) )
 		{
 			crafted++;
 			totalOutput += recipe.OutputAmount;
+			totalBanked += bankedThisIter;
 		}
 
 		if ( crafted == 0 )
@@ -131,6 +133,9 @@ public sealed class CraftingStation : Component
 		string outputName = outputDef != null ? outputDef.Name : recipe.OutputItem.ToString();
 
 		GameLog.Add( $"You crafted {totalOutput}x {outputName}!", "#4caf78" );
+
+		if ( totalBanked > 0 )
+			GameLog.Add( $"Inventory full — {totalBanked}x {outputName} sent to your bank.", "#c9a84c" );
 
 		switch ( Station )
 		{
@@ -142,8 +147,10 @@ public sealed class CraftingStation : Component
 		return crafted;
 	}
 
-	bool TryCraftInternal( string recipeId, bool silent )
+	bool TryCraftInternal( string recipeId, bool silent, out int banked )
 	{
+		banked = 0;
+
 		var inventory = GetPlayerInventory();
 		if ( inventory == null )
 			return false;
@@ -193,7 +200,8 @@ public sealed class CraftingStation : Component
 		}
 
 		inventory.RemoveIngredients( recipe );
-		inventory.AddItem( recipe.OutputItem, recipe.OutputAmount );
+		var (craftedPlaced, craftedBanked) = inventory.AddItemOrBank( recipe.OutputItem, recipe.OutputAmount );
+		banked = craftedBanked;
 
 		var outputDef = ItemDatabase.Get( recipe.OutputItem );
 		string outputName = outputDef != null ? outputDef.Name : recipe.OutputItem.ToString();
@@ -204,6 +212,9 @@ public sealed class CraftingStation : Component
 				GameLog.Add( $"You crafted {recipe.OutputAmount}x {outputName}!", "#4caf78" );
 			else
 				GameLog.Add( $"You crafted {outputName}!", "#4caf78" );
+
+			if ( craftedBanked > 0 )
+				GameLog.Add( $"Inventory full — {craftedBanked}x {outputName} sent to your bank.", "#c9a84c" );
 		}
 
 		int xpAward = recipe.XpReward;

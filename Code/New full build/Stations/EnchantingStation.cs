@@ -249,7 +249,14 @@ public sealed class EnchantingStation : Component
 		inventory.RemoveItem( ItemId.ArcaneDust, essenceCost );
 
 		var instance = new ItemInstance( itemId, randomType, randomPercent );
-		inventory.AddUniqueItem( instance );
+		bool placedInInv = inventory.AddUniqueItemOrBank( instance );
+
+		if ( !placedInInv )
+		{
+			var defForLog = ItemDatabase.Get( instance.ItemId );
+			string itemName = defForLog != null ? defForLog.Name : instance.ItemId.ToString();
+			GameLog.Add( $"Inventory full — {itemName} sent to your bank.", "#c9a84c" );
+		}
 
 		skills.AddXp( SkillType.Enchanting, GetEnchantXp( itemId ) );
 
@@ -318,7 +325,14 @@ public sealed class EnchantingStation : Component
 		inventory.RemoveUniqueItem( removeSecond );
 
 		var result = new ItemInstance( itemA.ItemId, itemA.Enchantment, combined );
-		inventory.AddUniqueItem( result );
+		bool placedInInv = inventory.AddUniqueItemOrBank( result );
+
+		if ( !placedInInv )
+		{
+			var defForLog = ItemDatabase.Get( result.ItemId );
+			string itemName = defForLog != null ? defForLog.Name : result.ItemId.ToString();
+			GameLog.Add( $"Inventory full — {itemName} sent to your bank.", "#c9a84c" );
+		}
 
 		skills.AddXp( SkillType.Enchanting, GetCombineXp( itemA.ItemId ) );
 
@@ -365,11 +379,14 @@ public sealed class EnchantingStation : Component
 		int dustReturn = GetSalvageReturn( instance.ItemId );
 
 		inventory.RemoveUniqueItem( uniqueIndex );
-		inventory.AddItem( ItemId.ArcaneDust, dustReturn );
+		var (placed, banked) = inventory.AddItemOrBank( ItemId.ArcaneDust, dustReturn );
 
 		var def = ItemDatabase.Get( instance.ItemId );
 		string name = def != null ? def.Name : instance.ItemId.ToString();
 		GameLog.Add( $"Salvaged {name} for {dustReturn} Arcane Dust.", "#a080d0" );
+
+		if ( banked > 0 )
+			GameLog.Add( $"Inventory full — {banked}x Arcane Dust sent to your bank.", "#c9a84c" );
 
 		return true;
 	}
