@@ -27,6 +27,9 @@ public class SpellDefinition
 	public float FreezeDuration;
 	public float TraceRadius;
 	public float MaxLifetime;
+	public int RequiredLevel;
+	public string Description;
+	public string UnlockHint;
 }
 
 public static class SpellDatabase
@@ -45,11 +48,14 @@ public static class SpellDatabase
 			ManaCost = 1,
 			MinCastTime = 0.5f,
 			DamageMultiplier = 1.25f,
-			MaxRange = 800f,
-			ProjectileSpeed = 900f,
+			MaxRange = 3000f,
+			ProjectileSpeed = 2000f,
 			FreezeDuration = 0f,
 			TraceRadius = 6f,
-			MaxLifetime = 4f
+			MaxLifetime = 5f,
+			RequiredLevel = 1,
+			Description = "A balanced fire projectile.",
+			UnlockHint = "Starter spell"
 		};
 
 		_spells[SpellId.IceShard] = new SpellDefinition
@@ -60,11 +66,14 @@ public static class SpellDatabase
 			ManaCost = 1,
 			MinCastTime = 0.5f,
 			DamageMultiplier = 0.875f,
-			MaxRange = 700f,
-			ProjectileSpeed = 1000f,
+			MaxRange = 3000f,
+			ProjectileSpeed = 1500f,
 			FreezeDuration = 2f,
-			TraceRadius = 4f,
-			MaxLifetime = 4f
+			TraceRadius = 5f,
+			MaxLifetime = 5f,
+			RequiredLevel = 10,
+			Description = "Low damage, but freezes enemies briefly.",
+			UnlockHint = "Found in the world"
 		};
 
 		_spells[SpellId.DarkBlast] = new SpellDefinition
@@ -75,11 +84,14 @@ public static class SpellDatabase
 			ManaCost = 2,
 			MinCastTime = 1.0f,
 			DamageMultiplier = 2.5f,
-			MaxRange = 900f,
-			ProjectileSpeed = 800f,
+			MaxRange = 3000f,
+			ProjectileSpeed = 1800f,
 			FreezeDuration = 0f,
 			TraceRadius = 8f,
-			MaxLifetime = 5f
+			MaxLifetime = 5f,
+			RequiredLevel = 25,
+			Description = "Heavy single-target burst.",
+			UnlockHint = "Quest reward"
 		};
 
 		_spells[SpellId.ArcaneBarrier] = new SpellDefinition
@@ -94,7 +106,10 @@ public static class SpellDatabase
 			ProjectileSpeed = 0f,
 			FreezeDuration = 0f,
 			TraceRadius = 0f,
-			MaxLifetime = 0f
+			MaxLifetime = 0f,
+			RequiredLevel = 15,
+			Description = "Conjure a wall that blocks enemies.",
+			UnlockHint = "Found in the world"
 		};
 	}
 

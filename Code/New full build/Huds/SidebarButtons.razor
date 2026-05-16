@@ -8,6 +8,10 @@
 			<div class="sidebar-icon">📜</div>
 			<div class="sidebar-tooltip">Quest Journal</div>
 		</div>
+		<div class="sidebar-button" onclick="@(() => OpenSpellbook())">
+			<div class="sidebar-icon">📖</div>
+			<div class="sidebar-tooltip">Spellbook</div>
+		</div>
 		<div class="sidebar-button" onclick="@(() => OpenLeaderboard())">
 			<div class="sidebar-icon">🏆</div>
 			<div class="sidebar-tooltip">Leaderboard</div>
@@ -17,6 +21,8 @@
 
 @code
 {
+	bool _warnedMissingBinding = false;
+
 	protected override void OnUpdate()
 	{
 		if ( Input.Pressed( "Journal" ) )
@@ -25,6 +31,31 @@
 				JournalStation.Close();
 			else
 				OpenJournal();
+		}
+
+		if ( TryReadSpellbookInput() )
+		{
+			if ( SpellbookStation.IsOpen )
+				SpellbookStation.Close();
+			else
+				OpenSpellbook();
+		}
+	}
+
+	bool TryReadSpellbookInput()
+	{
+		try
+		{
+			return Input.Pressed( "Spellbook" );
+		}
+		catch
+		{
+			if ( !_warnedMissingBinding )
+			{
+				Log.Info( "[SidebarButtons] No 'Spellbook' input binding found. Add it in project settings (suggested key: B)." );
+				_warnedMissingBinding = true;
+			}
+			return false;
 		}
 	}
 
@@ -38,6 +69,12 @@
 	{
 		CloseAllOtherHuds();
 		LeaderboardStation.Open();
+	}
+
+	void OpenSpellbook()
+	{
+		CloseAllOtherHuds();
+		SpellbookStation.Open();
 	}
 
 	void CloseAllOtherHuds()
@@ -62,10 +99,11 @@
 
 		JournalStation.Close();
 		LeaderboardStation.Close();
+		SpellbookStation.Close();
 	}
 
 	protected override int BuildHash()
 	{
-		return ( JournalStation.IsOpen, LeaderboardStation.IsOpen ).GetHashCode();
+		return ( JournalStation.IsOpen, LeaderboardStation.IsOpen, SpellbookStation.IsOpen ).GetHashCode();
 	}
 }

@@ -25,6 +25,8 @@ public sealed class HotbarInput : Component
 			return;
 		if ( LeaderboardStation.IsOpen )
 			return;
+		if ( SpellbookStation.IsOpen )
+			return;
 		if ( MinimapState.IsFullMapOpen )
 			return;
 		if ( WelcomeHudState.IsOpen )
@@ -34,9 +36,6 @@ public sealed class HotbarInput : Component
 
 		var inventory = GameObject.Components.Get<Inventory>();
 		if ( inventory == null )
-			return;
-
-		if ( inventory.IsWeaponMagic() )
 			return;
 
 		var potionSystem = GameObject.Components.Get<PotionSystem>();

@@ -10,7 +10,7 @@
 		<div class="cross-line cross-left"></div>
 		<div class="cross-line cross-right"></div>
 		<div class="draw-bar-bg" style="opacity: @(IsDrawing || IsCasting ? "1" : "0");">
-			<div class="draw-bar-fill @(DrawReady || CastReady ? "ready" : "")" style="width: @BarPercent%;"></div>
+			<div class="draw-bar-fill @(IsCasting ? "casting" : "") @(DrawReady || CastReady ? "ready" : "")" style="width: @BarPercent%;"></div>
 		</div>
 		@if ( IsCasting && CastSpellName != null )
 		{

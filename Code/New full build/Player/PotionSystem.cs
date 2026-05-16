@@ -38,9 +38,13 @@ public sealed class PotionSystem : Component
 	[Property] public float BuffDuration { get; set; } = 60f;
 	[Property] public float ElixirDuration { get; set; } = 60f;
 
+	[Property] public float PotionCooldownDuration { get; set; } = 15f;
+
 	public bool IsDrinking { get; set; }
 	public bool IsHealTicking { get; private set; }
 	public float DrinkTimer { get; set; }
+
+	[Sync] public float PotionCooldownRemaining { get; set; }
 
 	float _healTickTimer;
 	float _healPerTick;
@@ -59,6 +63,13 @@ public sealed class PotionSystem : Component
 			DrinkTimer -= Time.Delta;
 			if ( DrinkTimer <= 0f )
 				IsDrinking = false;
+		}
+
+		if ( PotionCooldownRemaining > 0f )
+		{
+			PotionCooldownRemaining -= Time.Delta;
+			if ( PotionCooldownRemaining < 0f )
+				PotionCooldownRemaining = 0f;
 		}
 
 		if ( IsHealTicking )
@@ -97,7 +108,12 @@ public sealed class PotionSystem : Component
 
 	public bool CanDrink()
 	{
-		return !IsDrinking && !IsHealTicking;
+		return !IsDrinking && !IsHealTicking && PotionCooldownRemaining <= 0f;
+	}
+
+	public void StartPotionCooldown()
+	{
+		PotionCooldownRemaining = PotionCooldownDuration;
 	}
 
 	public bool TryDrinkPotion( ItemId potionId )
@@ -151,6 +167,7 @@ public sealed class PotionSystem : Component
 
 		IsDrinking = true;
 		DrinkTimer = DrinkDuration;
+		StartPotionCooldown();
 
 		string name = def.Name;
 

@@ -21,6 +21,8 @@ public sealed class Monster : Component
 	[Property, Group( "Aggro" )] public float AggroRange { get; set; } = 400f;
 	[Property, Group( "Aggro" )] public float LeashRange { get; set; } = 800f;
 	[Property, Group( "Aggro" )] public float AttackRange { get; set; } = 80f;
+	[Property, Group( "Aggro" )] public float LeashNoExchangeTime { get; set; } = 8f;
+	[Property, Group( "Aggro" )] public float LeashNoHitChaseTime { get; set; } = 30f;
 
 	[Property, Group( "Ranged" )] public bool IsRanged { get; set; } = false;
 	[Property, Group( "Ranged" )] public GameObject ProjectilePrefab { get; set; }
@@ -77,9 +79,12 @@ public sealed class Monster : Component
 	float _healthRegenAccum = 0f;
 	int _respawnGeneration = 0;
 	bool _pendingDeath = false;
-	bool _leashed = false;
 	int _strafeDirection = 1;
 	float _repositionExtra = 0f;
+
+	float _lastDamageExchangeTime = -100f;
+	float _chaseStartTime = -100f;
+	bool _hasLandedHitDuringChase = false;
 
 	bool _lastBroadcastMoving = false;
 	bool _lastBroadcastRunning = false;
@@ -249,6 +254,22 @@ public sealed class Monster : Component
 		GameObject.WorldRotation = Rotation.FromYaw( currentYaw + move );
 	}
 
+	bool ShouldLeash()
+	{
+		if ( _target == null || !_target.IsValid() )
+			return true;
+
+		float sinceExchange = Time.Now - _lastDamageExchangeTime;
+		if ( sinceExchange > LeashNoExchangeTime && !HasLineOfSightRanged( _target ) )
+			return true;
+
+		float sinceChaseStart = Time.Now - _chaseStartTime;
+		if ( sinceChaseStart > LeashNoHitChaseTime && !_hasLandedHitDuringChase )
+			return true;
+
+		return false;
+	}
+
 	void UpdateChasing()
 	{
 		if ( _target == null || !_target.IsValid() )
@@ -259,25 +280,15 @@ public sealed class Monster : Component
 			return;
 		}
 
+		if ( ShouldLeash() )
+		{
+			_target = null;
+			IsAggro = false;
+			StartReturning();
+			return;
+		}
+
 		float dist = FlatDistance( WorldPosition, _target.WorldPosition );
-		float distFromWaypoint = GetDistFromNearestWaypoint();
-
-		if ( distFromWaypoint > LeashRange )
-		{
-			_target = null;
-			IsAggro = false;
-			_leashed = true;
-			StartReturning();
-			return;
-		}
-
-		if ( dist > AggroRange )
-		{
-			_target = null;
-			IsAggro = false;
-			StartReturning();
-			return;
-		}
 
 		float effectiveAttackRange = IsRanged ? ProjectileRange : AttackRange;
 
@@ -358,22 +369,10 @@ public sealed class Monster : Component
 			return;
 		}
 
-		float dist = FlatDistance( WorldPosition, _target.WorldPosition );
-
-		if ( dist > AggroRange )
+		if ( ShouldLeash() )
 		{
 			_target = null;
 			IsAggro = false;
-			StartReturning();
-			return;
-		}
-
-		float distFromWaypoint = GetDistFromNearestWaypoint();
-		if ( distFromWaypoint > LeashRange )
-		{
-			_target = null;
-			IsAggro = false;
-			_leashed = true;
 			StartReturning();
 			return;
 		}
@@ -427,39 +426,30 @@ public sealed class Monster : Component
 
 	void UpdateReturning()
 	{
-		if ( CheckAggro() )
-			return;
-
 		RegenerateHealth();
 
-		if ( Waypoints == null || Waypoints.Count == 0 )
-		{
-			_state = MonsterState.Idle;
-			SetMoving( false, false );
-			return;
-		}
-
-		var waypoint = Waypoints[_currentWaypoint];
-		if ( waypoint == null )
-		{
-			_state = MonsterState.Idle;
-			SetMoving( false, false );
-			return;
-		}
-
-		float dist = FlatDistance( WorldPosition, waypoint.WorldPosition );
+		float dist = FlatDistance( WorldPosition, _spawnPosition );
 
 		if ( dist < 20f )
 		{
 			_healthRegenAccum = 0f;
-			_leashed = false;
-			_state = MonsterState.Patrolling;
+
+			if ( Waypoints != null && Waypoints.Count > 0 )
+			{
+				SetNearestWaypointAsCurrent();
+				_state = MonsterState.Patrolling;
+			}
+			else
+			{
+				_state = MonsterState.Idle;
+				SetMoving( false, false );
+			}
 			return;
 		}
 
-		FaceTarget( waypoint.WorldPosition );
+		FaceTarget( _spawnPosition );
 		SetMoving( true, false );
-		MoveTowards( waypoint.WorldPosition, PatrolSpeed );
+		MoveTowards( _spawnPosition, PatrolSpeed );
 		SnapToGround();
 	}
 
@@ -477,8 +467,23 @@ public sealed class Monster : Component
 
 	void StartReturning()
 	{
-		SetNearestWaypointAsCurrent();
 		_state = MonsterState.Returning;
+	}
+
+	void EnterChase( GameObject target )
+	{
+		bool isNewEngagement = _state != MonsterState.Chasing && _state != MonsterState.Attacking && _state != MonsterState.Repositioning;
+
+		_target = target;
+		IsAggro = true;
+		_state = MonsterState.Chasing;
+
+		if ( isNewEngagement )
+		{
+			_chaseStartTime = Time.Now;
+			_hasLandedHitDuringChase = false;
+			_lastDamageExchangeTime = Time.Now;
+		}
 	}
 
 	void SetMoving( bool moving, bool running )
@@ -510,13 +515,17 @@ public sealed class Monster : Component
 		if ( FirstAttacker == null && attacker != null )
 			FirstAttacker = attacker;
 
-		if ( _target == null && attacker != null )
+		if ( attacker != null && _state != MonsterState.Returning )
 		{
-			_target = attacker;
-			IsAggro = true;
-
-			if ( _state != MonsterState.Attacking && _state != MonsterState.Chasing && _state != MonsterState.Repositioning )
-				_state = MonsterState.Chasing;
+			if ( _target == attacker )
+			{
+				_lastDamageExchangeTime = Time.Now;
+				IsAggro = true;
+			}
+			else
+			{
+				EnterChase( attacker );
+			}
 		}
 
 		CurrentHealth -= damage;
@@ -679,6 +688,11 @@ public sealed class Monster : Component
 		bool willKill = playerHealth.CurrentHealth - damage <= 0;
 		playerHealth.TakeDamage( damage );
 
+		_lastDamageExchangeTime = Time.Now;
+		_hasLandedHitDuringChase = true;
+
+		DamagePopupBroadcaster.Broadcast( playerHealth.WorldPosition + Vector3.Up * 60f, damage, playerHealth.MaxHealth, false );
+
 		if ( willKill )
 		{
 			ModelRenderer?.Set( "b_victory", true );
@@ -699,6 +713,11 @@ public sealed class Monster : Component
 
 		bool willKill = playerHealth.CurrentHealth - damage <= 0;
 		playerHealth.TakeDamage( damage );
+
+		_lastDamageExchangeTime = Time.Now;
+		_hasLandedHitDuringChase = true;
+
+		DamagePopupBroadcaster.Broadcast( playerHealth.WorldPosition + Vector3.Up * 60f, damage, playerHealth.MaxHealth, false );
 
 		if ( willKill )
 		{
@@ -1000,7 +1019,6 @@ public sealed class Monster : Component
 			_attackAnimTimer = 0f;
 			_healthRegenAccum = 0f;
 			_pendingDeath = false;
-			_leashed = false;
 			_repositionExtra = 0f;
 			_state = MonsterState.Idle;
 			GameObject.WorldPosition = _spawnPosition;
@@ -1026,9 +1044,6 @@ public sealed class Monster : Component
 
 	bool CheckAggro()
 	{
-		if ( _leashed )
-			return false;
-
 		var players = Scene.GetAllComponents<PlayerController>();
 
 		foreach ( var player in players )
@@ -1040,9 +1055,7 @@ public sealed class Monster : Component
 			float dist = FlatDistance( WorldPosition, player.WorldPosition );
 			if ( dist <= AggroRange )
 			{
-				_target = player.GameObject;
-				IsAggro = true;
-				_state = MonsterState.Chasing;
+				EnterChase( player.GameObject );
 				return true;
 			}
 		}
@@ -1208,26 +1221,6 @@ public sealed class Monster : Component
 				_currentWaypoint = i;
 			}
 		}
-	}
-
-	float GetDistFromNearestWaypoint()
-	{
-		if ( Waypoints == null || Waypoints.Count == 0 )
-			return 0f;
-
-		float nearestDist = float.MaxValue;
-
-		foreach ( var wp in Waypoints )
-		{
-			if ( wp == null )
-				continue;
-
-			float dist = FlatDistance( WorldPosition, wp.WorldPosition );
-			if ( dist < nearestDist )
-				nearestDist = dist;
-		}
-
-		return nearestDist;
 	}
 
 	static void LogLoot( ItemId item, int amount )

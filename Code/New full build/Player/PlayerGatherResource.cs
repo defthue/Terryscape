@@ -46,6 +46,7 @@ public sealed class PlayerGatherResource : Component
 			TeleportStone.ActiveStone != null ||
 			JournalStation.IsOpen ||
 			LeaderboardStation.IsOpen ||
+			SpellbookStation.IsOpen ||
 			NpcInteract.ActiveNpc != null ||
 			MinimapState.IsFullMapOpen ||
 			WelcomeHudState.IsOpen ||
@@ -92,6 +93,9 @@ public sealed class PlayerGatherResource : Component
 
 				if ( LeaderboardStation.IsOpen )
 					LeaderboardStation.Close();
+
+				if ( SpellbookStation.IsOpen )
+					SpellbookStation.Close();
 
 				if ( NpcInteract.ActiveNpc != null )
 					NpcInteract.ActiveNpc.CloseDialogue();
@@ -172,6 +176,9 @@ public sealed class PlayerGatherResource : Component
 		if ( LeaderboardStation.IsOpen )
 			return;
 
+		if ( SpellbookStation.IsOpen )
+			return;
+
 		if ( MinimapState.IsFullMapOpen )
 			return;
 
@@ -196,6 +203,9 @@ public sealed class PlayerGatherResource : Component
 					shooterComp.StartDraw();
 				return;
 			}
+
+			if ( inventory != null && inventory.IsWeaponMagic() )
+				return;
 
 			if ( _cooldownRemaining <= 0f )
 			{
@@ -414,11 +424,21 @@ public sealed class PlayerGatherResource : Component
 		int damage = (int)( weaponPower * skillBonus * triangleMult * buffMult * staffMeleeMult );
 		if ( damage < 1 ) damage = 1;
 
-		GameLog.Add( $"You hit {monster.MonsterName} for {damage} damage. ({monster.CurrentHealth}/{monster.MaxHealth} HP left)", "#a8c8a8" );
+		bool isCrit = CombatConstants.RollCrit();
+		if ( isCrit )
+			damage = (int)( damage * CombatConstants.CritMultiplier );
+
+		var manaCombat = GameObject.Components.Get<ManaSystem>();
+		if ( manaCombat != null )
+			manaCombat.MarkCombat();
+
+		GameLog.Add( $"You hit {monster.MonsterName} for {damage} damage{( isCrit ? " (CRIT!)" : "" )}. ({monster.CurrentHealth}/{monster.MaxHealth} HP left)", "#a8c8a8" );
 
 		SoundLibrary.PlayMonsterHit( monster.WorldPosition );
 
 		monster.TakeDamage( damage, GameObject );
+
+		DamagePopupBroadcaster.Broadcast( monster.WorldPosition + Vector3.Up * 50f, damage, monster.MaxHealth, isCrit );
 	}
 
 	void HandleBossHit( Boss boss, Inventory inventory, Skills skills )
@@ -455,11 +475,21 @@ public sealed class PlayerGatherResource : Component
 		int damage = (int)( weaponPower * skillBonus * triangleMult * buffMult * staffMeleeMult );
 		if ( damage < 1 ) damage = 1;
 
-		GameLog.Add( $"You hit {boss.BossName} for {damage} damage. ({boss.CurrentHealth}/{boss.MaxHealth} HP left)", "#a8c8a8" );
+		bool isCrit = CombatConstants.RollCrit();
+		if ( isCrit )
+			damage = (int)( damage * CombatConstants.CritMultiplier );
+
+		var manaCombat = GameObject.Components.Get<ManaSystem>();
+		if ( manaCombat != null )
+			manaCombat.MarkCombat();
+
+		GameLog.Add( $"You hit {boss.BossName} for {damage} damage{( isCrit ? " (CRIT!)" : "" )}. ({boss.CurrentHealth}/{boss.MaxHealth} HP left)", "#a8c8a8" );
 
 		SoundLibrary.PlayMonsterHit( boss.WorldPosition );
 
 		boss.TakeDamage( damage, GameObject );
+
+		DamagePopupBroadcaster.Broadcast( boss.WorldPosition + Vector3.Up * 50f, damage, boss.MaxHealth, isCrit );
 	}
 
 	void HandleResourceHit( ResourceNode node, Inventory inventory, Skills skills )

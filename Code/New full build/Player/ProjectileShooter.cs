@@ -20,15 +20,13 @@ public sealed class ProjectileShooter : Component
 	[Property, Group( "Draw Animation" )] public int DrawHoldType { get; set; } = 1;
 	[Property, Group( "Draw Animation" )] public int DrawHoldTypeAttack { get; set; } = 0;
 
-	[Property] public float LaunchAngleOffset { get; set; } = 2f;
+	[Property, Group( "Aim Trace" )] public float AimTraceDistance { get; set; } = 5000f;
 
 	public bool IsDrawing { get; private set; }
 	public bool IsDrawReady { get; private set; }
 	public float DrawProgress => MinDrawDuration > 0f ? MathF.Min( _drawTimer / MinDrawDuration, 1f ) : 1f;
 
 	float _drawTimer;
-	Vector3 _drawStartPos;
-	bool _wantsRedraw;
 
 	bool IsThirdPerson()
 	{
@@ -44,28 +42,20 @@ public sealed class ProjectileShooter : Component
 		if ( IsProxy )
 			return;
 
-		if ( _wantsRedraw && !IsDrawing )
-		{
-			_wantsRedraw = false;
-			StartDraw();
-		}
-
 		if ( !IsDrawing )
 			return;
 
-		float movedDist = ( WorldPosition - _drawStartPos ).Length;
-		if ( movedDist > 5f )
-		{
-			CancelDraw();
-			return;
-		}
-
 		_drawTimer += Time.Delta;
 
-		if ( _drawTimer >= MinDrawDuration )
-		{
+		if ( DrawProgress >= 1f )
 			IsDrawReady = true;
-			ReleaseShot();
+
+		if ( !Input.Down( "attack1" ) )
+		{
+			if ( DrawProgress >= 1f )
+				ReleaseShot();
+			else
+				CancelDraw();
 		}
 	}
 
@@ -101,7 +91,6 @@ public sealed class ProjectileShooter : Component
 		IsDrawing = true;
 		IsDrawReady = false;
 		_drawTimer = 0f;
-		_drawStartPos = WorldPosition;
 
 		if ( BodyRenderer != null )
 		{
@@ -113,6 +102,8 @@ public sealed class ProjectileShooter : Component
 		BroadcastDrawAnim();
 
 		SoundLibrary.PlayBowPull( WorldPosition );
+
+		ArcherAimCamera.NotifyAimActivity();
 
 		return true;
 	}
@@ -134,7 +125,6 @@ public sealed class ProjectileShooter : Component
 
 		IsDrawing = false;
 		IsDrawReady = false;
-		_wantsRedraw = false;
 		_drawTimer = 0f;
 		GameLog.Add( "Shot cancelled.", "#6a6a6a" );
 	}
@@ -144,6 +134,8 @@ public sealed class ProjectileShooter : Component
 		IsDrawing = false;
 		IsDrawReady = false;
 		_drawTimer = 0f;
+
+		ArcherAimCamera.NotifyAimActivity();
 
 		var inventory = GameObject.Components.Get<Inventory>();
 		var skills = GameObject.Components.Get<Skills>();
@@ -195,14 +187,38 @@ public sealed class ProjectileShooter : Component
 			aimForward * forwardOff +
 			aimRight * lateralOff;
 
+		Vector3 launchDir = aimForward;
+
+		var camera = Scene.Camera;
+		if ( camera != null )
+		{
+			var camPos = camera.WorldPosition;
+			var camForward = camera.WorldRotation.Forward;
+			var camEnd = camPos + camForward * AimTraceDistance;
+
+			var aimTrace = Scene.Trace
+				.Ray( camPos, camEnd )
+				.UseHitboxes( true )
+				.IgnoreGameObjectHierarchy( GameObject )
+				.Run();
+
+			var aimTarget = aimTrace.Hit ? aimTrace.HitPosition : camEnd;
+			var toTarget = aimTarget - spawnPos;
+			if ( toTarget.LengthSquared > 0.01f )
+				launchDir = toTarget.Normal;
+		}
+
 		var arrow = ArrowPrefab.Clone( spawnPos );
-		arrow.WorldRotation = AimSource.WorldRotation;
+
+		float yaw = MathF.Atan2( launchDir.y, launchDir.x ) * ( 180f / MathF.PI );
+		float pitch = MathF.Asin( -launchDir.z ) * ( 180f / MathF.PI );
+		arrow.WorldRotation = Rotation.From( pitch, yaw, 0f );
+
 		arrow.NetworkSpawn();
 
 		var projectile = arrow.Components.Get<ArrowProjectile>();
 		if ( projectile != null )
 		{
-			var launchDir = (aimForward + Vector3.Up * (LaunchAngleOffset / 100f)).Normal;
 			projectile.Velocity = launchDir * ArrowSpeed;
 			projectile.Damage = damage;
 			projectile.Shooter = GameObject;
@@ -213,6 +229,26 @@ public sealed class ProjectileShooter : Component
 
 		skills.AddXp( SkillType.Archery, 2 );
 
-		SoundLibrary.PlayBowRelease( spawnPos );
+		SoundLibrary.PlayBowRelease( WorldPosition );
+
+		if ( BodyRenderer != null )
+		{
+			BodyRenderer.Set( "holdtype", DrawHoldType );
+			BodyRenderer.Set( "holdtype_attack", 1 );
+			BodyRenderer.Set( "b_attack", true );
+		}
+
+		BroadcastReleaseAnim();
+	}
+
+	[Rpc.Broadcast]
+	void BroadcastReleaseAnim()
+	{
+		if ( BodyRenderer != null )
+		{
+			BodyRenderer.Set( "holdtype", DrawHoldType );
+			BodyRenderer.Set( "holdtype_attack", 1 );
+			BodyRenderer.Set( "b_attack", true );
+		}
 	}
 }

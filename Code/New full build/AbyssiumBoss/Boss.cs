@@ -641,6 +641,7 @@ public sealed class Boss : Component
 			finalDamage = 1;
 
 		playerHealth.TakeDamage( finalDamage );
+		DamagePopupBroadcaster.Broadcast( playerObj.WorldPosition + Vector3.Up * 60f, finalDamage, playerHealth.MaxHealth, false );
 	}
 
 	void ApplyKnockbackToPlayer( GameObject playerObj, BossAttackDefinition attack )
@@ -864,6 +865,7 @@ public sealed class Boss : Component
 			finalDamage = 1;
 
 		playerHealth.TakeDamage( finalDamage );
+		DamagePopupBroadcaster.Broadcast( playerObj.WorldPosition + Vector3.Up * 60f, finalDamage, playerHealth.MaxHealth, false );
 	}
 
 	void UpdateReturning()

@@ -317,6 +317,44 @@ public static class TerryScapeBackend
 				}
 			}
 
+			save.CurrentMana = json.Int( "currentMana", -1 );
+
+			if ( json.TryGetProperty( "unlockedSpells", out var unlockedSpellsEl ) && unlockedSpellsEl.ValueKind == JsonValueKind.Array )
+			{
+				foreach ( var el in unlockedSpellsEl.EnumerateArray() )
+				{
+					if ( el.ValueKind == JsonValueKind.String )
+						save.UnlockedSpells.Add( el.GetString() );
+				}
+			}
+
+			if ( json.TryGetProperty( "spellSlots", out var spellSlotsEl ) )
+			{
+				JsonElement? slotsObj = null;
+				if ( spellSlotsEl.ValueKind == JsonValueKind.Object )
+				{
+					slotsObj = spellSlotsEl;
+				}
+				else if ( spellSlotsEl.ValueKind == JsonValueKind.String )
+				{
+					var raw = spellSlotsEl.GetString();
+					if ( !string.IsNullOrEmpty( raw ) )
+					{
+						try { slotsObj = JsonDocument.Parse( raw ).RootElement; }
+						catch { }
+					}
+				}
+
+				if ( slotsObj.HasValue && slotsObj.Value.ValueKind == JsonValueKind.Object )
+				{
+					foreach ( var prop in slotsObj.Value.EnumerateObject() )
+					{
+						if ( prop.Value.ValueKind == JsonValueKind.String )
+							save.SpellSlots[prop.Name] = prop.Value.GetString();
+					}
+				}
+			}
+
 			Log.Info( $"[TerryScapeBackend] Loaded save from {save.SavedAt}." );
 			return new LoadResult { Success = true, Save = save };
 		}
@@ -342,6 +380,7 @@ public static class TerryScapeBackend
 			string uniqueItemsJson = JsonSerializer.Serialize( BuildUniqueItemsPayload( data.UniqueItems ) );
 			string equippedSlotIndicesJson = JsonSerializer.Serialize( data.EquippedSlotIndices ?? new Dictionary<string, int>() );
 			string chestClaimsJson = JsonSerializer.Serialize( data.ChestClaims ?? new Dictionary<string, string>() );
+			string spellSlotsJson = JsonSerializer.Serialize( data.SpellSlots ?? new Dictionary<string, string>() );
 
 			var payload = new
 			{
@@ -369,7 +408,10 @@ public static class TerryScapeBackend
 				totalLevel = data.TotalLevel,
 				totalGold = data.TotalGold,
 				totalKills = data.TotalKills,
-				chestClaims = chestClaimsJson
+				chestClaims = chestClaimsJson,
+				currentMana = data.CurrentMana,
+				unlockedSpells = data.UnlockedSpells ?? new List<string>(),
+				spellSlots = spellSlotsJson
 			};
 
 			var result = await CallEndpointWithRetry( "save-player", payload, SaveMaxAttempts );

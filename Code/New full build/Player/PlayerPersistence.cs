@@ -28,6 +28,7 @@ public sealed class PlayerPersistence : Component
 	{
 		JournalStation.Close();
 		LeaderboardStation.Close();
+		SpellbookStation.Close();
 
 		if ( BankStation.ActiveBank != null )
 			BankStation.Close();
@@ -111,6 +112,8 @@ public sealed class PlayerPersistence : Component
 			if ( newHealth != null )
 				newHealth.RefillToMax();
 
+			SpellbookState.ApplySaveData( null, null );
+
 			_loadComplete = true;
 			RefreshAllNpcQuestState();
 			return;
@@ -130,6 +133,17 @@ public sealed class PlayerPersistence : Component
 
 		if ( bank != null )
 			bank.ApplySaveData( save );
+
+		SpellbookState.ApplySaveData( save.UnlockedSpells, save.SpellSlots );
+
+		var mana = FindComponentInPlayer<ManaSystem>();
+		if ( mana != null && save.CurrentMana >= 0 )
+		{
+			int clamped = save.CurrentMana;
+			if ( clamped > mana.MaxMana )
+				clamped = mana.MaxMana;
+			mana.CurrentMana = clamped;
+		}
 
 		_loadComplete = true;
 
@@ -196,6 +210,13 @@ public sealed class PlayerPersistence : Component
 			data.Bank = new System.Collections.Generic.Dictionary<string, int>();
 			data.BankUnique = new System.Collections.Generic.List<PlayerSaveData.UniqueItemEntry>();
 		}
+
+		var ( unlocked, slots ) = SpellbookState.ToSaveData();
+		data.UnlockedSpells = unlocked;
+		data.SpellSlots = slots;
+
+		var mana = FindComponentInPlayer<ManaSystem>();
+		data.CurrentMana = mana != null ? mana.CurrentMana : -1;
 
 		data.TotalLevel = ComputeTotalLevel( data.Skills );
 		data.TotalGold = inventory.GetItemCount( ItemId.GoldCoin )

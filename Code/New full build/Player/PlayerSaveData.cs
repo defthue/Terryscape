@@ -39,6 +39,10 @@ public class PlayerSaveData
 
 	public Dictionary<string, string> ChestClaims { get; set; } = new();
 
+	public int CurrentMana { get; set; } = -1;
+	public List<string> UnlockedSpells { get; set; } = new();
+	public Dictionary<string, string> SpellSlots { get; set; } = new();
+
 	public class SkillEntry
 	{
 		public int Level { get; set; } = 1;

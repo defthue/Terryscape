@@ -1,0 +1,206 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using System.Linq;
+@using System.Collections.Generic;
+@inherits PanelComponent
+
+<root>
+	@if ( IsOpen )
+	{
+		<div class="shop-backdrop" onclick="@(() => CloseBook())"></div>
+		<div class="crafting-overlay">
+			<div class="crafting-popup" style="width: 820px; height: 600px;">
+				<div class="crafting-header">
+					<div class="crafting-title">Spellbook</div>
+					<div class="crafting-close" onclick="@(() => CloseBook())">✕</div>
+				</div>
+
+				<div class="spellbook-body">
+					<div class="spellbook-list">
+						@foreach ( var spell in AllSpells )
+						{
+							bool unlocked = SpellbookState.IsUnlocked( spell.Id );
+							bool selected = SelectedSpell != null && SelectedSpell.Id == spell.Id;
+
+							<div class="spell-row @(unlocked ? "unlocked" : "locked") @(selected ? "selected" : "")"
+								 onclick="@(() => SelectSpell( spell ))">
+								<div class="spell-row-name">@spell.Name</div>
+								@if ( !unlocked )
+								{
+									<div class="spell-row-lock">🔒 Lv @spell.RequiredLevel</div>
+								}
+								else
+								{
+									int boundSlot = GetBoundSlotFor( spell.Id );
+									@if ( boundSlot == 1 )
+									{
+										<div class="spell-row-slot">Left Click</div>
+									}
+									else if ( boundSlot == 2 )
+									{
+										<div class="spell-row-slot">Right Click</div>
+									}
+								}
+							</div>
+						}
+					</div>
+
+					<div class="spellbook-detail">
+						@if ( SelectedSpell != null )
+						{
+							bool unlocked = SpellbookState.IsUnlocked( SelectedSpell.Id );
+							bool meetsLevel = MagicLevel >= SelectedSpell.RequiredLevel;
+							int boundSlot = GetBoundSlotFor( SelectedSpell.Id );
+
+							<div class="detail-name">@SelectedSpell.Name</div>
+							<div class="detail-desc">@SelectedSpell.Description</div>
+
+							<div class="detail-stats">
+								<div class="detail-stat">
+									<span class="stat-label">Mana Cost:</span>
+									<span class="stat-value">@SelectedSpell.ManaCost</span>
+								</div>
+								<div class="detail-stat">
+									<span class="stat-label">Cast Time:</span>
+									<span class="stat-value">@SelectedSpell.MinCastTime s</span>
+								</div>
+								<div class="detail-stat">
+									<span class="stat-label">Required Magic:</span>
+									<span class="stat-value @(meetsLevel ? "met" : "unmet")">Lv @SelectedSpell.RequiredLevel</span>
+								</div>
+								<div class="detail-stat">
+									<span class="stat-label">Bound To:</span>
+									<span class="stat-value">@GetBoundLabel( boundSlot )</span>
+								</div>
+							</div>
+
+							@if ( !unlocked )
+							{
+								<div class="detail-locked">
+									<div class="locked-label">🔒 Locked</div>
+									<div class="locked-hint">@SelectedSpell.UnlockHint</div>
+								</div>
+							}
+							else
+							{
+								<div class="detail-bindings">
+									<div class="bindings-label">Bind to:</div>
+									<div class="bindings-row">
+										<div class="bind-button @(boundSlot == 1 ? "bound" : "")"
+											 onclick="@(() => BindToSlot( 1 ))">
+											Left Click
+										</div>
+										<div class="bind-button @(boundSlot == 2 ? "bound" : "")"
+											 onclick="@(() => BindToSlot( 2 ))">
+											Right Click
+										</div>
+										@if ( boundSlot > 0 )
+										{
+											<div class="bind-button unbind"
+												 onclick="@(() => UnbindCurrent( boundSlot ))">
+												Unbind
+											</div>
+										}
+									</div>
+								</div>
+							}
+						}
+						else
+						{
+							<div class="detail-empty">Select a spell to view details.</div>
+						}
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	bool IsOpen => SpellbookStation.IsOpen;
+
+	SpellDefinition SelectedSpell { get; set; }
+	int MagicLevel { get; set; } = 1;
+	List<SpellDefinition> AllSpells { get; set; } = new();
+
+	void CloseBook()
+	{
+		SpellbookStation.Close();
+	}
+
+	void SelectSpell( SpellDefinition def )
+	{
+		SelectedSpell = def;
+	}
+
+	void BindToSlot( int slot )
+	{
+		if ( SelectedSpell == null )
+			return;
+
+		SpellbookState.BindSlot( slot, SelectedSpell.Id );
+		string label = slot == 1 ? "Left Click" : "Right Click";
+		GameLog.Add( $"{SelectedSpell.Name} bound to {label}.", "#7a5aaa" );
+	}
+
+	void UnbindCurrent( int slot )
+	{
+		if ( SelectedSpell == null )
+			return;
+
+		SpellbookState.UnbindSlot( slot );
+		string label = slot == 1 ? "Left Click" : "Right Click";
+		GameLog.Add( $"{SelectedSpell.Name} unbound from {label}.", "#7a5aaa" );
+	}
+
+	int GetBoundSlotFor( SpellId id )
+	{
+		foreach ( var kv in SpellbookState.GetSlotBindings() )
+		{
+			if ( kv.Value == id )
+				return kv.Key;
+		}
+		return 0;
+	}
+
+	string GetBoundLabel( int slot )
+	{
+		if ( slot == 1 ) return "Left Click";
+		if ( slot == 2 ) return "Right Click";
+		return "Not bound";
+	}
+
+	void RefreshData()
+	{
+		AllSpells = SpellDatabase.GetAll().OrderBy( s => s.RequiredLevel ).ToList();
+
+		var skills = PlayerHelper.GetSkills( PlayerHelper.GetLocalPlayer() );
+		MagicLevel = skills != null ? skills.GetLevel( SkillType.Magic ) : 1;
+
+		if ( SelectedSpell == null && AllSpells.Count > 0 )
+			SelectedSpell = AllSpells[0];
+	}
+
+	protected override void OnUpdate()
+	{
+		if ( IsOpen )
+			StateHasChanged();
+	}
+
+	protected override int BuildHash()
+	{
+		if ( IsOpen )
+			RefreshData();
+
+		int hash = ( IsOpen, MagicLevel, SelectedSpell != null ? (int)SelectedSpell.Id : -1 ).GetHashCode();
+
+		foreach ( var id in SpellbookState.GetUnlocked() )
+			hash = ( hash, (int)id ).GetHashCode();
+
+		foreach ( var kv in SpellbookState.GetSlotBindings() )
+			hash = ( hash, kv.Key, (int)kv.Value ).GetHashCode();
+
+		return hash;
+	}
+}

@@ -6,7 +6,7 @@
     "Name": "arrow",
     "Position": "0,0,0",
     "Rotation": "0,0,0,1",
-    "Scale": "0.8,0.6,0.6",
+    "Scale": "0.800000012,0.600000024,0.600000024",
     "Tags": "",
     "Enabled": true,
     "NetworkMode": 2,
@@ -47,7 +47,7 @@
         "__guid": "b5c6c1c7-3ba3-4f44-9a44-c37db66f8118",
         "__enabled": true,
         "Flags": 0,
-        "Gravity": 600,
+        "Gravity": 200,
         "MaxLifetime": 2,
         "OnComponentDestroy": null,
         "OnComponentDisabled": null,
@@ -59,7 +59,28 @@
         "TraceRadius": 3
       }
     ],
-    "Children": []
+    "Children": [],
+    "__properties": {
+      "NetworkInterpolation": true,
+      "TimeScale": 1,
+      "WantsSystemScene": true,
+      "Metadata": {},
+      "NavMesh": {
+        "Enabled": false,
+        "IncludeStaticBodies": true,
+        "IncludeKeyframedBodies": true,
+        "EditorAutoUpdate": false,
+        "AgentHeight": 64,
+        "AgentRadius": 16,
+        "AgentStepSize": 18,
+        "AgentMaxSlope": 40,
+        "ExcludedBodies": "",
+        "IncludedBodies": "",
+        "DeferGeneration": false,
+        "CustomBounds": false
+      }
+    },
+    "__variables": []
   },
   "ResourceVersion": 2,
   "ShowInMenu": false,

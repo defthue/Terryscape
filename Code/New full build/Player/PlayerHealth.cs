@@ -6,8 +6,8 @@ using System.Linq;
 public sealed class PlayerHealth : Component
 {
 	[Property] public int BaseHealth { get; set; } = 100;
-	[Property] public float RegenDelay { get; set; } = 10f;
-	[Property] public float RegenInterval { get; set; } = 3f;
+	[Property] public float RegenDelay { get; set; } = 3f;
+	[Property] public float RegenInterval { get; set; } = 0.5f;
 	[Property] public int RegenAmount { get; set; } = 2;
 	[Property] public GameObject RespawnPoint { get; set; }
 
@@ -47,7 +47,6 @@ public sealed class PlayerHealth : Component
 				{
 					CurrentHealth = Math.Min( CurrentHealth + RegenAmount, MaxHealth );
 					_regenTimer = 0f;
-					GameLog.Add( $"You regenerated {RegenAmount} HP. ({CurrentHealth}/{MaxHealth} HP)", "#4caf78" );
 
 					if ( CurrentHealth >= MaxHealth )
 					{

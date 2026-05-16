@@ -31,6 +31,8 @@ public sealed class SpellCaster : Component
 
 	[Property, Group( "Frozen Bonus" )] public float FrozenBonusDamage { get; set; } = 1.5f;
 
+	[Property, Group( "Aim Trace" )] public float AimTraceDistance { get; set; } = 5000f;
+
 	public bool IsCasting { get; private set; }
 	public bool IsCastReady { get; private set; }
 	public float CastProgress => _activeSpell != null && _activeSpell.MinCastTime > 0f ? MathF.Min( _castTimer / _activeSpell.MinCastTime, 1f ) : 1f;
@@ -39,7 +41,6 @@ public sealed class SpellCaster : Component
 	SpellDefinition _activeSpell;
 	float _castTimer;
 	string _castAction;
-	Vector3 _castStartPos;
 
 	bool IsThirdPerson()
 	{
@@ -75,41 +76,62 @@ public sealed class SpellCaster : Component
 		}
 
 		if ( PlayerGatherResource.UIOpen )
+		{
+			if ( IsCasting )
+				CancelCast();
 			return;
+		}
+
+		if ( SpellbookStation.IsOpen )
+		{
+			if ( IsCasting )
+				CancelCast();
+			return;
+		}
 
 		var potionSystem = GameObject.Components.Get<PotionSystem>();
 		if ( potionSystem != null && potionSystem.IsDrinking )
+		{
+			if ( IsCasting )
+				CancelCast();
 			return;
+		}
 
 		if ( !IsCasting )
 		{
-			if ( Input.Pressed( "Slot1" ) )
-				StartCast( SpellId.Fireball, "Slot1" );
-			else if ( Input.Pressed( "Slot2" ) )
-				StartCast( SpellId.IceShard, "Slot2" );
-			else if ( Input.Pressed( "Slot3" ) )
-				StartCast( SpellId.DarkBlast, "Slot3" );
-			else if ( Input.Pressed( "Slot4" ) )
-				StartCast( SpellId.ArcaneBarrier, "Slot4" );
+			if ( Input.Pressed( "attack1" ) )
+				TryStartCastForSlot( 1, "attack1" );
+			else if ( Input.Pressed( "attack2" ) )
+				TryStartCastForSlot( 2, "attack2" );
+
+			return;
 		}
-		else
+
+		_castTimer += Time.Delta;
+
+		if ( CastProgress >= 1f )
+			IsCastReady = true;
+
+		bool released = !string.IsNullOrEmpty( _castAction ) && !Input.Down( _castAction );
+		if ( released )
 		{
-			float movedDist = ( WorldPosition - _castStartPos ).Length;
-			if ( movedDist > 5f )
-			{
-				CancelCast();
-				GameLog.Add( "Cast cancelled — you moved.", "#6a6a6a" );
-				return;
-			}
-
-			_castTimer += Time.Delta;
-
-			if ( _castTimer >= _activeSpell.MinCastTime )
-			{
-				IsCastReady = true;
+			if ( CastProgress >= 1f )
 				ReleaseCast();
-			}
+			else
+				CancelCast();
 		}
+	}
+
+	void TryStartCastForSlot( int slotIndex, string action )
+	{
+		if ( !SpellbookState.IsSlotBound( slotIndex ) )
+			return;
+
+		var spellId = SpellbookState.GetSlot( slotIndex );
+		if ( !SpellbookState.IsUnlocked( spellId ) )
+			return;
+
+		StartCast( spellId, action );
 	}
 
 	void StartCast( SpellId spellId, string action )
@@ -138,9 +160,10 @@ public sealed class SpellCaster : Component
 		_activeSpell = spell;
 		_castAction = action;
 		_castTimer = 0f;
-		_castStartPos = WorldPosition;
 		IsCasting = true;
 		IsCastReady = false;
+
+		ArcherAimCamera.NotifyAimActivity();
 	}
 
 	[Rpc.Broadcast]
@@ -182,6 +205,9 @@ public sealed class SpellCaster : Component
 			return;
 		}
 
+		if ( mana != null )
+			mana.MarkCombat();
+
 		if ( BodyRenderer != null )
 		{
 			BodyRenderer.Set( "holdtype", 6 );
@@ -190,6 +216,8 @@ public sealed class SpellCaster : Component
 		}
 
 		BroadcastCastAnim();
+
+		ArcherAimCamera.NotifyAimActivity();
 
 		if ( spell.Type == SpellType.Barrier )
 		{
@@ -223,9 +251,18 @@ public sealed class SpellCaster : Component
 		if ( potionSystem != null )
 			buffMult = potionSystem.GetBuffMultiplier( BuffType.Magic );
 
-		float totalPower = staffPower * spell.DamageMultiplier * skillBonus * buffMult;
+		float sicknessMult = 1f;
+		var mana = GameObject.Components.Get<ManaSystem>();
+		if ( mana != null )
+			sicknessMult = mana.GetManaDamageMultiplier();
+
+		float totalPower = staffPower * spell.DamageMultiplier * skillBonus * buffMult * sicknessMult;
 		int damage = (int)totalPower;
 		if ( damage < 1 ) damage = 1;
+
+		bool isCrit = CombatConstants.RollCrit();
+		if ( isCrit )
+			damage = (int)( damage * CombatConstants.CritMultiplier );
 
 		bool tp = IsThirdPerson();
 		float forwardOff = tp ? TpForwardOffset : FpForwardOffset;
@@ -241,17 +278,41 @@ public sealed class SpellCaster : Component
 			aimForward * forwardOff +
 			aimRight * lateralOff;
 
+		Vector3 launchDir = aimForward;
+
+		var camera = Scene.Camera;
+		if ( camera != null )
+		{
+			var camPos = camera.WorldPosition;
+			var camForward = camera.WorldRotation.Forward;
+			var camEnd = camPos + camForward * AimTraceDistance;
+
+			var aimTrace = Scene.Trace
+				.Ray( camPos, camEnd )
+				.UseHitboxes( true )
+				.IgnoreGameObjectHierarchy( GameObject )
+				.Run();
+
+			var aimTarget = aimTrace.Hit ? aimTrace.HitPosition : camEnd;
+			var toTarget = aimTarget - spawnPos;
+			if ( toTarget.LengthSquared > 0.01f )
+				launchDir = toTarget.Normal;
+		}
+
 		var projectile = prefab.Clone( spawnPos );
 		if ( projectile == null )
 			return;
 
-		projectile.WorldRotation = AimSource.WorldRotation;
+		float yaw = MathF.Atan2( launchDir.y, launchDir.x ) * ( 180f / MathF.PI );
+		float pitch = MathF.Asin( -launchDir.z ) * ( 180f / MathF.PI );
+		projectile.WorldRotation = Rotation.From( pitch, yaw, 0f );
+
 		projectile.NetworkSpawn();
 
 		var spellProj = projectile.Components.Get<SpellProjectile>();
 		if ( spellProj != null )
 		{
-			spellProj.Velocity = aimForward * spell.ProjectileSpeed;
+			spellProj.Velocity = launchDir * spell.ProjectileSpeed;
 			spellProj.Damage = damage;
 			spellProj.Shooter = GameObject;
 			spellProj.SpellId = spell.Id;
@@ -260,6 +321,7 @@ public sealed class SpellCaster : Component
 			spellProj.TraceRadius = spell.TraceRadius;
 			spellProj.FreezeDuration = spell.FreezeDuration;
 			spellProj.FrozenBonusDamage = FrozenBonusDamage;
+			spellProj.IsCrit = isCrit;
 		}
 
 		skills.AddXp( SkillType.Magic, 2 );
@@ -276,7 +338,7 @@ public sealed class SpellCaster : Component
 		if ( manaCheck != null )
 			manaLeft = manaCheck.CurrentMana;
 
-		GameLog.Add( $"You cast {spell.Name}! ({damage} power, {manaLeft} mana left)", "#7a5aaa" );
+		GameLog.Add( $"You cast {spell.Name}! ({damage} power{( isCrit ? ", CRIT!" : "" )}, {manaLeft} mana left)", "#7a5aaa" );
 	}
 
 	void SpawnBarrier( SpellDefinition spell )
@@ -299,10 +361,13 @@ public sealed class SpellCaster : Component
 		PushOverlapping( spawnPos, flatForward, BarrierWidth * 25f, 30f );
 		BroadcastBarrier( spawnPos, barrierRotation );
 
+		var mana = GameObject.Components.Get<ManaSystem>();
+		if ( mana != null )
+			mana.MarkCombat();
+
 		int manaLeft = 0;
-		var manaCheck = GameObject.Components.Get<ManaSystem>();
-		if ( manaCheck != null )
-			manaLeft = manaCheck.CurrentMana;
+		if ( mana != null )
+			manaLeft = mana.CurrentMana;
 
 		GameLog.Add( $"You conjure an Arcane Barrier! ({manaLeft} mana left)", "#7a5aaa" );
 	}

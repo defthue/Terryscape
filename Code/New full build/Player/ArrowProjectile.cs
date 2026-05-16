@@ -12,6 +12,7 @@ public sealed class ArrowProjectile : Component
 	public int Damage { get; set; }
 	public GameObject Shooter { get; set; }
 	public CombatStyle Style { get; set; }
+	public bool IsCrit { get; set; }
 
 	bool _stuck;
 	float _lifetime;
@@ -69,6 +70,7 @@ public sealed class ArrowProjectile : Component
 			if ( finalDamage < 1 ) finalDamage = 1;
 
 			monster.TakeDamage( finalDamage, Shooter );
+			DamagePopupBroadcaster.Broadcast( trace.HitPosition, finalDamage, monster.MaxHealth, IsCrit );
 			GameObject.Destroy();
 			return;
 		}
@@ -81,6 +83,7 @@ public sealed class ArrowProjectile : Component
 			if ( finalDamage < 1 ) finalDamage = 1;
 
 			boss.TakeDamage( finalDamage, Shooter );
+			DamagePopupBroadcaster.Broadcast( trace.HitPosition, finalDamage, boss.MaxHealth, IsCrit );
 			GameObject.Destroy();
 			return;
 		}

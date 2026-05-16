@@ -31,7 +31,7 @@
 
         return monsters.FindAll( m =>
             !m.IsDead &&
-            Vector3.DistanceBetween( m.GameObject.WorldPosition, playerPos ) <= 250f
+            Vector3.DistanceBetween( m.GameObject.WorldPosition, playerPos ) <= 1000f
         );
     }
 

@@ -1,0 +1,98 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using System.Collections.Generic;
+@using System.Linq;
+@inherits PanelComponent
+
+<root>
+	@foreach ( var popup in GetVisiblePopups() )
+	{
+		<div class="popup-wrapper tier-@(popup.ColorTier) @(popup.IsCrit ? "crit" : "") @(popup.AgePercent > 0.7f ? "fading" : "")"
+			 style="left: @(popup.ScreenX.ToString("0.##"))%; top: @(popup.ScreenY.ToString("0.##"))%; transform: translate(-50%, @(popup.FloatY)px);">
+			@(popup.IsCrit ? "✦ " + popup.Damage + " ✦" : popup.Damage.ToString())
+		</div>
+	}
+</root>
+
+@code
+{
+	public class DrawPopup
+	{
+		public float ScreenX;
+		public float ScreenY;
+		public float FloatY;
+		public int Damage;
+		public int ColorTier;
+		public bool IsCrit;
+		public float AgePercent;
+	}
+
+	List<DrawPopup> GetVisiblePopups()
+	{
+		var list = new List<DrawPopup>();
+
+		var broadcaster = Game.ActiveScene?.GetAllComponents<DamagePopupBroadcaster>().FirstOrDefault();
+		if ( broadcaster == null )
+			return list;
+
+		var camera = Scene.Camera;
+		if ( camera == null )
+			return list;
+
+		float maxDistSqr = broadcaster.MaxVisibleDistance * broadcaster.MaxVisibleDistance;
+		float lifetime = broadcaster.PopupLifetime;
+		if ( lifetime <= 0f )
+			lifetime = 0.01f;
+
+		var camForward = camera.WorldRotation.Forward;
+		var camPos = camera.WorldPosition;
+
+		foreach ( var popup in broadcaster.ActivePopups )
+		{
+			var toPopup = popup.WorldPosition - camPos;
+			if ( Vector3.Dot( camForward, toPopup ) <= 0f )
+				continue;
+
+			if ( toPopup.LengthSquared > maxDistSqr )
+				continue;
+
+			float age = Time.Now - popup.SpawnTime;
+			float agePct = age / lifetime;
+			if ( agePct < 0f ) agePct = 0f;
+			if ( agePct > 1f ) agePct = 1f;
+
+			var normal = camera.PointToScreenNormal( popup.WorldPosition );
+
+			list.Add( new DrawPopup
+			{
+				ScreenX = normal.x * 100f,
+				ScreenY = normal.y * 100f,
+				FloatY = -agePct * 60f,
+				Damage = popup.Damage,
+				ColorTier = popup.ColorTier,
+				IsCrit = popup.IsCrit,
+				AgePercent = agePct
+			} );
+		}
+
+		return list;
+	}
+
+	protected override void OnUpdate()
+	{
+		StateHasChanged();
+	}
+
+	protected override int BuildHash()
+	{
+		var broadcaster = Game.ActiveScene?.GetAllComponents<DamagePopupBroadcaster>().FirstOrDefault();
+		if ( broadcaster == null )
+			return 0;
+
+		int hash = broadcaster.ActivePopups.Count;
+		foreach ( var p in broadcaster.ActivePopups )
+			hash = ( hash, p.Damage, p.ColorTier, p.IsCrit, (int)(p.SpawnTime * 100f) ).GetHashCode();
+
+		return ( hash, (int)( Time.Now * 30f ) ).GetHashCode();
+	}
+}

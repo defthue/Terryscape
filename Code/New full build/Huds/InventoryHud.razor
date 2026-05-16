@@ -87,7 +87,7 @@
 				<div class="mana-bar-fill" style="width: @ManaPercent%;"></div>
 				<div class="mana-bar-text">@CurrentMana / @MaxMana MP @(IsDrinking ? "— Drinking..." : "")</div>
 			</div>
-			@if ( ActiveBuffs.Count > 0 )
+			@if ( ActiveBuffs.Count > 0 || ManaSicknessRemaining > 0 || PotionCooldownRemaining > 0 )
 			{
 				<div class="buff-row">
 					@foreach ( var buff in ActiveBuffs )
@@ -95,6 +95,22 @@
 						<div class="buff-icon" style="background: @GetBuffColor( buff.Type );">
 							<div class="buff-timer">@((int)buff.Remaining)s</div>
 							<div class="buff-tooltip">@buff.Type +@((int)buff.Percent)%</div>
+						</div>
+					}
+					@if ( ManaSicknessRemaining > 0 )
+					{
+						<div class="buff-icon mana-sickness-icon">
+							<div class="buff-icon-symbol">💧</div>
+							<div class="buff-timer">@((int)ManaSicknessRemaining)s</div>
+							<div class="buff-tooltip">Mana Sickness — -25% magic damage</div>
+						</div>
+					}
+					@if ( PotionCooldownRemaining > 0 )
+					{
+						<div class="buff-icon potion-cooldown-icon">
+							<div class="buff-icon-symbol">🚫</div>
+							<div class="buff-timer">@((int)PotionCooldownRemaining)s</div>
+							<div class="buff-tooltip">Potion Cooldown</div>
 						</div>
 					}
 				</div>
@@ -226,6 +242,12 @@
 							<div class="skill-name">@skill.Name</div>
 							<div class="xp-bar">
 								<div class="xp-fill @(skill.CssClass)-fill" style="width: @skill.XpPercent%;"></div>
+							</div>
+							<div class="skill-tooltip">
+								<div class="skill-tooltip-name">@skill.Name</div>
+								<div class="skill-tooltip-line">Level @skill.Level</div>
+								<div class="skill-tooltip-line">XP: @skill.Xp / @skill.XpRequired</div>
+								<div class="skill-tooltip-line skill-tooltip-remaining">@(skill.XpRequired - skill.Xp) XP to next level</div>
 							</div>
 						</div>
 					}
@@ -397,6 +419,8 @@
 	int ManaPercent { get; set; }
 	bool IsDrinking { get; set; }
 	bool IsHealTicking { get; set; }
+	float ManaSicknessRemaining { get; set; }
+	float PotionCooldownRemaining { get; set; }
 	List<ActiveBuff> ActiveBuffs { get; set; } = new();
 
 	List<SlotData> CachedSlots { get; set; } = new();
@@ -590,6 +614,7 @@
 		if ( NpcInteract.ActiveNpc != null ) return;
 		if ( JournalStation.IsOpen ) return;
 		if ( LeaderboardStation.IsOpen ) return;
+		if ( SpellbookStation.IsOpen ) return;
 		if ( MinimapState.IsFullMapOpen ) return;
 		if ( WelcomeHudState.IsOpen ) return;
 
@@ -775,18 +800,21 @@
 			CurrentMana = mana.CurrentMana;
 			MaxMana = mana.MaxMana;
 			ManaPercent = MaxMana > 0 ? (int)( ( (float)CurrentMana / MaxMana ) * 100f ) : 0;
+			ManaSicknessRemaining = mana.ManaSicknessRemaining;
 		}
 		else
 		{
 			CurrentMana = 0;
 			MaxMana = 0;
 			ManaPercent = 0;
+			ManaSicknessRemaining = 0f;
 		}
 
 		if ( potions != null )
 		{
 			IsDrinking = potions.IsDrinking;
 			IsHealTicking = potions.IsHealTicking;
+			PotionCooldownRemaining = potions.PotionCooldownRemaining;
 
 			foreach ( var buff in potions.GetActiveBuffs() )
 				ActiveBuffs.Add( buff );
@@ -795,6 +823,7 @@
 		{
 			IsDrinking = false;
 			IsHealTicking = false;
+			PotionCooldownRemaining = 0f;
 		}
 
 		if ( inventory != null )
@@ -965,6 +994,8 @@
 			return true;
 		if ( LeaderboardStation.IsOpen )
 			return true;
+		if ( SpellbookStation.IsOpen )
+			return true;
 		if ( MinimapState.IsFullMapOpen )
 			return true;
 		if ( WelcomeHudState.IsOpen )
@@ -1057,6 +1088,8 @@
 			MaxMana,
 			IsDrinking,
 			IsHealTicking,
+			(int)ManaSicknessRemaining,
+			(int)PotionCooldownRemaining,
 			EquipmentSlots.Count > 0 ? EquipmentSlots[0].ItemName ?? "" : "",
 			PlayerGatherResource.UIOpen,
 			GameLog.Messages.Count,

@@ -12,6 +12,7 @@ public sealed class SpellProjectile : Component
 	public float TraceRadius { get; set; } = 5f;
 	public float FreezeDuration { get; set; }
 	public float FrozenBonusDamage { get; set; } = 1.5f;
+	public bool IsCrit { get; set; }
 
 	float _distanceTraveled;
 	float _lifetime;
@@ -77,6 +78,8 @@ public sealed class SpellProjectile : Component
 			if ( FreezeDuration > 0f )
 				monster.ApplyFreeze( FreezeDuration );
 
+			DamagePopupBroadcaster.Broadcast( trace.HitPosition, finalDamage, monster.MaxHealth, IsCrit );
+
 			GameObject.Destroy();
 			return;
 		}
@@ -89,6 +92,7 @@ public sealed class SpellProjectile : Component
 			if ( finalDamage < 1 ) finalDamage = 1;
 
 			boss.TakeDamage( finalDamage, Shooter );
+			DamagePopupBroadcaster.Broadcast( trace.HitPosition, finalDamage, boss.MaxHealth, IsCrit );
 			GameObject.Destroy();
 			return;
 		}

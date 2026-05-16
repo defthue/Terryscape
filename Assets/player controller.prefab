@@ -94,7 +94,7 @@
         "Flags": 1,
         "AngularDamping": 1,
         "EnableImpactDamage": true,
-        "EnhancedCcd": false,
+        "EnhancedCcd": true,
         "Gravity": true,
         "GravityScale": 1,
         "ImpactDamage": 0,
@@ -118,7 +118,9 @@
         "OnComponentStart": null,
         "OnComponentUpdate": null,
         "OverrideMassCenter": true,
+        "PreciseContacts": true,
         "RigidbodyFlags": "DisableCollisionSounds",
+        "SleepThreshold": 2,
         "StartAsleep": false
       },
       {
@@ -240,9 +242,9 @@
         "OnComponentFixedUpdate": null,
         "OnComponentStart": null,
         "OnComponentUpdate": null,
-        "RegenAmount": 2,
+        "RegenAmount": 5,
         "RegenDelay": 10,
-        "RegenInterval": 3,
+        "RegenInterval": 1,
         "RespawnPoint": {
           "_type": "gameobject",
           "prefab": "respawn.prefab"
@@ -282,7 +284,8 @@
         "OnComponentEnabled": null,
         "OnComponentFixedUpdate": null,
         "OnComponentStart": null,
-        "OnComponentUpdate": null
+        "OnComponentUpdate": null,
+        "PotionCooldownDuration": 15
       },
       {
         "__type": "ProjectileShooter",
@@ -293,6 +296,7 @@
           "_type": "gameobject",
           "go": "d4b06bbf-e7cd-4dcc-9b9c-ac5b758c3ea9"
         },
+        "AimTraceDistance": 5000,
         "ArrowPrefab": {
           "_type": "gameobject",
           "prefab": "arrow.prefab"
@@ -309,7 +313,6 @@
         "FpForwardOffset": 50,
         "FpHeightOffset": 42,
         "FpLateralOffset": 8,
-        "LaunchAngleOffset": 2,
         "MinDrawDuration": 0.6,
         "OnComponentDestroy": null,
         "OnComponentDisabled": null,
@@ -318,21 +321,27 @@
         "OnComponentStart": null,
         "OnComponentUpdate": null,
         "TpForwardOffset": 60,
-        "TpHeightOffset": 35,
-        "TpLateralOffset": 20
+        "TpHeightOffset": 50,
+        "TpLateralOffset": 3
       },
       {
         "__type": "ManaSystem",
         "__guid": "86d420c5-b515-45a6-9d98-200277f7dc77",
         "__enabled": true,
         "Flags": 0,
-        "DefaultMaxMana": 0,
+        "BaseMana": 20,
+        "CombatRegenRate": 1,
+        "CombatStateDuration": 5,
+        "ManaPerLevel": 2,
+        "ManaSicknessDamageReduction": 0.25,
+        "ManaSicknessDuration": 30,
         "OnComponentDestroy": null,
         "OnComponentDisabled": null,
         "OnComponentEnabled": null,
         "OnComponentFixedUpdate": null,
         "OnComponentStart": null,
-        "OnComponentUpdate": null
+        "OnComponentUpdate": null,
+        "OocRegenRate": 5
       },
       {
         "__type": "SpellCaster",
@@ -343,6 +352,7 @@
           "_type": "gameobject",
           "go": "d4b06bbf-e7cd-4dcc-9b9c-ac5b758c3ea9"
         },
+        "AimTraceDistance": 5000,
         "BarrierColliderSize": "200,20,150",
         "BarrierDepth": 1,
         "BarrierDuration": 5,
@@ -526,6 +536,33 @@
         "OnComponentFixedUpdate": null,
         "OnComponentStart": null,
         "OnComponentUpdate": null
+      },
+      {
+        "__type": "ArcherAimCamera",
+        "__guid": "275bc0d9-1a40-4e49-b4b3-2f0c498caab0",
+        "__enabled": true,
+        "Flags": 0,
+        "AimFov": 70,
+        "AimModeHoldDuration": 3,
+        "DefaultFov": 80,
+        "ForwardOffset": 35,
+        "FovLerpSpeed": 10,
+        "MaxDrawFovZoom": 6,
+        "OffsetLerpSpeed": 5,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "PlayerCamera": {
+          "_type": "component",
+          "component_id": "5509681e-d549-4a7b-876a-2414f725e0c0",
+          "go": "d4b06bbf-e7cd-4dcc-9b9c-ac5b758c3ea9",
+          "component_type": "CameraComponent"
+        },
+        "RightOffset": 20,
+        "UpOffset": 10
       }
     ],
     "Children": [

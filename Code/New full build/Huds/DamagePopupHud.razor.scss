@@ -1,0 +1,77 @@
+root {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	pointer-events: none;
+	font-family: Almendra;
+	font-smooth: auto;
+}
+
+.popup-wrapper {
+	position: absolute;
+	font-weight: 700;
+	pointer-events: none;
+	white-space: nowrap;
+	text-align: center;
+	letter-spacing: 0.5px;
+	text-shadow:
+		-2px -2px 0 #000,
+		 0   -2px 0 #000,
+		 2px -2px 0 #000,
+		 2px  0   0 #000,
+		 2px  2px 0 #000,
+		 0    2px 0 #000,
+		-2px  2px 0 #000,
+		-2px  0   0 #000;
+	transition: opacity 0.05s linear;
+	opacity: 1;
+
+	&.tier-0 {
+		color: #9a9a9a;
+		font-size: 18px;
+	}
+
+	&.tier-1 {
+		color: #ffffff;
+		font-size: 24px;
+	}
+
+	&.tier-2 {
+		color: #f0c040;
+		font-size: 30px;
+	}
+
+	&.tier-3 {
+		color: #e87838;
+		font-size: 36px;
+	}
+
+	&.crit {
+		color: #ffd700;
+		font-size: 44px;
+		animation: crit-pop 0.35s ease-out;
+		text-shadow:
+			-2px -2px 0 #000,
+			 0   -2px 0 #000,
+			 2px -2px 0 #000,
+			 2px  0   0 #000,
+			 2px  2px 0 #000,
+			 0    2px 0 #000,
+			-2px  2px 0 #000,
+			-2px  0   0 #000,
+			0 0 14px #ffd700aa;
+	}
+
+	&.fading {
+		opacity: 0.0;
+		transition: opacity 0.35s ease-out;
+	}
+}
+
+@keyframes crit-pop {
+	0%   { transform: translate(-50%, 0px) scale(0.4); }
+	40%  { transform: translate(-50%, -20px) scale(1.4); }
+	100% { transform: translate(-50%, -40px) scale(1.0); }
+}
