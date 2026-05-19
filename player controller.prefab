@@ -1,0 +1,1270 @@
+{
+  "RootObject": {
+    "__guid": "43dc9686-8264-42d7-9f3e-17be6bb1f957",
+    "__version": 2,
+    "Flags": 0,
+    "Name": "player controller",
+    "Position": "0,0,0",
+    "Rotation": "0,0,0,1",
+    "Scale": "1,1,1",
+    "Tags": "",
+    "Enabled": true,
+    "NetworkMode": 1,
+    "NetworkFlags": 0,
+    "NetworkOrphaned": 0,
+    "NetworkTransmit": true,
+    "OwnerTransfer": 1,
+    "Components": [
+      {
+        "__type": "Sandbox.PlayerController",
+        "__guid": "b5cd6d4a-68d9-4364-84c3-c008b41ed1c9",
+        "__enabled": true,
+        "Flags": 0,
+        "AccelerationTime": 0,
+        "AimStrengthBody": 1,
+        "AimStrengthEyes": 1,
+        "AimStrengthHead": 1,
+        "AirFriction": 0.1,
+        "AltMoveButton": "run",
+        "Body": {
+          "_type": "component",
+          "component_id": "b11e77f0-b601-475c-b262-3443c04c48a8",
+          "go": "43dc9686-8264-42d7-9f3e-17be6bb1f957",
+          "component_type": "Rigidbody"
+        },
+        "BodyCollisionTags": null,
+        "BodyHeight": 72,
+        "BodyMass": 500,
+        "BodyRadius": 16,
+        "BrakePower": 1,
+        "CameraOffset": "250,0,0",
+        "ColliderObject": {
+          "_type": "gameobject",
+          "go": "1de767ae-49d2-4116-98f6-ae0b6ac450fc"
+        },
+        "DeaccelerationTime": 0,
+        "DuckedHeight": 36,
+        "DuckedSpeed": 70,
+        "EnableFootstepSounds": true,
+        "EnablePressing": true,
+        "EyeDistanceFromTop": 0,
+        "FootstepMixer": {
+          "Name": "unknown",
+          "Id": "00000000-0000-0000-0000-000000000000"
+        },
+        "FootstepVolume": 1,
+        "HideBodyInFirstPerson": false,
+        "JumpSpeed": 300,
+        "LookSensitivity": 1,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "PitchClamp": 90,
+        "ReachLength": 130,
+        "Renderer": {
+          "_type": "component",
+          "component_id": "2795f401-4c71-4fd7-8575-b6259ef80de0",
+          "go": "c1f2a082-666f-46c2-963c-977b391ae411",
+          "component_type": "SkinnedModelRenderer"
+        },
+        "RotateWithGround": true,
+        "RotationAngleLimit": 15,
+        "RotationSpeed": 1,
+        "RunByDefault": false,
+        "RunSpeed": 320,
+        "ShowColliderComponents": false,
+        "ShowRigidbodyComponent": false,
+        "ThirdPerson": true,
+        "ToggleCameraModeButton": "view",
+        "UseAnimatorControls": true,
+        "UseButton": "use",
+        "UseCameraControls": true,
+        "UseFovFromPreferences": false,
+        "UseInputControls": true,
+        "UseLookControls": true,
+        "WalkSpeed": 110
+      },
+      {
+        "__type": "Sandbox.Rigidbody",
+        "__guid": "b11e77f0-b601-475c-b262-3443c04c48a8",
+        "__enabled": true,
+        "Flags": 1,
+        "AngularDamping": 1,
+        "EnableImpactDamage": true,
+        "EnhancedCcd": true,
+        "Gravity": true,
+        "GravityScale": 1,
+        "ImpactDamage": 0,
+        "LinearDamping": 0.1,
+        "Locking": {
+          "X": false,
+          "Y": false,
+          "Z": false,
+          "Pitch": true,
+          "Yaw": true,
+          "Roll": true
+        },
+        "MassCenterOverride": "0,0,36",
+        "MassOverride": 500,
+        "MinImpactDamageSpeed": 500,
+        "MotionEnabled": true,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "OverrideMassCenter": true,
+        "RigidbodyFlags": "DisableCollisionSounds",
+        "SleepThreshold": 2,
+        "StartAsleep": false
+      },
+      {
+        "__type": "Sandbox.Movement.MoveModeWalk",
+        "__guid": "e29c19c9-f930-4f23-a2fd-4ebecb6ae35f",
+        "__enabled": true,
+        "Flags": 0,
+        "GroundAngle": 45,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "Priority": 0,
+        "StepDownHeight": 18,
+        "StepUpHeight": 18
+      },
+      {
+        "__type": "Sandbox.Movement.MoveModeSwim",
+        "__guid": "2ccdc192-4975-4982-8054-476f3da2c343",
+        "__enabled": true,
+        "Flags": 0,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "Priority": 10,
+        "SwimLevel": 0.6
+      },
+      {
+        "__type": "Sandbox.Movement.MoveModeLadder",
+        "__guid": "3335552a-cda4-4dc9-ad7f-932cb61c2055",
+        "__enabled": true,
+        "Flags": 0,
+        "ClimbableTags": "ladder",
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "Priority": 5,
+        "Speed": 1
+      },
+      {
+        "__type": "Sandbox.Movement.SitMoveMode",
+        "__guid": "7ea44f2f-fd6a-4e0a-a989-8528bad5398c",
+        "__enabled": true,
+        "Flags": 0,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null
+      },
+      {
+        "__type": "Sandbox.Dresser",
+        "__guid": "d315cc36-3479-4cd3-a8b1-f688395540ba",
+        "__enabled": true,
+        "Flags": 0,
+        "ApplyHeightScale": true,
+        "BodyTarget": {
+          "_type": "component",
+          "component_id": "2795f401-4c71-4fd7-8575-b6259ef80de0",
+          "go": "c1f2a082-666f-46c2-963c-977b391ae411",
+          "component_type": "SkinnedModelRenderer"
+        },
+        "Clothing": [],
+        "ManualAge": 0.5,
+        "ManualHeight": 0.5,
+        "ManualTint": 0.5,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "RemoveUnownedItems": true,
+        "Source": "OwnerConnection",
+        "WorkshopItems": []
+      },
+      {
+        "__type": "Inventory",
+        "__guid": "030e99fd-3ee0-4258-99a1-208612f09324",
+        "__enabled": true,
+        "Flags": 0,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null
+      },
+      {
+        "__type": "Skills",
+        "__guid": "f846de3e-b8b3-40e0-9dea-17722fd015df",
+        "__enabled": true,
+        "Flags": 0,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null
+      },
+      {
+        "__type": "PlayerHealth",
+        "__guid": "1c0f888f-c252-44fd-9531-ee5517a65014",
+        "__enabled": true,
+        "Flags": 0,
+        "BaseHealth": 50,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "RegenAmount": 5,
+        "RegenDelay": 10,
+        "RegenInterval": 1,
+        "RespawnPoint": {
+          "_type": "gameobject",
+          "prefab": "respawn.prefab"
+        }
+      },
+      {
+        "__type": "BankStorage",
+        "__guid": "2b78c29d-41c9-4ba8-af8e-90d11902d9cb",
+        "__enabled": true,
+        "Flags": 0,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null
+      },
+      {
+        "__type": "PotionSystem",
+        "__guid": "54ac60c7-fc33-4ffd-8e25-f7b64e0ea567",
+        "__enabled": true,
+        "Flags": 0,
+        "ArcheryBuffPercent": 15,
+        "AttackBuffPercent": 15,
+        "BuffDuration": 60,
+        "DefenceBuffPercent": 15,
+        "DrinkDuration": 1,
+        "ElixirBuffPercent": 20,
+        "ElixirDuration": 60,
+        "GreaterHealAmount": 60,
+        "HealAmount": 30,
+        "HealTickDuration": 2,
+        "MagicBuffPercent": 15,
+        "MinorHealAmount": 15,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "PotionCooldownDuration": 15
+      },
+      {
+        "__type": "ProjectileShooter",
+        "__guid": "8f8877fe-2944-4e31-a23c-495e78799a75",
+        "__enabled": true,
+        "Flags": 0,
+        "AimSource": {
+          "_type": "gameobject",
+          "go": "d4b06bbf-e7cd-4dcc-9b9c-ac5b758c3ea9"
+        },
+        "AimTraceDistance": 5000,
+        "ArrowPrefab": {
+          "_type": "gameobject",
+          "prefab": "arrow.prefab"
+        },
+        "ArrowSpeed": 2000,
+        "BodyRenderer": {
+          "_type": "component",
+          "component_id": "2795f401-4c71-4fd7-8575-b6259ef80de0",
+          "go": "c1f2a082-666f-46c2-963c-977b391ae411",
+          "component_type": "SkinnedModelRenderer"
+        },
+        "DrawHoldType": 5,
+        "DrawHoldTypeAttack": 4,
+        "FpForwardOffset": 50,
+        "FpHeightOffset": 42,
+        "FpLateralOffset": 8,
+        "MinDrawDuration": 0.6,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "TpForwardOffset": 60,
+        "TpHeightOffset": 50,
+        "TpLateralOffset": 3
+      },
+      {
+        "__type": "ManaSystem",
+        "__guid": "86d420c5-b515-45a6-9d98-200277f7dc77",
+        "__enabled": true,
+        "Flags": 0,
+        "BaseMana": 20,
+        "CombatRegenRate": 0.6,
+        "CombatStateDuration": 10,
+        "ManaPerLevel": 2,
+        "ManaSicknessDuration": 10,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "OocRegenRate": 2
+      },
+      {
+        "__type": "SpellCaster",
+        "__guid": "300eb8bc-70dd-4fb6-a3a6-672552438b4c",
+        "__enabled": true,
+        "Flags": 0,
+        "AcidGravity": 800,
+        "AcidLaunchPitchDegrees": 35,
+        "AcidPoisonDamagePerTick": 2,
+        "AcidPoisonDuration": 5,
+        "AcidPoisonTickInterval": 1,
+        "AcidPoolColor": "0.5,0.95,0.2,0.55",
+        "AcidSpitPrefab": {
+          "_type": "gameobject",
+          "prefab": "acidplaceholder.prefab"
+        },
+        "AcidSplashRadius": 150,
+        "AcidSplashVisualDuration": 1.5,
+        "AimSource": {
+          "_type": "gameobject",
+          "go": "d4b06bbf-e7cd-4dcc-9b9c-ac5b758c3ea9"
+        },
+        "AimTraceDistance": 5000,
+        "BarrierColliderSize": "200,20,150",
+        "BarrierDepth": 1,
+        "BarrierDuration": 5,
+        "BarrierForwardOffset": 70,
+        "BarrierHeight": 1,
+        "BarrierHeightOffset": 0,
+        "BarrierLateralOffset": 0,
+        "BarrierPrefab": {
+          "_type": "gameobject",
+          "prefab": "arcaneshieldbarrier.prefab"
+        },
+        "BarrierTint": "0.2,0.4,1,0.4",
+        "BarrierWidth": 1,
+        "BodyRenderer": {
+          "_type": "component",
+          "component_id": "2795f401-4c71-4fd7-8575-b6259ef80de0",
+          "go": "c1f2a082-666f-46c2-963c-977b391ae411",
+          "component_type": "SkinnedModelRenderer"
+        },
+        "DarkBlastPrefab": {
+          "_type": "gameobject",
+          "prefab": "darkblast.prefab"
+        },
+        "FireballPrefab": {
+          "_type": "gameobject",
+          "prefab": "realfireball.prefab"
+        },
+        "FpForwardOffset": 60,
+        "FpHeightOffset": 40,
+        "FpLateralOffset": 0,
+        "FrozenBonusDamage": 1,
+        "HealPulseColor": "0.4,1,0.6,1",
+        "HomingAcquireConeDegrees": 25,
+        "HomingMaxAcquireRange": 2500,
+        "HomingTurnSpeed": 8,
+        "IceShardPrefab": {
+          "_type": "gameobject",
+          "prefab": "iceshardparticle.prefab"
+        },
+        "InfernoDamagePerTick": 2,
+        "InfernoDuration": 5,
+        "InfernoHeight": 180,
+        "InfernoRadius": 100,
+        "InfernoReticleColor": "1,0.5,0.15,1",
+        "InfernoTickInterval": 0.5,
+        "LightningColor": "0.82353,0.72549,0.98039,1",
+        "LightningForwardOffset": 30,
+        "LightningHaloColor": "0.57255,0.5098,0.93333,1",
+        "LightningHeightOffset": 50,
+        "LightningLateralOffset": 0,
+        "MagicMissilePrefab": {
+          "_type": "gameobject",
+          "prefab": "magicmissile.prefab"
+        },
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "SingularityCollapseRadius": 150,
+        "SingularityPullDuration": 1.5,
+        "SingularityPullRadius": 300,
+        "SingularityReticleColor": "0.7,0.4,1,1",
+        "StoneskinAuraPrefab": {
+          "_type": "gameobject",
+          "prefab": "stoneskinaura.prefab"
+        },
+        "StoneskinDuration": 4,
+        "TpForwardOffset": 60,
+        "TpHeightOffset": 50,
+        "TpLateralOffset": 0
+      },
+      {
+        "__type": "PlayerSetup",
+        "__guid": "a9dba935-ebf3-4168-8157-1c94f9a5be00",
+        "__enabled": true,
+        "Flags": 0,
+        "Dresser": {
+          "_type": "component",
+          "component_id": "d315cc36-3479-4cd3-a8b1-f688395540ba",
+          "go": "43dc9686-8264-42d7-9f3e-17be6bb1f957",
+          "component_type": "Dresser"
+        },
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "PlayerCamera": {
+          "_type": "component",
+          "component_id": "5509681e-d549-4a7b-876a-2414f725e0c0",
+          "go": "d4b06bbf-e7cd-4dcc-9b9c-ac5b758c3ea9",
+          "component_type": "CameraComponent"
+        }
+      },
+      {
+        "__type": "PlayerGatherResource",
+        "__guid": "d8388120-04f3-4cc0-b7ce-b01310956e77",
+        "__enabled": true,
+        "Flags": 0,
+        "BodyRenderer": {
+          "_type": "component",
+          "component_id": "2795f401-4c71-4fd7-8575-b6259ef80de0",
+          "go": "c1f2a082-666f-46c2-963c-977b391ae411",
+          "component_type": "SkinnedModelRenderer"
+        },
+        "DirectionSource": {
+          "_type": "gameobject",
+          "go": "d4b06bbf-e7cd-4dcc-9b9c-ac5b758c3ea9"
+        },
+        "ForageHoldType": 4,
+        "ForageHoldTypeAttack": 0,
+        "ForwardOffset": 70,
+        "HeightOffset": 50,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "PunchStanceResetTime": 2,
+        "ShowDebugTrace": false,
+        "StaffMeleeDamageMultiplier": 0.5,
+        "SwingCooldown": 0.5,
+        "TraceDistance": 5,
+        "TraceRadius": 20
+      },
+      {
+        "__type": "KnockbackReceiver",
+        "__guid": "455b2e30-e60a-453a-84f7-733779e096f8",
+        "__enabled": true,
+        "Flags": 0,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "VerticalImpulse": 180
+      },
+      {
+        "__type": "PlayerPersistence",
+        "__guid": "53c0742f-1843-47a2-8f6d-55b60c9b9d18",
+        "__enabled": true,
+        "Flags": 0,
+        "AutoSaveIntervalSeconds": 30,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null
+      },
+      {
+        "__type": "PlayerSpeechBubble",
+        "__guid": "63a8a4fc-7887-418d-9813-13e65d3e7fe0",
+        "__enabled": true,
+        "Flags": 0,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null
+      },
+      {
+        "__type": "PlayerMovementTuner",
+        "__guid": "3b13e688-95bd-4913-8730-78fd777f2466",
+        "__enabled": true,
+        "Flags": 0,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "RunSpeedMultiplier": 1.5,
+        "WalkSpeedMultiplier": 1.75
+      },
+      {
+        "__type": "Sandbox.Huds.PlayerNameplatePanel",
+        "__guid": "18887de6-6fb4-4327-828d-72ee1f3a3dd0",
+        "__enabled": true,
+        "Flags": 0,
+        "MaxVisibleDistance": 2000,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "PlayerController": {
+          "_type": "component",
+          "component_id": "b5cd6d4a-68d9-4364-84c3-c008b41ed1c9",
+          "go": "43dc9686-8264-42d7-9f3e-17be6bb1f957",
+          "component_type": "PlayerController"
+        }
+      },
+      {
+        "__type": "HotbarInput",
+        "__guid": "18c11968-b596-482d-b68a-73978d9249ee",
+        "__enabled": true,
+        "Flags": 0,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null
+      },
+      {
+        "__type": "ArcherAimCamera",
+        "__guid": "275bc0d9-1a40-4e49-b4b3-2f0c498caab0",
+        "__enabled": true,
+        "Flags": 0,
+        "AimFov": 70,
+        "AimModeHoldDuration": 3,
+        "AimPitchOffset": -2,
+        "AimRollOffset": 0,
+        "AimYawOffset": 2,
+        "DefaultFov": 80,
+        "ForwardOffset": 40,
+        "FovLerpSpeed": 10,
+        "MaxDrawFovZoom": 6,
+        "OffsetLerpSpeed": 5,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "PlayerCamera": {
+          "_type": "component",
+          "component_id": "5509681e-d549-4a7b-876a-2414f725e0c0",
+          "go": "d4b06bbf-e7cd-4dcc-9b9c-ac5b758c3ea9",
+          "component_type": "CameraComponent"
+        },
+        "RightOffset": 35,
+        "UpOffset": -5
+      },
+      {
+        "__type": "ToolCycler",
+        "__guid": "3e040fe5-9c82-4f74-be91-b8a5ad6fc8ca",
+        "__enabled": true,
+        "Flags": 0,
+        "CycleAction": "CycleAction",
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null
+      }
+    ],
+    "Children": [
+      {
+        "__guid": "c1f2a082-666f-46c2-963c-977b391ae411",
+        "__version": 2,
+        "Flags": 0,
+        "Name": "Body",
+        "Position": "0,0,0",
+        "Rotation": "0,0,0,1",
+        "Scale": "1,1,1",
+        "Tags": "",
+        "Enabled": true,
+        "NetworkMode": 1,
+        "NetworkFlags": 0,
+        "NetworkOrphaned": 0,
+        "NetworkTransmit": true,
+        "OwnerTransfer": 1,
+        "Components": [
+          {
+            "__type": "Sandbox.SkinnedModelRenderer",
+            "__guid": "2795f401-4c71-4fd7-8575-b6259ef80de0",
+            "__enabled": true,
+            "Flags": 0,
+            "AnimationGraph": "models/citizen/citizen.vanmgrph",
+            "BodyGroups": 341,
+            "BoneMergeTarget": null,
+            "CreateAttachments": false,
+            "CreateBoneObjects": false,
+            "LodOverride": null,
+            "MaterialGroup": "default",
+            "MaterialOverride": null,
+            "Materials": null,
+            "Model": "models/citizen/citizen.vmdl",
+            "Morphs": {},
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "Parameters": {
+              "bools": {
+                "b_attack": true
+              },
+              "ints": {
+                "holdtype_handedness": 0,
+                "holdtype": 0
+              },
+              "floats": {
+                "scale_height": 1
+              },
+              "vectors": {},
+              "rotations": {}
+            },
+            "PlaybackRate": 1,
+            "RenderOptions": {
+              "GameLayer": true,
+              "OverlayLayer": false,
+              "BloomLayer": false,
+              "AfterUILayer": false
+            },
+            "RenderType": "On",
+            "Sequence": {
+              "Name": null,
+              "Looping": true,
+              "Blending": false
+            },
+            "Tint": "1,1,1,1",
+            "UseAnimGraph": true
+          },
+          {
+            "__type": "HeadHider",
+            "__guid": "d33ff2f1-2bb8-4e73-b58f-b6f80c2945fa",
+            "__enabled": true,
+            "Flags": 0,
+            "BodyRenderer": {
+              "_type": "component",
+              "component_id": "2795f401-4c71-4fd7-8575-b6259ef80de0",
+              "go": "c1f2a082-666f-46c2-963c-977b391ae411",
+              "component_type": "SkinnedModelRenderer"
+            },
+            "CameraOffset": "8,0,0",
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "PlayerCamera": {
+              "_type": "component",
+              "component_id": "5509681e-d549-4a7b-876a-2414f725e0c0",
+              "go": "d4b06bbf-e7cd-4dcc-9b9c-ac5b758c3ea9",
+              "component_type": "CameraComponent"
+            },
+            "PlayerController": {
+              "_type": "component",
+              "component_id": "b5cd6d4a-68d9-4364-84c3-c008b41ed1c9",
+              "go": "43dc9686-8264-42d7-9f3e-17be6bb1f957",
+              "component_type": "PlayerController"
+            }
+          }
+        ],
+        "Children": []
+      },
+      {
+        "__guid": "1de767ae-49d2-4116-98f6-ae0b6ac450fc",
+        "__version": 2,
+        "Flags": 1,
+        "Name": "Colliders",
+        "Position": "0,0,0",
+        "Rotation": "0,0,0,1",
+        "Scale": "1,1,1",
+        "Tags": "",
+        "Enabled": true,
+        "NetworkMode": 2,
+        "NetworkFlags": 0,
+        "NetworkOrphaned": 0,
+        "NetworkTransmit": true,
+        "OwnerTransfer": 1,
+        "Components": [
+          {
+            "__type": "Sandbox.CapsuleCollider",
+            "__guid": "c6281b6f-df09-4c17-8ccc-67884b528a8d",
+            "__enabled": true,
+            "Flags": 1,
+            "ColliderFlags": 0,
+            "Elasticity": null,
+            "End": "0,0,36",
+            "Friction": 0,
+            "IsTrigger": false,
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "OnObjectTriggerEnter": null,
+            "OnObjectTriggerExit": null,
+            "OnTriggerEnter": null,
+            "OnTriggerExit": null,
+            "Radius": 11.313708,
+            "RollingResistance": null,
+            "Start": "0,0,60.6862907",
+            "Static": false,
+            "Surface": null,
+            "SurfaceVelocity": "0,0,0"
+          },
+          {
+            "__type": "Sandbox.BoxCollider",
+            "__guid": "766959b6-e5b1-4b7b-b822-1449e67bc21a",
+            "__enabled": true,
+            "Flags": 1,
+            "Center": "0,0,18",
+            "ColliderFlags": 0,
+            "Elasticity": null,
+            "Friction": 0,
+            "IsTrigger": false,
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "OnObjectTriggerEnter": null,
+            "OnObjectTriggerExit": null,
+            "OnTriggerEnter": null,
+            "OnTriggerExit": null,
+            "RollingResistance": null,
+            "Scale": "16,16,36",
+            "Static": false,
+            "Surface": null,
+            "SurfaceVelocity": "0,0,0"
+          }
+        ],
+        "Children": []
+      },
+      {
+        "__guid": "66d5a509-0479-4d5f-ad8d-a997ebffb121",
+        "__version": 2,
+        "Flags": 0,
+        "Name": "HeldTool",
+        "Position": "0,0,0",
+        "Rotation": "0,0,0,1",
+        "Scale": "1,1,1",
+        "Tags": "",
+        "Enabled": true,
+        "NetworkMode": 1,
+        "NetworkFlags": 0,
+        "NetworkOrphaned": 0,
+        "NetworkTransmit": true,
+        "OwnerTransfer": 1,
+        "Components": [
+          {
+            "__type": "Sandbox.ModelRenderer",
+            "__guid": "32492f81-1db0-45c5-9c45-f4909d96a145",
+            "__enabled": true,
+            "Flags": 0,
+            "BodyGroups": 18446744073709551615,
+            "CreateAttachments": false,
+            "LodOverride": null,
+            "MaterialGroup": null,
+            "MaterialOverride": null,
+            "Materials": null,
+            "Model": "models/saunaaxe/cabinaxe.vmdl",
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "RenderOptions": {
+              "GameLayer": true,
+              "OverlayLayer": false,
+              "BloomLayer": false,
+              "AfterUILayer": false
+            },
+            "RenderType": "On",
+            "Tint": "1,1,1,1"
+          },
+          {
+            "__type": "HeldToolController",
+            "__guid": "e6458b40-06a6-4874-a0c8-7933fae02629",
+            "__enabled": true,
+            "Flags": 0,
+            "BodyRenderer": {
+              "_type": "component",
+              "component_id": "2795f401-4c71-4fd7-8575-b6259ef80de0",
+              "go": "c1f2a082-666f-46c2-963c-977b391ae411",
+              "component_type": "SkinnedModelRenderer"
+            },
+            "BoneName": "hold_R",
+            "DefaultPositionOffset": "0,0,0",
+            "DefaultRotationOffset": "0,0,0",
+            "MagicHoldType": 6,
+            "MeleeHoldType": 6,
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "RangedHoldType": 2,
+            "ToolModels": [
+              {
+                "ItemId": "AbyssiumSword",
+                "Model": "models/tools/swords/abyssiumsword.vmdl",
+                "PositionOffset": "0,0,-12.5",
+                "RotationOffset": "0,90,0"
+              },
+              {
+                "ItemId": "LunariteSword",
+                "Model": "models/tools/swords/lunariteswordfbx.vmdl",
+                "PositionOffset": "0,0,-12",
+                "RotationOffset": "0,90,0"
+              },
+              {
+                "ItemId": "SolariumSword",
+                "Model": "models/tools/swords/solariumswordfbx.vmdl",
+                "PositionOffset": "0,0,-11",
+                "RotationOffset": "0,90,0"
+              },
+              {
+                "ItemId": "ColdveinSword",
+                "Model": "models/tools/swords/coldveinswordfbx.vmdl",
+                "PositionOffset": "0,0,-11",
+                "RotationOffset": "0,90,0"
+              },
+              {
+                "ItemId": "AshsteelSword",
+                "Model": "models/tools/swords/ashsteelswordfbx.vmdl",
+                "PositionOffset": "0,0,-11",
+                "RotationOffset": "0,90,0"
+              },
+              {
+                "ItemId": "CoppiteSword",
+                "Model": "models/tools/swords/coppiteswordfbx.vmdl",
+                "PositionOffset": "0,0,-11",
+                "RotationOffset": "0,90,0"
+              },
+              {
+                "ItemId": "WorldrootStaff",
+                "Model": "models/tools/staffs/worldrootstaff.vmdl",
+                "PositionOffset": "-2,0,-12",
+                "RotationOffset": "0,0,0"
+              },
+              {
+                "ItemId": "DuskoakStaff",
+                "Model": "models/tools/staffs/duskoakstaff.vmdl",
+                "PositionOffset": "-2,0,-12",
+                "RotationOffset": "0,0,0"
+              },
+              {
+                "ItemId": "GhostwoodStaff",
+                "Model": "models/tools/staffs/ghostwoodstaff.vmdl",
+                "PositionOffset": "-2,0,-12",
+                "RotationOffset": "0,0,0"
+              },
+              {
+                "ItemId": "IronbarkStaff",
+                "Model": "models/tools/staffs/ironbarkstaff.vmdl",
+                "PositionOffset": "-2,0,-12",
+                "RotationOffset": "0,0,0"
+              },
+              {
+                "ItemId": "ElmheartStaff",
+                "Model": "models/tools/staffs/elmheartstaff.vmdl",
+                "PositionOffset": "-2,0,-12",
+                "RotationOffset": "0,0,0"
+              },
+              {
+                "ItemId": "AshwoodStaff",
+                "Model": "models/tools/staffs/ashwoodstaff.vmdl",
+                "PositionOffset": "-2,0,-12",
+                "RotationOffset": "0,0,0"
+              },
+              {
+                "ItemId": "AbyssiumHatchet",
+                "Model": "models/tools/hatchets/abyssiumhatchetfbx.vmdl",
+                "PositionOffset": "0,0,-14",
+                "RotationOffset": "0,80,0"
+              },
+              {
+                "ItemId": "LunariteHatchet",
+                "Model": "models/tools/hatchets/lunaritehatchetfbx.vmdl",
+                "PositionOffset": "0,0,-13",
+                "RotationOffset": "0,80,0"
+              },
+              {
+                "ItemId": "SolariumHatchet",
+                "Model": "models/tools/hatchets/solariumhatchetfbx.vmdl",
+                "PositionOffset": "0,0,-13",
+                "RotationOffset": "0,80,0"
+              },
+              {
+                "ItemId": "ColdveinHatchet",
+                "Model": "models/tools/hatchets/coldveinhatchetfbx.vmdl",
+                "PositionOffset": "0,0,-13",
+                "RotationOffset": "0,80,0"
+              },
+              {
+                "ItemId": "AshsteelHatchet",
+                "Model": "models/tools/hatchets/ashsteelhatchetfbx.vmdl",
+                "PositionOffset": "0,0,-13",
+                "RotationOffset": "0,80,0"
+              },
+              {
+                "ItemId": "CoppiteHatchet",
+                "Model": "models/tools/hatchets/coppitehatchetfbx.vmdl",
+                "PositionOffset": "0,0,-13",
+                "RotationOffset": "0,80,0"
+              },
+              {
+                "ItemId": "AbyssiumPickaxe",
+                "Model": "models/tools/pickaxes/abyssiumpickaxe.vmdl",
+                "PositionOffset": "0,0,-12.5",
+                "RotationOffset": "0,90,0"
+              },
+              {
+                "ItemId": "LunaritePickaxe",
+                "Model": "models/tools/pickaxes/lunaritepickaxe.vmdl",
+                "PositionOffset": "0,0,-12",
+                "RotationOffset": "0,90,0"
+              },
+              {
+                "ItemId": "SolariumPickaxe",
+                "Model": "models/tools/pickaxes/solariumpickaxe.vmdl",
+                "PositionOffset": "0,0,-12",
+                "RotationOffset": "0,90,0"
+              },
+              {
+                "ItemId": "ColdveinPickaxe",
+                "Model": "models/tools/pickaxes/coldveinpickaxe.vmdl",
+                "PositionOffset": "0,0,-12",
+                "RotationOffset": "0,90,0"
+              },
+              {
+                "ItemId": "AshsteelPickaxe",
+                "Model": "models/tools/pickaxes/ashsteel pickaxe.vmdl",
+                "PositionOffset": "0,0,-12",
+                "RotationOffset": "0,90,0"
+              },
+              {
+                "ItemId": "CoppitePickaxe",
+                "Model": "models/tools/pickaxes/coppitepickaxe.vmdl",
+                "PositionOffset": "0,0,-11",
+                "RotationOffset": "0,90,0"
+              },
+              {
+                "ItemId": "WorldrootBow",
+                "Model": "models/tools/bows/worldrootbow.vmdl",
+                "PositionOffset": "6.5,0,-22",
+                "RotationOffset": "0,90,0"
+              },
+              {
+                "ItemId": "DuskoakBow",
+                "Model": "models/tools/bows/duskoakbow.vmdl",
+                "PositionOffset": "6.5,0,-22",
+                "RotationOffset": "0,90,0"
+              },
+              {
+                "ItemId": "GhostwoodBow",
+                "Model": "models/tools/bows/ghostwoodbow.vmdl",
+                "PositionOffset": "6.5,0,-22",
+                "RotationOffset": "0,90,0"
+              },
+              {
+                "ItemId": "IronbarkBow",
+                "Model": "models/tools/bows/ironbarkbow.vmdl",
+                "PositionOffset": "6.5,0,-22",
+                "RotationOffset": "0,90,0"
+              },
+              {
+                "ItemId": "ElmheartBow",
+                "Model": "models/tools/bows/elmheartbow.vmdl",
+                "PositionOffset": "6.5,0,-22",
+                "RotationOffset": "0,90,0"
+              },
+              {
+                "ItemId": "AshwoodBow",
+                "Model": "models/tools/bows/ashwoodbow.vmdl",
+                "PositionOffset": "6.5,0,-22",
+                "RotationOffset": "0,90,0"
+              },
+              {
+                "ItemId": "PrimitiveHatchet",
+                "Model": "models/tools/hatchets/primitivehatchetfbx.vmdl",
+                "PositionOffset": "0,0,-12",
+                "RotationOffset": "0,80,0"
+              },
+              {
+                "ItemId": "PrimitivePickaxe",
+                "Model": "models/tools/pickaxes/primitivepickaxe.vmdl",
+                "PositionOffset": "0,0,-11",
+                "RotationOffset": "0,90,0"
+              }
+            ],
+            "ToolRenderer": {
+              "_type": "component",
+              "component_id": "32492f81-1db0-45c5-9c45-f4909d96a145",
+              "go": "66d5a509-0479-4d5f-ad8d-a997ebffb121",
+              "component_type": "ModelRenderer"
+            }
+          }
+        ],
+        "Children": []
+      },
+      {
+        "__guid": "d4b06bbf-e7cd-4dcc-9b9c-ac5b758c3ea9",
+        "__version": 2,
+        "Flags": 0,
+        "Name": "Main Camera",
+        "Position": "-113.715897,-1626.58606,219.845001",
+        "Rotation": "-0.0695247799,-0.035484951,0.541098535,0.837328732",
+        "Scale": "1,1,1",
+        "Tags": "",
+        "Enabled": true,
+        "NetworkMode": 1,
+        "NetworkFlags": 0,
+        "NetworkOrphaned": 0,
+        "NetworkTransmit": true,
+        "OwnerTransfer": 1,
+        "Components": [
+          {
+            "__type": "Sandbox.CameraComponent",
+            "__guid": "5509681e-d549-4a7b-876a-2414f725e0c0",
+            "__enabled": true,
+            "Flags": 0,
+            "BackgroundColor": "0.33333,0.46275,0.52157,1",
+            "ClearFlags": "All",
+            "EnablePostProcessing": true,
+            "FieldOfView": 60,
+            "FovAxis": "Horizontal",
+            "IsMainCamera": true,
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "Orthographic": false,
+            "OrthographicHeight": 1204,
+            "PostProcessAnchor": null,
+            "Priority": 1,
+            "RenderExcludeTags": "",
+            "RenderTags": "",
+            "RenderTexture": null,
+            "TargetEye": "None",
+            "Viewport": "0,0,1,1",
+            "ZFar": 10000,
+            "ZNear": 10
+          }
+        ],
+        "Children": []
+      },
+      {
+        "__guid": "41031b9c-b8d5-4b1e-bae0-a0f275263f33",
+        "__version": 2,
+        "Flags": 0,
+        "Name": "SpeechBubbleAnchor",
+        "Position": "0,0,120",
+        "Rotation": "0,0,0,1",
+        "Scale": "1,1,1",
+        "Tags": "",
+        "Enabled": true,
+        "NetworkMode": 1,
+        "NetworkFlags": 0,
+        "NetworkOrphaned": 0,
+        "NetworkTransmit": true,
+        "OwnerTransfer": 1,
+        "Components": [
+          {
+            "__type": "Sandbox.WorldPanel",
+            "__guid": "3cba9cff-3224-402a-9621-2c93528bebf4",
+            "__enabled": true,
+            "Flags": 0,
+            "HorizontalAlign": "Center",
+            "InteractionRange": 1000,
+            "LookAtCamera": true,
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "PanelSize": "1200,1200",
+            "RenderOptions": {
+              "GameLayer": true,
+              "OverlayLayer": false,
+              "BloomLayer": false,
+              "AfterUILayer": false
+            },
+            "RenderScale": 1,
+            "VerticalAlign": "Center"
+          },
+          {
+            "__type": "Sandbox.Player.PlayerSpeechBubblePanel",
+            "__guid": "2d53b48f-cd04-4bae-bb78-52d22a4858b9",
+            "__enabled": true,
+            "Flags": 0,
+            "Bubble": {
+              "_type": "component",
+              "component_id": "63a8a4fc-7887-418d-9813-13e65d3e7fe0",
+              "go": "43dc9686-8264-42d7-9f3e-17be6bb1f957",
+              "component_type": "PlayerSpeechBubble"
+            },
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null
+          }
+        ],
+        "Children": []
+      },
+      {
+        "__guid": "82a3581b-283c-4e75-a841-65bdebf99d05",
+        "__version": 2,
+        "Flags": 0,
+        "Name": "NameplateAnchor",
+        "Position": "0,0,83.6791229",
+        "Rotation": "0,0,0,1",
+        "Scale": "1,1,1",
+        "Tags": "",
+        "Enabled": true,
+        "NetworkMode": 1,
+        "NetworkFlags": 0,
+        "NetworkOrphaned": 0,
+        "NetworkTransmit": true,
+        "OwnerTransfer": 1,
+        "Components": [
+          {
+            "__type": "Sandbox.WorldPanel",
+            "__guid": "8c30b819-d741-4b85-af56-c972c2cc8dcb",
+            "__enabled": true,
+            "Flags": 0,
+            "HorizontalAlign": "Center",
+            "InteractionRange": 1000,
+            "LookAtCamera": true,
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "PanelSize": "400,200",
+            "RenderOptions": {
+              "GameLayer": true,
+              "OverlayLayer": false,
+              "BloomLayer": false,
+              "AfterUILayer": false
+            },
+            "RenderScale": 1,
+            "VerticalAlign": "Center"
+          },
+          {
+            "__type": "Sandbox.Huds.PlayerNameplatePanel",
+            "__guid": "11bfc0cc-14e0-48b9-a891-cd915beeaf33",
+            "__enabled": true,
+            "Flags": 0,
+            "MaxVisibleDistance": 2000,
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "PlayerController": {
+              "_type": "component",
+              "component_id": "b5cd6d4a-68d9-4364-84c3-c008b41ed1c9",
+              "go": "43dc9686-8264-42d7-9f3e-17be6bb1f957",
+              "component_type": "PlayerController"
+            }
+          }
+        ],
+        "Children": []
+      }
+    ],
+    "__properties": {
+      "NetworkInterpolation": true,
+      "TimeScale": 1,
+      "WantsSystemScene": true,
+      "Metadata": {},
+      "NavMesh": {
+        "Enabled": false,
+        "IncludeStaticBodies": true,
+        "IncludeKeyframedBodies": true,
+        "EditorAutoUpdate": false,
+        "AgentHeight": 64,
+        "AgentRadius": 16,
+        "AgentStepSize": 18,
+        "AgentMaxSlope": 40,
+        "ExcludedBodies": "",
+        "IncludedBodies": "",
+        "DeferGeneration": false,
+        "CustomBounds": false
+      }
+    },
+    "__variables": []
+  },
+  "ResourceVersion": 2,
+  "ShowInMenu": false,
+  "MenuPath": null,
+  "MenuIcon": null,
+  "DontBreakAsTemplate": false,
+  "__references": [
+    "fish.cabinaxe#105357"
+  ],
+  "__version": 2
+}
