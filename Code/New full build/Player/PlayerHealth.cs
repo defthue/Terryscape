@@ -61,22 +61,37 @@ public sealed class PlayerHealth : Component
 	void UpdateMaxHealth()
 	{
 		var skills = Components.Get<Skills>();
+		int baseMax;
 		if ( skills == null )
 		{
-			MaxHealth = BaseHealth;
-			return;
+			baseMax = BaseHealth;
+		}
+		else
+		{
+			int attackLevel = skills.GetLevel( SkillType.Attack );
+			int archeryLevel = skills.GetLevel( SkillType.Archery );
+			int magicLevel = skills.GetLevel( SkillType.Magic );
+
+			baseMax = BaseHealth + ( attackLevel - 1 ) + ( archeryLevel - 1 ) + ( magicLevel - 1 );
 		}
 
-		int attackLevel = skills.GetLevel( SkillType.Attack );
-		int archeryLevel = skills.GetLevel( SkillType.Archery );
-		int magicLevel = skills.GetLevel( SkillType.Magic );
-
-		MaxHealth = BaseHealth + ( attackLevel - 1 ) + ( archeryLevel - 1 ) + ( magicLevel - 1 );
+		var inventory = Components.Get<Inventory>();
+		float vitalityBonus = inventory != null ? inventory.GetEnchantmentBonus( EnchantmentType.Vitality ) : 0f;
+		MaxHealth = (int)( baseMax * ( 1f + vitalityBonus / 100f ) );
 	}
 
 	public void TakeDamage( int damage )
 	{
-		ApplyDamage( damage );
+		int reduced = damage;
+
+		var stoneskin = StoneskinBuff.GetActive( GameObject );
+		if ( stoneskin != null )
+		{
+			reduced = (int)( reduced * stoneskin.DamageMultiplier );
+			if ( reduced < 1 ) reduced = 1;
+		}
+
+		ApplyDamage( reduced );
 	}
 
 	[Rpc.Broadcast]

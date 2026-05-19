@@ -5,13 +5,12 @@ public sealed class ManaSystem : Component
 	[Property] public int BaseMana { get; set; } = 20;
 	[Property] public int ManaPerLevel { get; set; } = 2;
 
-	[Property] public float OocRegenRate { get; set; } = 5f;
-	[Property] public float CombatRegenRate { get; set; } = 1f;
+	[Property] public float OocRegenRate { get; set; } = 2f;
+	[Property] public float CombatRegenRate { get; set; } = 0.4f;
 
-	[Property] public float CombatStateDuration { get; set; } = 5f;
+	[Property] public float CombatStateDuration { get; set; } = 8f;
 
-	[Property] public float ManaSicknessDuration { get; set; } = 30f;
-	[Property] public float ManaSicknessDamageReduction { get; set; } = 0.25f;
+	[Property] public float ManaSicknessDuration { get; set; } = 10f;
 
 	[Sync] public int CurrentMana { get; set; }
 	[Sync] public int MaxMana { get; set; }
@@ -25,7 +24,7 @@ public sealed class ManaSystem : Component
 
 	public float GetManaDamageMultiplier()
 	{
-		return HasManaSickness ? ( 1f - ManaSicknessDamageReduction ) : 1f;
+		return 1f;
 	}
 
 	public void MarkCombat()
@@ -53,9 +52,15 @@ public sealed class ManaSystem : Component
 				ManaSicknessRemaining = 0f;
 		}
 
-		if ( CurrentMana < MaxMana )
+		if ( CurrentMana < MaxMana && !HasManaSickness )
 		{
-			float rate = IsInCombat ? CombatRegenRate : OocRegenRate;
+			float baseRate = IsInCombat ? CombatRegenRate : OocRegenRate;
+
+			var inventory = Components.Get<Inventory>();
+			var penalties = CombatTriangle.GetEquippedArmorPenalties( inventory );
+			float rate = baseRate - penalties.ManaRegenPenalty;
+			if ( rate < 0f ) rate = 0f;
+
 			_regenAccum += rate * Time.Delta;
 
 			int whole = (int)_regenAccum;
@@ -71,7 +76,11 @@ public sealed class ManaSystem : Component
 	{
 		var skills = Components.Get<Skills>();
 		int magicLevel = skills != null ? skills.GetLevel( SkillType.Magic ) : 1;
-		MaxMana = BaseMana + ( magicLevel - 1 ) * ManaPerLevel;
+		int baseMax = BaseMana + ( magicLevel - 1 ) * ManaPerLevel;
+
+		var inventory = Components.Get<Inventory>();
+		float focusBonus = inventory != null ? inventory.GetEnchantmentBonus( EnchantmentType.Focus ) : 0f;
+		MaxMana = (int)( baseMax * ( 1f + focusBonus / 100f ) );
 
 		if ( CurrentMana > MaxMana )
 			CurrentMana = MaxMana;
@@ -85,6 +94,7 @@ public sealed class ManaSystem : Component
 			return false;
 
 		CurrentMana -= amount;
+		MarkCombat();
 		return true;
 	}
 
@@ -155,7 +165,7 @@ public sealed class ManaSystem : Component
 
 		var def = ItemDatabase.Get( potionId );
 		string name = def != null ? def.Name : "Mana Potion";
-		GameLog.Add( $"You drink a {name}. Restored {restoreAmount} mana. Mana sickness for {(int)ManaSicknessDuration}s.", "#4a8ac8" );
+		GameLog.Add( $"You drink a {name}. Restored {restoreAmount} mana. Mana regen disabled for {(int)ManaSicknessDuration}s.", "#4a8ac8" );
 
 		return true;
 	}

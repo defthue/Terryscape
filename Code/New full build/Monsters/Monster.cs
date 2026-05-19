@@ -1,6 +1,7 @@
 using Sandbox;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 public sealed class Monster : Component
 {
@@ -64,6 +65,8 @@ public sealed class Monster : Component
 	[Sync] public bool IsAggro { get; set; }
 	[Sync] public bool IsFrozen { get; set; }
 	[Sync] public float FreezeTimeRemaining { get; set; }
+	[Sync] public float SlowTimeRemaining { get; set; }
+	[Sync] public float SlowMultiplier { get; set; } = 1f;
 	[Sync] public GameObject FirstAttacker { get; set; }
 
 	enum MonsterState { Idle, Patrolling, TurningInPlace, Chasing, Attacking, Repositioning, Returning, Dead, Victory }
@@ -125,6 +128,16 @@ public sealed class Monster : Component
 
 		if ( IsDead )
 			return;
+
+		if ( SlowTimeRemaining > 0f )
+		{
+			SlowTimeRemaining -= Time.Delta;
+			if ( SlowTimeRemaining <= 0f )
+			{
+				SlowTimeRemaining = 0f;
+				SlowMultiplier = 1f;
+			}
+		}
 
 		if ( IsFrozen )
 		{
@@ -228,7 +241,7 @@ public sealed class Monster : Component
 
 		RotateToward( waypoint.WorldPosition );
 		SetMoving( true, false );
-		MoveForward( PatrolSpeed );
+		MoveForward( PatrolSpeed * GetSpeedMultiplier() );
 		SnapToGround();
 	}
 
@@ -300,7 +313,7 @@ public sealed class Monster : Component
 
 		FaceTarget( _target.WorldPosition );
 		SetMoving( true, true );
-		MoveTowards( _target.WorldPosition, ChaseSpeed );
+		MoveTowards( _target.WorldPosition, ChaseSpeed * GetSpeedMultiplier() );
 		SnapToGround();
 	}
 
@@ -400,7 +413,7 @@ public sealed class Monster : Component
 		FaceTarget( _target.WorldPosition );
 		SetMoving( true, true );
 
-		float moveDist = ChaseSpeed * Time.Delta;
+		float moveDist = ChaseSpeed * GetSpeedMultiplier() * Time.Delta;
 
 		var trace = Scene.Trace
 			.Ray( WorldPosition + Vector3.Up * 30f, WorldPosition + Vector3.Up * 30f + moveDir * moveDist )
@@ -449,7 +462,7 @@ public sealed class Monster : Component
 
 		FaceTarget( _spawnPosition );
 		SetMoving( true, false );
-		MoveTowards( _spawnPosition, PatrolSpeed );
+		MoveTowards( _spawnPosition, PatrolSpeed * GetSpeedMultiplier() );
 		SnapToGround();
 	}
 
@@ -547,6 +560,26 @@ public sealed class Monster : Component
 		FreezeTimeRemaining = MathF.Max( FreezeTimeRemaining, duration );
 	}
 
+	[Rpc.Host]
+	public void ApplySlow( float duration, float multiplier )
+	{
+		if ( IsDead )
+			return;
+
+		if ( duration > SlowTimeRemaining )
+		{
+			SlowTimeRemaining = duration;
+			SlowMultiplier = multiplier;
+		}
+	}
+
+	public float GetSpeedMultiplier()
+	{
+		if ( SlowTimeRemaining > 0f )
+			return SlowMultiplier;
+		return 1f;
+	}
+
 	bool HasLineOfSightRanged( GameObject target )
 	{
 		if ( target == null || !target.IsValid() )
@@ -584,7 +617,8 @@ public sealed class Monster : Component
 		CombatStyle playerStyle = CombatTriangle.GetStyleFromWeapon( playerWeaponDef );
 		float triangleMult = CombatTriangle.GetDealMultiplier( CombatStyle, playerStyle );
 
-		float armorValue = playerInventory != null ? CombatTriangle.GetEffectiveArmorValue( CombatStyle, playerInventory ) : 0f;
+		float armorValue = playerInventory != null ?
+			CombatTriangle.GetEffectiveArmorValue( playerInventory ) : 0f;
 		float armorReduction = CombatTriangle.GetArmorReduction( armorValue );
 
 		float defenceMult = playerSkills != null ? playerSkills.GetDefenceMultiplier() : 1f;
@@ -1013,6 +1047,8 @@ public sealed class Monster : Component
 			IsAggro = false;
 			IsFrozen = false;
 			FreezeTimeRemaining = 0f;
+			SlowTimeRemaining = 0f;
+			SlowMultiplier = 1f;
 			FirstAttacker = null;
 			_target = null;
 			_attackCooldownRemaining = 0f;

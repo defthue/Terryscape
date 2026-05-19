@@ -20,6 +20,8 @@ public sealed class DamagePopupBroadcaster : Component
 	[Property] public float MaxVisibleDistance { get; set; } = 3000f;
 	[Property] public float PopupLifetime { get; set; } = 1.2f;
 
+	public const int TierPoison = 4;
+
 	protected override void OnStart()
 	{
 		_instance = this;
@@ -58,6 +60,15 @@ public sealed class DamagePopupBroadcaster : Component
 
 		int tier = ComputeColorTier( damage, targetMaxHealth );
 		instance.RpcSpawnPopup( worldPos, damage, tier, isCrit );
+	}
+
+	public static void BroadcastPoison( Vector3 worldPos, int damage )
+	{
+		var instance = GetInstance();
+		if ( instance == null )
+			return;
+
+		instance.RpcSpawnPopup( worldPos, damage, TierPoison, false );
 	}
 
 	static int ComputeColorTier( int damage, int targetMaxHealth )

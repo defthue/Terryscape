@@ -352,6 +352,12 @@ public sealed class ShopStation : Component
 			return false;
 		}
 
+		if ( instance.IsSocketable && instance.SocketsUsed > 0 )
+		{
+			GameLog.Add( "Extract the runes before selling this item.", "#c86464" );
+			return false;
+		}
+
 		int price = GetBuyPriceFromPlayer( instance.ItemId );
 		if ( price <= 0 )
 		{

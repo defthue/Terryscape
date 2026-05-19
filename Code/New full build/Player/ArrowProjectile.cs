@@ -71,6 +71,7 @@ public sealed class ArrowProjectile : Component
 
 			monster.TakeDamage( finalDamage, Shooter );
 			DamagePopupBroadcaster.Broadcast( trace.HitPosition, finalDamage, monster.MaxHealth, IsCrit );
+			SoundLibrary.PlayArrowImpact( trace.HitPosition );
 			GameObject.Destroy();
 			return;
 		}
@@ -84,10 +85,12 @@ public sealed class ArrowProjectile : Component
 
 			boss.TakeDamage( finalDamage, Shooter );
 			DamagePopupBroadcaster.Broadcast( trace.HitPosition, finalDamage, boss.MaxHealth, IsCrit );
+			SoundLibrary.PlayArrowImpact( trace.HitPosition );
 			GameObject.Destroy();
 			return;
 		}
 
+		SoundLibrary.PlayArrowImpact( trace.HitPosition );
 		Stick( trace.HitPosition );
 	}
 

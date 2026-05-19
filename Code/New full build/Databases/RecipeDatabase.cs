@@ -37,6 +37,8 @@ public class RecipeDefinition
 
 public static class RecipeDatabase
 {
+	const float CraftingXpMultiplier = 2f;
+
 	static List<RecipeDefinition> _recipes;
 
 	static RecipeDefinition Define(
@@ -52,6 +54,8 @@ public static class RecipeDatabase
 		int xpReward
 	)
 	{
+		int finalXp = xpSkill == SkillType.Crafting ? (int)(xpReward * CraftingXpMultiplier) : xpReward;
+
 		return new RecipeDefinition
 		{
 			Id = id,
@@ -63,7 +67,7 @@ public static class RecipeDatabase
 			SkillRequired = skillRequired,
 			LevelRequired = levelRequired,
 			XpSkill = xpSkill,
-			XpReward = xpReward
+			XpReward = finalXp
 		};
 	}
 

@@ -14,6 +14,12 @@ public enum ArmorClass
 	Light
 }
 
+public struct ArmorPenalties
+{
+	public float ManaRegenPenalty;
+	public float RangedDrawPenalty;
+}
+
 public static class CombatTriangle
 {
 	public static float GetDealMultiplier( CombatStyle attacker, CombatStyle defender )
@@ -78,34 +84,13 @@ public static class CombatTriangle
 		}
 	}
 
-	public static CombatStyle GetMatchingStyle( ArmorClass armorClass )
+	public static float GetEffectiveArmorValue( Inventory inventory )
 	{
-		switch ( armorClass )
-		{
-			case ArmorClass.Heavy: return CombatStyle.Melee;
-			case ArmorClass.Medium: return CombatStyle.Ranged;
-			case ArmorClass.Light: return CombatStyle.Magic;
-			default: return CombatStyle.None;
-		}
-	}
+		if ( inventory == null )
+			return 0f;
 
-	public static bool IsArmorEffective( CombatStyle playerStyle, ItemDefinition armorDef )
-	{
-		if ( armorDef == null )
-			return false;
-
-		var armorClass = GetArmorClass( armorDef );
-		if ( armorClass == ArmorClass.None )
-			return true;
-
-		var matchingStyle = GetMatchingStyle( armorClass );
-		return matchingStyle == playerStyle;
-	}
-
-	public static float GetEffectiveArmorValue( CombatStyle playerStyle, Inventory inventory )
-	{
 		float total = 0f;
-		EquipSlot[] armorSlots = { EquipSlot.Head, EquipSlot.Chest, EquipSlot.Legs };
+		EquipSlot[] armorSlots = { EquipSlot.Head, EquipSlot.Chest, EquipSlot.Legs, EquipSlot.Shield };
 
 		foreach ( var slot in armorSlots )
 		{
@@ -117,19 +102,46 @@ public static class CombatTriangle
 			if ( def == null )
 				continue;
 
-			if ( IsArmorEffective( playerStyle, def ) )
-				total += def.ArmorValue;
+			total += def.ArmorValue;
 		}
 
-		var shieldId = inventory.GetEquipped( EquipSlot.Shield );
-		if ( shieldId != ItemId.None )
-		{
-			var shieldDef = ItemDatabase.Get( shieldId );
-			if ( shieldDef != null )
-				total += shieldDef.ArmorValue;
-		}
+		float toughnessBonus = inventory.GetEnchantmentBonus( EnchantmentType.Toughness );
+		total *= 1f + toughnessBonus / 100f;
 
 		return total;
+	}
+
+	public static ArmorPenalties GetEquippedArmorPenalties( Inventory inventory )
+	{
+		var penalties = new ArmorPenalties();
+		if ( inventory == null )
+			return penalties;
+
+		EquipSlot[] slots = { EquipSlot.Head, EquipSlot.Chest, EquipSlot.Legs };
+
+		foreach ( var slot in slots )
+		{
+			var id = inventory.GetEquipped( slot );
+			if ( id == ItemId.None )
+				continue;
+
+			var def = ItemDatabase.Get( id );
+			if ( def == null )
+				continue;
+
+			switch ( def.Type )
+			{
+				case ItemType.HeavyArmor:
+					penalties.ManaRegenPenalty += 0.1f;
+					penalties.RangedDrawPenalty += 0.1f;
+					break;
+				case ItemType.MediumArmor:
+					penalties.ManaRegenPenalty += 0.07f;
+					break;
+			}
+		}
+
+		return penalties;
 	}
 
 	public static float GetArmorReduction( float armorValue )

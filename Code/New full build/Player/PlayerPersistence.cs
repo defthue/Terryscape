@@ -112,7 +112,7 @@ public sealed class PlayerPersistence : Component
 			if ( newHealth != null )
 				newHealth.RefillToMax();
 
-			SpellbookState.ApplySaveData( null, null );
+			SpellbookState.ApplySaveData( null );
 
 			_loadComplete = true;
 			RefreshAllNpcQuestState();
@@ -134,7 +134,7 @@ public sealed class PlayerPersistence : Component
 		if ( bank != null )
 			bank.ApplySaveData( save );
 
-		SpellbookState.ApplySaveData( save.UnlockedSpells, save.SpellSlots );
+		SpellbookState.ApplySaveData( save.UnlockedSpells );
 
 		var mana = FindComponentInPlayer<ManaSystem>();
 		if ( mana != null && save.CurrentMana >= 0 )
@@ -211,9 +211,8 @@ public sealed class PlayerPersistence : Component
 			data.BankUnique = new System.Collections.Generic.List<PlayerSaveData.UniqueItemEntry>();
 		}
 
-		var ( unlocked, slots ) = SpellbookState.ToSaveData();
+		var unlocked = SpellbookState.ToSaveData();
 		data.UnlockedSpells = unlocked;
-		data.SpellSlots = slots;
 
 		var mana = FindComponentInPlayer<ManaSystem>();
 		data.CurrentMana = mana != null ? mana.CurrentMana : -1;

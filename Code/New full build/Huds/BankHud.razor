@@ -33,7 +33,7 @@
 							if ( row.IsUnique )
 							{
 								var def = ItemDatabase.Get( row.UniqueInstance.ItemId );
-								string color = row.UniqueInstance.IsEnchanted ? "#a080d0" : GetItemColor( def );
+								string color = ( row.UniqueInstance.IsEnchanted || ( row.UniqueInstance.IsSocketable && row.UniqueInstance.SocketsUsed > 0 ) ) ? "#a080d0" : GetItemColor( def );
 
 								<div class="recipe-row @(SelectedIsBank && SelectedIsUnique && SelectedUniqueIndex == row.BankUniqueIndex ? "selected" : "") craftable"
 									 onclick="@(() => SelectUnique( true, row.BankUniqueIndex ))">
@@ -150,7 +150,7 @@
 						@foreach ( var entry in InventoryUnique )
 						{
 							var def = ItemDatabase.Get( entry.Instance.ItemId );
-							string color = entry.Instance.IsEnchanted ? "#a080d0" : GetItemColor( def );
+							string color = ( entry.Instance.IsEnchanted || ( entry.Instance.IsSocketable && entry.Instance.SocketsUsed > 0 ) ) ? "#a080d0" : GetItemColor( def );
 
 							<div class="recipe-row @(!SelectedIsBank && SelectedIsUnique && SelectedUniqueIndex == entry.InventoryIndex ? "selected" : "") craftable"
 								 onclick="@(() => SelectUnique( false, entry.InventoryIndex ))">

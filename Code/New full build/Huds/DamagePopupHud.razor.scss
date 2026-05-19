@@ -48,6 +48,21 @@ root {
 		font-size: 36px;
 	}
 
+	&.tier-4 {
+		color: #8cf028;
+		font-size: 22px;
+		text-shadow:
+			-2px -2px 0 #000,
+			 0   -2px 0 #000,
+			 2px -2px 0 #000,
+			 2px  0   0 #000,
+			 2px  2px 0 #000,
+			 0    2px 0 #000,
+			-2px  2px 0 #000,
+			-2px  0   0 #000,
+			0 0 10px #8cf02888;
+	}
+
 	&.crit {
 		color: #ffd700;
 		font-size: 44px;

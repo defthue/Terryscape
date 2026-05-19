@@ -20,12 +20,18 @@ public sealed class SoundLibrary : Component
 	const string FIREBALL = "Sounds/Fireball.sound";
 	const string ICE_SHARD = "Sounds/IceShard.sound";
 	const string DARK_BLAST = "Sounds/DarkBlast.sound";
+	const string LIGHTNING_BOLT = "Sounds/LightningBolt.sound";
 	const string EQUIP = "Sounds/Equip.sound";
 	const string TELEPORT = "Sounds/TeleportSound.sound";
 	const string SMALL_MONSTER_ATTACK = "Sounds/SmallMonsterAttack.sound";
 	const string LARGE_MONSTER_ATTACK = "Sounds/LargeMonsterAttack.sound";
 	const string CARD_SHUFFLE = "Sounds/CardShuffle.sound";
 	const string CARD_DEALT = "Sounds/CardDealt.sound";
+	const string ACID_SPIT_IMPACT = "Sounds/AcidSpitImpact.sound";
+	const string ICE_SHARD_IMPACT = "Sounds/IceShardImpact.sound";
+	const string ARROW_IMPACT = "Sounds/ArrowImpact.sound";
+	const string MAGIC_MISSILE = "Sounds/MagicMissile.sound";
+	const string SINGULARITY = "Sounds/Singularity.sound";
 
 	static SoundLibrary _instance;
 	static SoundHandle _furnaceLoopHandle;
@@ -68,6 +74,14 @@ public sealed class SoundLibrary : Component
 		var handle = Sound.Play( soundPath, GetLocalListenerPosition() );
 		if ( handle.IsValid() )
 			_listenerLockedSounds.Add( handle );
+	}
+
+	static SoundHandle PlayLockedReturning( string soundPath )
+	{
+		var handle = Sound.Play( soundPath, GetLocalListenerPosition() );
+		if ( handle.IsValid() )
+			_listenerLockedSounds.Add( handle );
+		return handle;
 	}
 
 	protected override void OnUpdate()
@@ -145,6 +159,23 @@ public sealed class SoundLibrary : Component
 		PlayPlayerActionSound( DARK_BLAST, position );
 	}
 
+	public static SoundHandle PlayLightningBoltLoop( Vector3 position )
+	{
+		var instance = GetInstance();
+		if ( instance == null )
+			return default;
+
+		var handle = PlayLockedReturning( LIGHTNING_BOLT );
+		instance.BroadcastWorldSoundForOthers( LIGHTNING_BOLT, position );
+		return handle;
+	}
+
+	public static void StopLightningBoltLoop( SoundHandle handle, float fadeOut = 0.15f )
+	{
+		if ( handle.IsValid() )
+			handle.Stop( fadeOut );
+	}
+
 	public static void PlayTeleport( Vector3 position )
 	{
 		PlayPlayerActionSound( TELEPORT, position );
@@ -193,6 +224,47 @@ public sealed class SoundLibrary : Component
 			return;
 
 		instance.BroadcastWorldSoundForAll( CARD_DEALT, position );
+	}
+
+	public static void PlayAcidSpitImpact( Vector3 position )
+	{
+		var instance = GetInstance();
+		if ( instance == null )
+			return;
+
+		instance.BroadcastWorldSoundForAll( ACID_SPIT_IMPACT, position );
+	}
+
+	public static void PlayIceShardImpact( Vector3 position )
+	{
+		var instance = GetInstance();
+		if ( instance == null )
+			return;
+
+		instance.BroadcastWorldSoundForAll( ICE_SHARD_IMPACT, position );
+	}
+
+	public static void PlayArrowImpact( Vector3 position )
+	{
+		var instance = GetInstance();
+		if ( instance == null )
+			return;
+
+		instance.BroadcastWorldSoundForAll( ARROW_IMPACT, position );
+	}
+
+	public static void PlayMagicMissile( Vector3 position )
+	{
+		PlayPlayerActionSound( MAGIC_MISSILE, position );
+	}
+
+	public static void PlaySingularity( Vector3 position )
+	{
+		var instance = GetInstance();
+		if ( instance == null )
+			return;
+
+		instance.BroadcastWorldSoundForAll( SINGULARITY, position );
 	}
 
 	public static void PlayHitNothing()

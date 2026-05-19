@@ -89,14 +89,7 @@ public sealed class BankStorage : Component
 
 		data.BankUnique = new List<PlayerSaveData.UniqueItemEntry>();
 		foreach ( var item in _bankedUnique )
-		{
-			data.BankUnique.Add( new PlayerSaveData.UniqueItemEntry
-			{
-				ItemId = item.ItemId.ToString(),
-				Enchantment = item.Enchantment.ToString(),
-				EnchantmentPercent = item.EnchantmentPercent
-			} );
-		}
+			data.BankUnique.Add( Inventory.BuildUniqueEntry( item ) );
 
 		return data;
 	}
@@ -126,15 +119,10 @@ public sealed class BankStorage : Component
 		{
 			foreach ( var entry in data.BankUnique )
 			{
-				if ( !System.Enum.TryParse<ItemId>( entry.ItemId, out var id ) )
+				var instance = Inventory.BuildInstanceFromEntry( entry );
+				if ( instance == null )
 					continue;
-				if ( id == ItemId.None )
-					continue;
-
-				var enchant = EnchantmentType.None;
-				System.Enum.TryParse<EnchantmentType>( entry.Enchantment, out enchant );
-
-				_bankedUnique.Add( new ItemInstance( id, enchant, entry.EnchantmentPercent ) );
+				_bankedUnique.Add( instance );
 			}
 		}
 	}

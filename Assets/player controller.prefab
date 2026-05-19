@@ -118,7 +118,6 @@
         "OnComponentStart": null,
         "OnComponentUpdate": null,
         "OverrideMassCenter": true,
-        "PreciseContacts": true,
         "RigidbodyFlags": "DisableCollisionSounds",
         "SleepThreshold": 2,
         "StartAsleep": false
@@ -330,24 +329,35 @@
         "__enabled": true,
         "Flags": 0,
         "BaseMana": 20,
-        "CombatRegenRate": 1,
-        "CombatStateDuration": 5,
+        "CombatRegenRate": 0.6,
+        "CombatStateDuration": 10,
         "ManaPerLevel": 2,
-        "ManaSicknessDamageReduction": 0.25,
-        "ManaSicknessDuration": 30,
+        "ManaSicknessDuration": 10,
         "OnComponentDestroy": null,
         "OnComponentDisabled": null,
         "OnComponentEnabled": null,
         "OnComponentFixedUpdate": null,
         "OnComponentStart": null,
         "OnComponentUpdate": null,
-        "OocRegenRate": 5
+        "OocRegenRate": 2
       },
       {
         "__type": "SpellCaster",
         "__guid": "300eb8bc-70dd-4fb6-a3a6-672552438b4c",
         "__enabled": true,
         "Flags": 0,
+        "AcidGravity": 800,
+        "AcidLaunchPitchDegrees": 35,
+        "AcidPoisonDamagePerTick": 2,
+        "AcidPoisonDuration": 5,
+        "AcidPoisonTickInterval": 1,
+        "AcidPoolColor": "0.5,0.95,0.2,0.55",
+        "AcidSpitPrefab": {
+          "_type": "gameobject",
+          "prefab": "acidplaceholder.prefab"
+        },
+        "AcidSplashRadius": 150,
+        "AcidSplashVisualDuration": 1.5,
         "AimSource": {
           "_type": "gameobject",
           "go": "d4b06bbf-e7cd-4dcc-9b9c-ac5b758c3ea9"
@@ -384,9 +394,28 @@
         "FpHeightOffset": 40,
         "FpLateralOffset": 0,
         "FrozenBonusDamage": 1,
+        "HealPulseColor": "0.4,1,0.6,1",
+        "HomingAcquireConeDegrees": 25,
+        "HomingMaxAcquireRange": 2500,
+        "HomingTurnSpeed": 8,
         "IceShardPrefab": {
           "_type": "gameobject",
           "prefab": "iceshardparticle.prefab"
+        },
+        "InfernoDamagePerTick": 2,
+        "InfernoDuration": 5,
+        "InfernoHeight": 180,
+        "InfernoRadius": 100,
+        "InfernoReticleColor": "1,0.5,0.15,1",
+        "InfernoTickInterval": 0.5,
+        "LightningColor": "0.82353,0.72549,0.98039,1",
+        "LightningForwardOffset": 30,
+        "LightningHaloColor": "0.57255,0.5098,0.93333,1",
+        "LightningHeightOffset": 50,
+        "LightningLateralOffset": 0,
+        "MagicMissilePrefab": {
+          "_type": "gameobject",
+          "prefab": "magicmissile.prefab"
         },
         "OnComponentDestroy": null,
         "OnComponentDisabled": null,
@@ -394,6 +423,15 @@
         "OnComponentFixedUpdate": null,
         "OnComponentStart": null,
         "OnComponentUpdate": null,
+        "SingularityCollapseRadius": 150,
+        "SingularityPullDuration": 1.5,
+        "SingularityPullRadius": 300,
+        "SingularityReticleColor": "0.7,0.4,1,1",
+        "StoneskinAuraPrefab": {
+          "_type": "gameobject",
+          "prefab": "stoneskinaura.prefab"
+        },
+        "StoneskinDuration": 4,
         "TpForwardOffset": 60,
         "TpHeightOffset": 50,
         "TpLateralOffset": 0
@@ -544,8 +582,11 @@
         "Flags": 0,
         "AimFov": 70,
         "AimModeHoldDuration": 3,
+        "AimPitchOffset": -2,
+        "AimRollOffset": 0,
+        "AimYawOffset": 2,
         "DefaultFov": 80,
-        "ForwardOffset": 35,
+        "ForwardOffset": 40,
         "FovLerpSpeed": 10,
         "MaxDrawFovZoom": 6,
         "OffsetLerpSpeed": 5,
@@ -561,8 +602,21 @@
           "go": "d4b06bbf-e7cd-4dcc-9b9c-ac5b758c3ea9",
           "component_type": "CameraComponent"
         },
-        "RightOffset": 20,
-        "UpOffset": 10
+        "RightOffset": 35,
+        "UpOffset": -5
+      },
+      {
+        "__type": "ToolCycler",
+        "__guid": "3e040fe5-9c82-4f74-be91-b8a5ad6fc8ca",
+        "__enabled": true,
+        "Flags": 0,
+        "CycleAction": "CycleAction",
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null
       }
     ],
     "Children": [
@@ -1016,7 +1070,7 @@
         "Flags": 0,
         "Name": "Main Camera",
         "Position": "-113.715897,-1626.58606,219.845001",
-        "Rotation": "-0.191886798,0.166570902,0.525572896,0.811915517",
+        "Rotation": "-0.0695247799,-0.035484951,0.541098535,0.837328732",
         "Scale": "1,1,1",
         "Tags": "",
         "Enabled": true,

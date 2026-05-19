@@ -1,12 +1,25 @@
 using Sandbox;
 using System.Collections.Generic;
+using System.Text.Json;
 
 public static class SpellbookState
 {
+	const string LocalBindingsFile = "spellbook_bindings.json";
+
 	static HashSet<SpellId> _unlockedSpells = new();
 	static Dictionary<int, SpellId> _slotBindings = new();
 
-	public static bool IsUnlocked( SpellId spellId ) => _unlockedSpells.Contains( spellId );
+	public static bool IsUnlocked( SpellId spellId )
+	{
+		var def = SpellDatabase.Get( spellId );
+		if ( def == null )
+			return false;
+
+		var skills = PlayerHelper.GetSkills( PlayerHelper.GetLocalPlayer() );
+		int magicLevel = skills != null ? skills.GetLevel( SkillType.Magic ) : 1;
+
+		return magicLevel >= def.RequiredLevel;
+	}
 
 	public static void Unlock( SpellId spellId )
 	{
@@ -45,13 +58,13 @@ public static class SpellbookState
 		}
 
 		_slotBindings[slotIndex] = spellId;
-		PlayerPersistence.Local?.RequestSaveNow();
+		SaveBindingsLocal();
 	}
 
 	public static void UnbindSlot( int slotIndex )
 	{
 		if ( _slotBindings.Remove( slotIndex ) )
-			PlayerPersistence.Local?.RequestSaveNow();
+			SaveBindingsLocal();
 	}
 
 	public static void UnbindSpell( SpellId spellId )
@@ -67,14 +80,21 @@ public static class SpellbookState
 		}
 
 		if ( changed )
-			PlayerPersistence.Local?.RequestSaveNow();
+			SaveBindingsLocal();
 	}
 
-	public static IEnumerable<SpellId> GetUnlocked() => _unlockedSpells;
+	public static IEnumerable<SpellId> GetUnlocked()
+	{
+		foreach ( var def in SpellDatabase.GetAll() )
+		{
+			if ( IsUnlocked( def.Id ) )
+				yield return def.Id;
+		}
+	}
 
 	public static Dictionary<int, SpellId> GetSlotBindings() => _slotBindings;
 
-	public static void ApplySaveData( List<string> unlocked, Dictionary<string, string> slots )
+	public static void ApplySaveData( List<string> unlocked )
 	{
 		_unlockedSpells.Clear();
 		_slotBindings.Clear();
@@ -91,9 +111,59 @@ public static class SpellbookState
 		if ( _unlockedSpells.Count == 0 )
 			_unlockedSpells.Add( SpellId.Fireball );
 
-		if ( slots != null )
+		LoadBindingsLocal();
+
+		if ( _slotBindings.Count == 0 )
 		{
-			foreach ( var kv in slots )
+			_slotBindings[1] = SpellId.Fireball;
+			if ( IsUnlocked( SpellId.IceShard ) )
+				_slotBindings[2] = SpellId.IceShard;
+			SaveBindingsLocal();
+		}
+	}
+
+	public static List<string> ToSaveData()
+	{
+		var unlocked = new List<string>();
+		foreach ( var id in _unlockedSpells )
+			unlocked.Add( id.ToString() );
+
+		return unlocked;
+	}
+
+	static void SaveBindingsLocal()
+	{
+		try
+		{
+			var data = new Dictionary<string, string>();
+			foreach ( var kv in _slotBindings )
+				data[kv.Key.ToString()] = kv.Value.ToString();
+
+			string json = JsonSerializer.Serialize( data );
+			FileSystem.Data.WriteAllText( LocalBindingsFile, json );
+		}
+		catch ( System.Exception ex )
+		{
+			Log.Warning( $"[SpellbookState] Failed to save local bindings: {ex.Message}" );
+		}
+	}
+
+	static void LoadBindingsLocal()
+	{
+		try
+		{
+			if ( !FileSystem.Data.FileExists( LocalBindingsFile ) )
+				return;
+
+			string json = FileSystem.Data.ReadAllText( LocalBindingsFile );
+			if ( string.IsNullOrEmpty( json ) )
+				return;
+
+			var data = JsonSerializer.Deserialize<Dictionary<string, string>>( json );
+			if ( data == null )
+				return;
+
+			foreach ( var kv in data )
 			{
 				if ( !int.TryParse( kv.Key, out var slotIdx ) )
 					continue;
@@ -101,29 +171,18 @@ public static class SpellbookState
 				if ( slotIdx != 1 && slotIdx != 2 )
 					continue;
 
-				if ( System.Enum.TryParse<SpellId>( kv.Value, out var id ) )
-					_slotBindings[slotIdx] = id;
+				if ( !System.Enum.TryParse<SpellId>( kv.Value, out var id ) )
+					continue;
+
+				if ( !IsUnlocked( id ) )
+					continue;
+
+				_slotBindings[slotIdx] = id;
 			}
 		}
-
-		if ( _slotBindings.Count == 0 )
+		catch ( System.Exception ex )
 		{
-			_slotBindings[1] = SpellId.Fireball;
-			if ( _unlockedSpells.Contains( SpellId.IceShard ) )
-				_slotBindings[2] = SpellId.IceShard;
+			Log.Warning( $"[SpellbookState] Failed to load local bindings: {ex.Message}" );
 		}
-	}
-
-	public static (List<string> unlocked, Dictionary<string, string> slots) ToSaveData()
-	{
-		var unlocked = new List<string>();
-		foreach ( var id in _unlockedSpells )
-			unlocked.Add( id.ToString() );
-
-		var slots = new Dictionary<string, string>();
-		foreach ( var kv in _slotBindings )
-			slots[kv.Key.ToString()] = kv.Value.ToString();
-
-		return ( unlocked, slots );
 	}
 }

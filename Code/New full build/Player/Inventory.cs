@@ -963,11 +963,16 @@ public sealed class Inventory : Component
 
 	public float GetEnchantmentBonus( EnchantmentType type )
 	{
+		if ( type == EnchantmentType.None )
+			return 0f;
+
 		float total = 0f;
 
-		foreach ( var kv in _equippedSlotIndex )
+		EquipSlot[] socketSlots = { EquipSlot.Ring, EquipSlot.Amulet };
+		foreach ( var equipSlot in socketSlots )
 		{
-			int idx = kv.Value;
+			if ( !_equippedSlotIndex.TryGetValue( equipSlot, out var idx ) )
+				continue;
 			if ( idx < 0 || idx >= MaxSlots )
 				continue;
 
@@ -975,8 +980,11 @@ public sealed class Inventory : Component
 			if ( !slot.IsUnique )
 				continue;
 
-			if ( slot.Unique.Enchantment == type )
-				total += slot.Unique.EnchantmentPercent;
+			var instance = slot.Unique;
+			if ( instance.Socket1 != null && instance.Socket1.Enchantment == type )
+				total += instance.Socket1.EnchantmentPercent;
+			if ( instance.Socket2 != null && instance.Socket2.Enchantment == type )
+				total += instance.Socket2.EnchantmentPercent;
 		}
 
 		return total;
@@ -1205,6 +1213,77 @@ public sealed class Inventory : Component
 		return _chestClaims;
 	}
 
+	public static PlayerSaveData.UniqueItemEntry BuildUniqueEntry( ItemInstance instance )
+	{
+		var entry = new PlayerSaveData.UniqueItemEntry
+		{
+			ItemId = instance.ItemId.ToString(),
+			Enchantment = instance.Enchantment.ToString(),
+			EnchantmentPercent = instance.EnchantmentPercent
+		};
+
+		if ( instance.Socket1 != null )
+		{
+			entry.Socket1ItemId = instance.Socket1.ItemId.ToString();
+			entry.Socket1Enchantment = instance.Socket1.Enchantment.ToString();
+			entry.Socket1Percent = instance.Socket1.EnchantmentPercent;
+		}
+		if ( instance.Socket2 != null )
+		{
+			entry.Socket2ItemId = instance.Socket2.ItemId.ToString();
+			entry.Socket2Enchantment = instance.Socket2.Enchantment.ToString();
+			entry.Socket2Percent = instance.Socket2.EnchantmentPercent;
+		}
+		return entry;
+	}
+
+	public static ItemInstance BuildInstanceFromEntry( PlayerSaveData.UniqueItemEntry entry )
+	{
+		if ( entry == null )
+			return null;
+		if ( !System.Enum.TryParse<ItemId>( entry.ItemId, out var id ) || id == ItemId.None )
+			return null;
+
+		var enchant = EnchantmentType.None;
+		System.Enum.TryParse<EnchantmentType>( entry.Enchantment, out enchant );
+
+		var instance = new ItemInstance( id, enchant, entry.EnchantmentPercent );
+		WipeLegacyEnchantIfJewelry( instance );
+
+		instance.Socket1 = BuildSocketRune( entry.Socket1ItemId, entry.Socket1Enchantment, entry.Socket1Percent );
+		instance.Socket2 = BuildSocketRune( entry.Socket2ItemId, entry.Socket2Enchantment, entry.Socket2Percent );
+
+		return instance;
+	}
+
+	static ItemInstance BuildSocketRune( string itemIdStr, string enchantStr, float percent )
+	{
+		if ( string.IsNullOrEmpty( itemIdStr ) || itemIdStr == "None" )
+			return null;
+		if ( !System.Enum.TryParse<ItemId>( itemIdStr, out var id ) || id == ItemId.None )
+			return null;
+
+		var enchant = EnchantmentType.None;
+		System.Enum.TryParse<EnchantmentType>( enchantStr, out enchant );
+		if ( enchant == EnchantmentType.None || percent <= 0f )
+			return null;
+
+		return new ItemInstance( id, enchant, percent );
+	}
+
+	static void WipeLegacyEnchantIfJewelry( ItemInstance instance )
+	{
+		if ( instance == null )
+			return;
+		if ( !instance.IsSocketable )
+			return;
+		if ( instance.Enchantment == EnchantmentType.None )
+			return;
+
+		instance.Enchantment = EnchantmentType.None;
+		instance.EnchantmentPercent = 0f;
+	}
+
 	public PlayerSaveData ToSaveData( PlayerSaveData data )
 	{
 		data.Stackables = new Dictionary<string, int>();
@@ -1228,12 +1307,7 @@ public sealed class Inventory : Component
 			if ( !slot.IsUnique )
 				continue;
 
-			data.UniqueItems.Add( new PlayerSaveData.UniqueItemEntry
-			{
-				ItemId = slot.Unique.ItemId.ToString(),
-				Enchantment = slot.Unique.Enchantment.ToString(),
-				EnchantmentPercent = slot.Unique.EnchantmentPercent
-			} );
+			data.UniqueItems.Add( BuildUniqueEntry( slot.Unique ) );
 		}
 
 		data.Equipped = new Dictionary<string, PlayerSaveData.UniqueItemEntry>();
@@ -1248,13 +1322,7 @@ public sealed class Inventory : Component
 			if ( !slot.IsUnique )
 				continue;
 
-			data.Equipped[kv.Key.ToString()] = new PlayerSaveData.UniqueItemEntry
-			{
-				ItemId = slot.Unique.ItemId.ToString(),
-				Enchantment = slot.Unique.Enchantment.ToString(),
-				EnchantmentPercent = slot.Unique.EnchantmentPercent
-			};
-
+			data.Equipped[kv.Key.ToString()] = BuildUniqueEntry( slot.Unique );
 			data.EquippedSlotIndices[kv.Key.ToString()] = idx + 1;
 		}
 
@@ -1292,6 +1360,19 @@ public sealed class Inventory : Component
 				entry.Enchantment = slot.Unique.Enchantment.ToString();
 				entry.EnchantmentPercent = slot.Unique.EnchantmentPercent;
 				entry.Count = 1;
+
+				if ( slot.Unique.Socket1 != null )
+				{
+					entry.Socket1ItemId = slot.Unique.Socket1.ItemId.ToString();
+					entry.Socket1Enchantment = slot.Unique.Socket1.Enchantment.ToString();
+					entry.Socket1Percent = slot.Unique.Socket1.EnchantmentPercent;
+				}
+				if ( slot.Unique.Socket2 != null )
+				{
+					entry.Socket2ItemId = slot.Unique.Socket2.ItemId.ToString();
+					entry.Socket2Enchantment = slot.Unique.Socket2.Enchantment.ToString();
+					entry.Socket2Percent = slot.Unique.Socket2.EnchantmentPercent;
+				}
 			}
 			else
 			{
@@ -1340,7 +1421,13 @@ public sealed class Inventory : Component
 					var enchant = EnchantmentType.None;
 					System.Enum.TryParse<EnchantmentType>( entry.Enchantment, out enchant );
 
-					_slots[idx].Unique = new ItemInstance( id, enchant, entry.EnchantmentPercent );
+					var instance = new ItemInstance( id, enchant, entry.EnchantmentPercent );
+					WipeLegacyEnchantIfJewelry( instance );
+
+					instance.Socket1 = BuildSocketRune( entry.Socket1ItemId, entry.Socket1Enchantment, entry.Socket1Percent );
+					instance.Socket2 = BuildSocketRune( entry.Socket2ItemId, entry.Socket2Enchantment, entry.Socket2Percent );
+
+					_slots[idx].Unique = instance;
 				}
 				else
 				{
@@ -1364,19 +1451,15 @@ public sealed class Inventory : Component
 
 			foreach ( var entry in data.UniqueItems )
 			{
-				if ( !System.Enum.TryParse<ItemId>( entry.ItemId, out var id ) )
+				var instance = BuildInstanceFromEntry( entry );
+				if ( instance == null )
 					continue;
-				if ( id == ItemId.None )
-					continue;
-
-				var enchant = EnchantmentType.None;
-				System.Enum.TryParse<EnchantmentType>( entry.Enchantment, out enchant );
 
 				int slotIndex = FindFirstEmptySlot();
 				if ( slotIndex < 0 )
 					break;
 
-				_slots[slotIndex].Unique = new ItemInstance( id, enchant, entry.EnchantmentPercent );
+				_slots[slotIndex].Unique = instance;
 			}
 
 			if ( !string.IsNullOrEmpty( data.EquippedAmmoId ) && data.EquippedAmmoQty > 0 )
@@ -1425,9 +1508,6 @@ public sealed class Inventory : Component
 				if ( id == ItemId.None )
 					continue;
 
-				var enchant = EnchantmentType.None;
-				System.Enum.TryParse<EnchantmentType>( kv.Value.Enchantment, out enchant );
-
 				int foundSlot = -1;
 				for ( int i = 0; i < MaxSlots; i++ )
 				{
@@ -1435,10 +1515,6 @@ public sealed class Inventory : Component
 					if ( !s.IsUnique )
 						continue;
 					if ( s.Unique.ItemId != id )
-						continue;
-					if ( s.Unique.Enchantment != enchant )
-						continue;
-					if ( System.MathF.Abs( s.Unique.EnchantmentPercent - kv.Value.EnchantmentPercent ) > 0.01f )
 						continue;
 
 					foundSlot = i;
@@ -1450,8 +1526,12 @@ public sealed class Inventory : Component
 					int empty = FindFirstEmptySlot();
 					if ( empty >= 0 )
 					{
-						_slots[empty].Unique = new ItemInstance( id, enchant, kv.Value.EnchantmentPercent );
-						foundSlot = empty;
+						var instance = BuildInstanceFromEntry( kv.Value );
+						if ( instance != null )
+						{
+							_slots[empty].Unique = instance;
+							foundSlot = empty;
+						}
 					}
 				}
 

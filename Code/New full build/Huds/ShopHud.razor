@@ -454,6 +454,8 @@
 					var instance = uniqueItems[i];
 					if ( instance.IsEnchanted )
 						continue;
+					if ( instance.IsSocketable && instance.SocketsUsed > 0 )
+						continue;
 
 					int price = ShopPricing.GetSellPrice( instance.ItemId );
 					if ( price <= 0 )

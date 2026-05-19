@@ -421,7 +421,11 @@ public sealed class PlayerGatherResource : Component
 
 		float staffMeleeMult = ( weaponDef != null && weaponDef.Type == ItemType.MagicWeapon ) ? StaffMeleeDamageMultiplier : 1f;
 
-		int damage = (int)( weaponPower * skillBonus * triangleMult * buffMult * staffMeleeMult );
+		float enchantMult = 1f;
+		if ( weaponDef != null && ( weaponDef.Type == ItemType.MeleeWeapon || weaponDef.Type == ItemType.Tool ) )
+			enchantMult = 1f + inventory.GetEnchantmentBonus( EnchantmentType.Sharpness ) / 100f;
+
+		int damage = (int)( weaponPower * skillBonus * triangleMult * buffMult * staffMeleeMult * enchantMult );
 		if ( damage < 1 ) damage = 1;
 
 		bool isCrit = CombatConstants.RollCrit();
@@ -472,7 +476,11 @@ public sealed class PlayerGatherResource : Component
 
 		float staffMeleeMult = ( weaponDef != null && weaponDef.Type == ItemType.MagicWeapon ) ? StaffMeleeDamageMultiplier : 1f;
 
-		int damage = (int)( weaponPower * skillBonus * triangleMult * buffMult * staffMeleeMult );
+		float enchantMult = 1f;
+		if ( weaponDef != null && ( weaponDef.Type == ItemType.MeleeWeapon || weaponDef.Type == ItemType.Tool ) )
+			enchantMult = 1f + inventory.GetEnchantmentBonus( EnchantmentType.Sharpness ) / 100f;
+
+		int damage = (int)( weaponPower * skillBonus * triangleMult * buffMult * staffMeleeMult * enchantMult );
 		if ( damage < 1 ) damage = 1;
 
 		bool isCrit = CombatConstants.RollCrit();

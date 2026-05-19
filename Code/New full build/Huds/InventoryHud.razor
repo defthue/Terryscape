@@ -145,7 +145,8 @@
 						{
 							var inst = slotData.Unique;
 							var def = ItemDatabase.Get( inst.ItemId );
-							string color = inst.IsEnchanted ? "#a080d0" : GetItemColor( inst.ItemId, def );
+							bool hasMagicBackground = inst.IsEnchanted || ( inst.IsSocketable && inst.SocketsUsed > 0 );
+							string color = hasMagicBackground ? "#a080d0" : GetItemColor( inst.ItemId, def );
 
 							<div class="item-slot filled equippable @(isHotbar ? "hotbar" : "") @(isPickedFrom ? "picked-up" : "") @(isEquipped ? "is-equipped" : "") @(IsRecentlyReceived( inst.ItemId ) ? "just-received" : "")"
 								 onclick="@(() => OnSlotLeftClick( slotIndex ))">
@@ -160,7 +161,7 @@
 								<div class="item-icon" style="background: @color;">
 									<img class="item-icon-img" src="@GetIconPath( inst.ItemId )" />
 								</div>
-								@if ( inst.IsEnchanted )
+								@if ( inst.IsEnchanted || ( inst.IsSocketable && inst.SocketsUsed > 0 ) )
 								{
 									<div class="item-enchant">@inst.GetShortStat()</div>
 								}
@@ -639,7 +640,8 @@
 		if ( slot.IsUnique )
 		{
 			var def = ItemDatabase.Get( slot.Unique.ItemId );
-			string color = slot.Unique.IsEnchanted ? "#a080d0" : GetItemColor( slot.Unique.ItemId, def );
+			bool ghostMagic = slot.Unique.IsEnchanted || ( slot.Unique.IsSocketable && slot.Unique.SocketsUsed > 0 );
+			string color = ghostMagic ? "#a080d0" : GetItemColor( slot.Unique.ItemId, def );
 			PickedUpGhost = new GhostDisplay
 			{
 				ItemId = slot.Unique.ItemId,
@@ -844,7 +846,8 @@
 					data.Count = 1;
 					var def = ItemDatabase.Get( src.Unique.ItemId );
 					data.Name = def != null ? def.Name : src.Unique.ItemId.ToString();
-					data.Color = src.Unique.IsEnchanted ? "#a080d0" : GetItemColor( src.Unique.ItemId, def );
+					bool srcMagic = src.Unique.IsEnchanted || ( src.Unique.IsSocketable && src.Unique.SocketsUsed > 0 );
+					data.Color = srcMagic ? "#a080d0" : GetItemColor( src.Unique.ItemId, def );
 				}
 				else if ( src.IsStack )
 				{
@@ -905,7 +908,8 @@
 				if ( equippedUnique != null )
 				{
 					var uDef = ItemDatabase.Get( equippedUnique.ItemId );
-					string color = equippedUnique.IsEnchanted ? "#a080d0" : GetItemColor( equippedUnique.ItemId, uDef );
+					bool eqMagic = equippedUnique.IsEnchanted || ( equippedUnique.IsSocketable && equippedUnique.SocketsUsed > 0 );
+					string color = eqMagic ? "#a080d0" : GetItemColor( equippedUnique.ItemId, uDef );
 					string baseName = uDef != null ? uDef.Name : equippedUnique.ItemId.ToString();
 
 					EquipmentSlots.Add( new EquipSlotDisplay

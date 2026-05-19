@@ -163,6 +163,10 @@ public enum ItemId
 	FineAmulet,
 	PristineAmulet,
 
+	RoughRune,
+	FineRune,
+	PristineRune,
+
 	LesserHealingPotion,
 	HealingPotion,
 	AttackPotion,
@@ -205,6 +209,7 @@ public enum ItemType
 	LightArmor,
 	Ring,
 	Amulet,
+	Rune,
 	Potion,
 	Misc
 }
@@ -452,24 +457,24 @@ public static class ItemDatabase
 		Add( Define( ItemId.AbyssiumMediumLegs, "Abyssium Medium Legs", ItemType.MediumArmor, tier: 6, maxStack: 1, slot: EquipSlot.Legs, skillRequired: SkillType.Defence, levelRequired: 50, armorValue: 25f, baseSellPrice: 54 ) );
 
 		// Light armor — least valuable of armor tiers
-		Add( Define( ItemId.CoppiteLightHelm, "Coppite Light Helm", ItemType.LightArmor, tier: 1, maxStack: 1, slot: EquipSlot.Head, skillRequired: SkillType.Magic, levelRequired: 1, armorValue: 1f, baseSellPrice: 2 ) );
-		Add( Define( ItemId.CoppiteLightChestplate, "Coppite Light Chestplate", ItemType.LightArmor, tier: 1, maxStack: 1, slot: EquipSlot.Chest, skillRequired: SkillType.Magic, levelRequired: 1, armorValue: 2f, baseSellPrice: 5 ) );
-		Add( Define( ItemId.CoppiteLightLegs, "Coppite Light Legs", ItemType.LightArmor, tier: 1, maxStack: 1, slot: EquipSlot.Legs, skillRequired: SkillType.Magic, levelRequired: 1, armorValue: 1f, baseSellPrice: 3 ) );
-		Add( Define( ItemId.AshsteelLightHelm, "Ashsteel Light Helm", ItemType.LightArmor, tier: 2, maxStack: 1, slot: EquipSlot.Head, skillRequired: SkillType.Magic, levelRequired: 10, armorValue: 2f, baseSellPrice: 6 ) );
-		Add( Define( ItemId.AshsteelLightChestplate, "Ashsteel Light Chestplate", ItemType.LightArmor, tier: 2, maxStack: 1, slot: EquipSlot.Chest, skillRequired: SkillType.Magic, levelRequired: 10, armorValue: 5f, baseSellPrice: 11 ) );
-		Add( Define( ItemId.AshsteelLightLegs, "Ashsteel Light Legs", ItemType.LightArmor, tier: 2, maxStack: 1, slot: EquipSlot.Legs, skillRequired: SkillType.Magic, levelRequired: 10, armorValue: 3f, baseSellPrice: 7 ) );
-		Add( Define( ItemId.ColdveinLightHelm, "Coldvein Light Helm", ItemType.LightArmor, tier: 3, maxStack: 1, slot: EquipSlot.Head, skillRequired: SkillType.Magic, levelRequired: 20, armorValue: 4f, baseSellPrice: 11 ) );
-		Add( Define( ItemId.ColdveinLightChestplate, "Coldvein Light Chestplate", ItemType.LightArmor, tier: 3, maxStack: 1, slot: EquipSlot.Chest, skillRequired: SkillType.Magic, levelRequired: 20, armorValue: 9f, baseSellPrice: 20 ) );
-		Add( Define( ItemId.ColdveinLightLegs, "Coldvein Light Legs", ItemType.LightArmor, tier: 3, maxStack: 1, slot: EquipSlot.Legs, skillRequired: SkillType.Magic, levelRequired: 20, armorValue: 6f, baseSellPrice: 14 ) );
-		Add( Define( ItemId.SolariumLightHelm, "Solarium Light Helm", ItemType.LightArmor, tier: 4, maxStack: 1, slot: EquipSlot.Head, skillRequired: SkillType.Magic, levelRequired: 30, armorValue: 7f, baseSellPrice: 17 ) );
-		Add( Define( ItemId.SolariumLightChestplate, "Solarium Light Chestplate", ItemType.LightArmor, tier: 4, maxStack: 1, slot: EquipSlot.Chest, skillRequired: SkillType.Magic, levelRequired: 30, armorValue: 14f, baseSellPrice: 32 ) );
-		Add( Define( ItemId.SolariumLightLegs, "Solarium Light Legs", ItemType.LightArmor, tier: 4, maxStack: 1, slot: EquipSlot.Legs, skillRequired: SkillType.Magic, levelRequired: 30, armorValue: 10f, baseSellPrice: 22 ) );
-		Add( Define( ItemId.LunariteLightHelm, "Lunarite Light Helm", ItemType.LightArmor, tier: 5, maxStack: 1, slot: EquipSlot.Head, skillRequired: SkillType.Magic, levelRequired: 40, armorValue: 10f, baseSellPrice: 25 ) );
-		Add( Define( ItemId.LunariteLightChestplate, "Lunarite Light Chestplate", ItemType.LightArmor, tier: 5, maxStack: 1, slot: EquipSlot.Chest, skillRequired: SkillType.Magic, levelRequired: 40, armorValue: 20f, baseSellPrice: 46 ) );
-		Add( Define( ItemId.LunariteLightLegs, "Lunarite Light Legs", ItemType.LightArmor, tier: 5, maxStack: 1, slot: EquipSlot.Legs, skillRequired: SkillType.Magic, levelRequired: 40, armorValue: 14f, baseSellPrice: 32 ) );
-		Add( Define( ItemId.AbyssiumLightHelm, "Abyssium Light Helm", ItemType.LightArmor, tier: 6, maxStack: 1, slot: EquipSlot.Head, skillRequired: SkillType.Magic, levelRequired: 50, armorValue: 14f, baseSellPrice: 35 ) );
-		Add( Define( ItemId.AbyssiumLightChestplate, "Abyssium Light Chestplate", ItemType.LightArmor, tier: 6, maxStack: 1, slot: EquipSlot.Chest, skillRequired: SkillType.Magic, levelRequired: 50, armorValue: 28f, baseSellPrice: 64 ) );
-		Add( Define( ItemId.AbyssiumLightLegs, "Abyssium Light Legs", ItemType.LightArmor, tier: 6, maxStack: 1, slot: EquipSlot.Legs, skillRequired: SkillType.Magic, levelRequired: 50, armorValue: 20f, baseSellPrice: 44 ) );
+		Add( Define( ItemId.CoppiteLightHelm, "Coppite Light Helm", ItemType.LightArmor, tier: 1, maxStack: 1, slot: EquipSlot.Head, skillRequired: SkillType.Defence, levelRequired: 1, armorValue: 1f, baseSellPrice: 2 ) );
+		Add( Define( ItemId.CoppiteLightChestplate, "Coppite Light Chestplate", ItemType.LightArmor, tier: 1, maxStack: 1, slot: EquipSlot.Chest, skillRequired: SkillType.Defence, levelRequired: 1, armorValue: 2f, baseSellPrice: 5 ) );
+		Add( Define( ItemId.CoppiteLightLegs, "Coppite Light Legs", ItemType.LightArmor, tier: 1, maxStack: 1, slot: EquipSlot.Legs, skillRequired: SkillType.Defence, levelRequired: 1, armorValue: 1f, baseSellPrice: 3 ) );
+		Add( Define( ItemId.AshsteelLightHelm, "Ashsteel Light Helm", ItemType.LightArmor, tier: 2, maxStack: 1, slot: EquipSlot.Head, skillRequired: SkillType.Defence, levelRequired: 10, armorValue: 2f, baseSellPrice: 6 ) );
+		Add( Define( ItemId.AshsteelLightChestplate, "Ashsteel Light Chestplate", ItemType.LightArmor, tier: 2, maxStack: 1, slot: EquipSlot.Chest, skillRequired: SkillType.Defence, levelRequired: 10, armorValue: 5f, baseSellPrice: 11 ) );
+		Add( Define( ItemId.AshsteelLightLegs, "Ashsteel Light Legs", ItemType.LightArmor, tier: 2, maxStack: 1, slot: EquipSlot.Legs, skillRequired: SkillType.Defence, levelRequired: 10, armorValue: 3f, baseSellPrice: 7 ) );
+		Add( Define( ItemId.ColdveinLightHelm, "Coldvein Light Helm", ItemType.LightArmor, tier: 3, maxStack: 1, slot: EquipSlot.Head, skillRequired: SkillType.Defence, levelRequired: 20, armorValue: 4f, baseSellPrice: 11 ) );
+		Add( Define( ItemId.ColdveinLightChestplate, "Coldvein Light Chestplate", ItemType.LightArmor, tier: 3, maxStack: 1, slot: EquipSlot.Chest, skillRequired: SkillType.Defence, levelRequired: 20, armorValue: 9f, baseSellPrice: 20 ) );
+		Add( Define( ItemId.ColdveinLightLegs, "Coldvein Light Legs", ItemType.LightArmor, tier: 3, maxStack: 1, slot: EquipSlot.Legs, skillRequired: SkillType.Defence, levelRequired: 20, armorValue: 6f, baseSellPrice: 14 ) );
+		Add( Define( ItemId.SolariumLightHelm, "Solarium Light Helm", ItemType.LightArmor, tier: 4, maxStack: 1, slot: EquipSlot.Head, skillRequired: SkillType.Defence, levelRequired: 30, armorValue: 7f, baseSellPrice: 17 ) );
+		Add( Define( ItemId.SolariumLightChestplate, "Solarium Light Chestplate", ItemType.LightArmor, tier: 4, maxStack: 1, slot: EquipSlot.Chest, skillRequired: SkillType.Defence, levelRequired: 30, armorValue: 14f, baseSellPrice: 32 ) );
+		Add( Define( ItemId.SolariumLightLegs, "Solarium Light Legs", ItemType.LightArmor, tier: 4, maxStack: 1, slot: EquipSlot.Legs, skillRequired: SkillType.Defence, levelRequired: 30, armorValue: 10f, baseSellPrice: 22 ) );
+		Add( Define( ItemId.LunariteLightHelm, "Lunarite Light Helm", ItemType.LightArmor, tier: 5, maxStack: 1, slot: EquipSlot.Head, skillRequired: SkillType.Defence, levelRequired: 40, armorValue: 10f, baseSellPrice: 25 ) );
+		Add( Define( ItemId.LunariteLightChestplate, "Lunarite Light Chestplate", ItemType.LightArmor, tier: 5, maxStack: 1, slot: EquipSlot.Chest, skillRequired: SkillType.Defence, levelRequired: 40, armorValue: 20f, baseSellPrice: 46 ) );
+		Add( Define( ItemId.LunariteLightLegs, "Lunarite Light Legs", ItemType.LightArmor, tier: 5, maxStack: 1, slot: EquipSlot.Legs, skillRequired: SkillType.Defence, levelRequired: 40, armorValue: 14f, baseSellPrice: 32 ) );
+		Add( Define( ItemId.AbyssiumLightHelm, "Abyssium Light Helm", ItemType.LightArmor, tier: 6, maxStack: 1, slot: EquipSlot.Head, skillRequired: SkillType.Defence, levelRequired: 50, armorValue: 14f, baseSellPrice: 35 ) );
+		Add( Define( ItemId.AbyssiumLightChestplate, "Abyssium Light Chestplate", ItemType.LightArmor, tier: 6, maxStack: 1, slot: EquipSlot.Chest, skillRequired: SkillType.Defence, levelRequired: 50, armorValue: 28f, baseSellPrice: 64 ) );
+		Add( Define( ItemId.AbyssiumLightLegs, "Abyssium Light Legs", ItemType.LightArmor, tier: 6, maxStack: 1, slot: EquipSlot.Legs, skillRequired: SkillType.Defence, levelRequired: 50, armorValue: 20f, baseSellPrice: 44 ) );
 
 		// Jewelry — small but valuable
 		Add( Define( ItemId.RoughRing, "Rough Ring", ItemType.Ring, tier: 1, maxStack: 1, slot: EquipSlot.Ring, skillRequired: SkillType.Smithing, levelRequired: 1, baseSellPrice: 8 ) );
@@ -478,6 +483,11 @@ public static class ItemDatabase
 		Add( Define( ItemId.RoughAmulet, "Rough Amulet", ItemType.Amulet, tier: 1, maxStack: 1, slot: EquipSlot.Amulet, skillRequired: SkillType.Smithing, levelRequired: 1, baseSellPrice: 8 ) );
 		Add( Define( ItemId.FineAmulet, "Fine Amulet", ItemType.Amulet, tier: 3, maxStack: 1, slot: EquipSlot.Amulet, skillRequired: SkillType.Smithing, levelRequired: 25, baseSellPrice: 25 ) );
 		Add( Define( ItemId.PristineAmulet, "Pristine Amulet", ItemType.Amulet, tier: 5, maxStack: 1, slot: EquipSlot.Amulet, skillRequired: SkillType.Smithing, levelRequired: 45, baseSellPrice: 50 ) );
+
+		// Blank runes — stackable, crafted at the Enchanting Altar
+		Add( Define( ItemId.RoughRune, "Rough Rune", ItemType.Rune, tier: 1, maxStack: 999, baseSellPrice: 3 ) );
+		Add( Define( ItemId.FineRune, "Fine Rune", ItemType.Rune, tier: 3, maxStack: 999, baseSellPrice: 8 ) );
+		Add( Define( ItemId.PristineRune, "Pristine Rune", ItemType.Rune, tier: 5, maxStack: 999, baseSellPrice: 20 ) );
 
 		// Potions — tier × 3
 		Add( Define( ItemId.LesserHealingPotion, "Lesser Healing Potion", ItemType.Potion, tier: 1, maxStack: 50, baseSellPrice: 3 ) );

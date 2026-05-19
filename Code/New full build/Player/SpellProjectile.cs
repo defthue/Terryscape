@@ -11,6 +11,8 @@ public sealed class SpellProjectile : Component
 	public float MaxLifetime { get; set; } = 4f;
 	public float TraceRadius { get; set; } = 5f;
 	public float FreezeDuration { get; set; }
+	public float SlowDuration { get; set; }
+	public float SlowMultiplier { get; set; } = 1f;
 	public float FrozenBonusDamage { get; set; } = 1.5f;
 	public bool IsCrit { get; set; }
 
@@ -78,7 +80,12 @@ public sealed class SpellProjectile : Component
 			if ( FreezeDuration > 0f )
 				monster.ApplyFreeze( FreezeDuration );
 
+			if ( SlowDuration > 0f )
+				monster.ApplySlow( SlowDuration, SlowMultiplier );
+
 			DamagePopupBroadcaster.Broadcast( trace.HitPosition, finalDamage, monster.MaxHealth, IsCrit );
+
+			PlayImpactSound( trace.HitPosition );
 
 			GameObject.Destroy();
 			return;
@@ -93,10 +100,22 @@ public sealed class SpellProjectile : Component
 
 			boss.TakeDamage( finalDamage, Shooter );
 			DamagePopupBroadcaster.Broadcast( trace.HitPosition, finalDamage, boss.MaxHealth, IsCrit );
+			PlayImpactSound( trace.HitPosition );
 			GameObject.Destroy();
 			return;
 		}
 
+		PlayImpactSound( trace.HitPosition );
 		GameObject.Destroy();
+	}
+
+	void PlayImpactSound( Vector3 pos )
+	{
+		switch ( SpellId )
+		{
+			case SpellId.IceShard:
+				SoundLibrary.PlayIceShardImpact( pos );
+				break;
+		}
 	}
 }

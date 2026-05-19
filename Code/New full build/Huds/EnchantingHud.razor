@@ -16,44 +16,40 @@
 				</div>
 
 				<div class="tab-row">
-					<div class="tab-button @(Mode == 0 ? "active" : "")" onclick="@(() => SetMode(0))">Enchant</div>
-					<div class="tab-button @(Mode == 1 ? "active" : "")" onclick="@(() => SetMode(1))">Combine</div>
-					<div class="tab-button @(Mode == 2 ? "active" : "")" onclick="@(() => SetMode(2))">Salvage</div>
+					<div class="tab-button @(Mode == 0 ? "active" : "")" onclick="@(() => SetMode(0))">Craft Blank</div>
+					<div class="tab-button @(Mode == 1 ? "active" : "")" onclick="@(() => SetMode(1))">Enchant</div>
+					<div class="tab-button @(Mode == 2 ? "active" : "")" onclick="@(() => SetMode(2))">Combine</div>
+					<div class="tab-button @(Mode == 3 ? "active" : "")" onclick="@(() => SetMode(3))">Tier Up</div>
+					<div class="tab-button @(Mode == 4 ? "active" : "")" onclick="@(() => SetMode(4))">Socket</div>
+					<div class="tab-button @(Mode == 5 ? "active" : "")" onclick="@(() => SetMode(5))">Extract</div>
 				</div>
 
 				<div class="enchant-body">
+					<div class="enchant-essence">Arcane Dust: @DustCount &nbsp;|&nbsp; Stone: @StoneCount &nbsp;|&nbsp; Enchanting: @EnchantingLevel</div>
+
 					@if ( Mode == 0 )
 					{
-						<div class="detail-section-label">Enchantable jewelry in inventory</div>
-						<div class="enchant-essence">Arcane Dust: @ArcaneDustCount</div>
-
-						@if ( EnchantableItems.Count == 0 )
+						@for ( int i = 0; i < CraftTiers.Length; i++ )
 						{
-							<div class="no-recipes">No enchantable jewelry in your inventory.</div>
-						}
+							var tier = CraftTiers[i];
+							int stone = Station?.GetCraftStone( tier ) ?? 0;
+							int dust = Station?.GetCraftDust( tier ) ?? 0;
+							int levelReq = Station?.GetCraftLevel( tier ) ?? 1;
+							bool meetsLevel = EnchantingLevel >= levelReq;
+							bool canAfford = StoneCount >= stone && DustCount >= dust;
+							bool canDo = meetsLevel && canAfford;
 
-						@foreach ( var entry in EnchantableItems )
-						{
-							var def = ItemDatabase.Get( entry.ItemId );
-							string name = def != null ? def.Name : entry.ItemId.ToString();
-							string color = GetItemColor( def );
-							int cost = Station?.GetEssenceCost( entry.ItemId ) ?? 0;
-							int levelReq = Station?.GetLevelRequired( entry.ItemId ) ?? 1;
-							bool canAfford = ArcaneDustCount >= cost;
-							bool meetsLevel = PlayerSkills != null && PlayerSkills.MeetsRequirement( SkillType.Enchanting, levelReq );
-							bool canEnchant = canAfford && meetsLevel && entry.Count > 0;
-
-							<div class="recipe-row @(canEnchant ? "craftable" : "locked")">
-								<div class="recipe-icon" style="background: @color;">
-									<img class="recipe-icon-img" src="@GetIconPath( entry.ItemId )" />
+							<div class="recipe-row @(canDo ? "craftable" : "locked")">
+								<div class="recipe-icon" style="background: #a080d0;">
+									<img class="recipe-icon-img" src="@GetIconPath( Station.GetBlankRuneItemId( tier ) )" />
 								</div>
 								<div class="recipe-info">
-									<div class="recipe-name">@name x@(entry.Count)</div>
-									<div class="recipe-sub">@cost dust — Lvl @levelReq</div>
+									<div class="recipe-name">@tier Rune</div>
+									<div class="recipe-sub">@stone Stone + @dust Dust — Lvl @levelReq</div>
 								</div>
-								<div class="craft-button @(canEnchant ? "" : "disabled")"
-									 onclick="@(() => DoEnchant( entry.ItemId ))">
-									Enchant
+								<div class="craft-button @(canDo ? "" : "disabled")"
+									 onclick="@(() => DoCraftBlank( tier ))">
+									Craft
 								</div>
 							</div>
 						}
@@ -61,51 +57,27 @@
 
 					@if ( Mode == 1 )
 					{
-						<div class="detail-section-label">Select two enchanted items to combine</div>
-						<div class="enchant-essence">Arcane Dust: @ArcaneDustCount (cost: @CombineEssenceCost)</div>
-
-						@if ( EnchantedItems.Count < 2 )
+						<div class="detail-section-label">Select a blank rune to enchant</div>
+						@if ( BlankRunes.Count == 0 )
 						{
-							<div class="no-recipes">You need at least 2 enchanted items to combine.</div>
+							<div class="no-recipes">No blank runes in your inventory.</div>
 						}
-
-						@for ( int i = 0; i < EnchantedItems.Count; i++ )
+						@foreach ( var entry in BlankRunes )
 						{
-							var item = EnchantedItems[i];
-							var idx = item.OriginalIndex;
-							bool selectedA = CombineSlotA == idx;
-							bool selectedB = CombineSlotB == idx;
-							bool selected = selectedA || selectedB;
-							float maxCap = Station != null ? Station.GetMaxCap( item.Instance.ItemId ) : 0f;
-							bool isMaxed = item.Instance.EnchantmentPercent >= maxCap - 0.05f;
-							string rowClass = isMaxed ? "locked" : ( selected ? "selected" : "craftable" );
+							int dust = Station?.GetEnchantDust( entry.Tier ) ?? 0;
+							bool canAfford = DustCount >= dust;
 
-							<div class="recipe-row @rowClass"
-								 onclick="@(() => SelectCombineSlot( idx ))">
+							<div class="recipe-row @(canAfford ? "craftable" : "locked")">
 								<div class="recipe-icon" style="background: #a080d0;">
-									<img class="recipe-icon-img" src="@GetIconPath( item.Instance.ItemId )" />
+									<img class="recipe-icon-img" src="@GetIconPath( entry.ItemId )" />
 								</div>
 								<div class="recipe-info">
-									<div class="recipe-name">@item.Instance.GetDisplayName()</div>
-									<div class="recipe-sub">@item.Instance.GetShortStat() @(isMaxed ? "(MAX)" : "")</div>
+									<div class="recipe-name">@entry.Tier Rune x@(entry.Count)</div>
+									<div class="recipe-sub">@dust Dust to enchant</div>
 								</div>
-								@if ( selectedA )
-								{
-									<div class="slot-label">A</div>
-								}
-								@if ( selectedB )
-								{
-									<div class="slot-label">B</div>
-								}
-							</div>
-						}
-
-						@if ( CombineSlotA >= 0 && CombineSlotB >= 0 )
-						{
-							<div class="craft-button-area">
-								<div class="craft-button @(CanCombine ? "" : "disabled")"
-									 onclick="@(() => DoCombine())">
-									Combine
+								<div class="craft-button @(canAfford ? "" : "disabled")"
+									 onclick="@(() => DoEnchant( entry.SlotIndex ))">
+									Enchant
 								</div>
 							</div>
 						}
@@ -113,31 +85,189 @@
 
 					@if ( Mode == 2 )
 					{
-						<div class="salvage-warning">⚠ Salvaging permanently destroys the item and returns some Arcane Dust.</div>
-
-						@if ( EnchantedItems.Count == 0 )
+						<div class="detail-section-label">Select two runes — same tier, same enchantment</div>
+						@if ( EnchantedRunes.Count < 2 )
 						{
-							<div class="no-recipes">You have no enchanted items to salvage.</div>
+							<div class="no-recipes">You need at least two enchanted runes to combine.</div>
 						}
-
-						@for ( int i = 0; i < EnchantedItems.Count; i++ )
+						@foreach ( var entry in EnchantedRunes )
 						{
-							var item = EnchantedItems[i];
-							var idx = item.OriginalIndex;
-							int dustReturn = Station?.GetSalvageReturn( item.Instance.ItemId ) ?? 0;
+							bool selectedA = CombineA == entry.SlotIndex;
+							bool selectedB = CombineB == entry.SlotIndex;
+							bool selected = selectedA || selectedB;
+							float cap = Station != null ? Station.GetTierCap( entry.Rune.RuneTier ) : 0f;
+							bool atCap = entry.Rune.EnchantmentPercent >= cap - 0.0001f;
+							string rowClass = atCap ? "locked" : ( selected ? "selected" : "craftable" );
 
-							<div class="recipe-row craftable">
+							<div class="recipe-row @rowClass"
+								 onclick="@(() => SelectCombineSlot( entry.SlotIndex ))">
 								<div class="recipe-icon" style="background: #a080d0;">
-									<img class="recipe-icon-img" src="@GetIconPath( item.Instance.ItemId )" />
+									<img class="recipe-icon-img" src="@GetIconPath( entry.Rune.ItemId )" />
 								</div>
 								<div class="recipe-info">
-									<div class="recipe-name">@item.Instance.GetDisplayName()</div>
-									<div class="recipe-sub">Returns @dustReturn Arcane Dust</div>
+									<div class="recipe-name">@entry.Rune.GetDisplayName()</div>
+									<div class="recipe-sub">@(atCap ? "AT CAP" : $"cap {cap:F0}%")</div>
 								</div>
-								<div class="craft-button salvage-button"
-									 onclick="@(() => DoSalvage( idx ))">
-									Salvage
+								@if ( selectedA ) { <div class="slot-label">A</div> }
+								@if ( selectedB ) { <div class="slot-label">B</div> }
+							</div>
+						}
+
+						@if ( CombineA >= 0 && CombineB >= 0 )
+						{
+							<div class="craft-button-area">
+								<div class="craft-button" onclick="@(() => DoCombine())">Combine</div>
+							</div>
+						}
+					}
+
+					@if ( Mode == 3 )
+					{
+						<div class="detail-section-label">Select 3 runes of the same tier</div>
+						@if ( EnchantedRunes.Count < 3 )
+						{
+							<div class="no-recipes">You need at least three enchanted runes to tier up.</div>
+						}
+						@foreach ( var entry in EnchantedRunes )
+						{
+							bool selected = TierUpSlots.Contains( entry.SlotIndex );
+							string rowClass = selected ? "selected" : "craftable";
+
+							<div class="recipe-row @rowClass"
+								 onclick="@(() => ToggleTierUp( entry.SlotIndex ))">
+								<div class="recipe-icon" style="background: #a080d0;">
+									<img class="recipe-icon-img" src="@GetIconPath( entry.Rune.ItemId )" />
 								</div>
+								<div class="recipe-info">
+									<div class="recipe-name">@entry.Rune.GetDisplayName()</div>
+									<div class="recipe-sub">@entry.Rune.RuneTier</div>
+								</div>
+							</div>
+						}
+
+						@if ( TierUpSlots.Count == 3 )
+						{
+							<div class="craft-button-area">
+								<div class="craft-button" onclick="@(() => DoTierUp())">Tier Up</div>
+							</div>
+						}
+					}
+
+					@if ( Mode == 4 )
+					{
+						<div class="detail-section-label">Select a ring/amulet, pick a socket, then select a rune</div>
+						@if ( Socketables.Count == 0 )
+						{
+							<div class="no-recipes">No rings or amulets in your inventory.</div>
+						}
+						@foreach ( var entry in Socketables )
+						{
+							bool selected = SelectedJewelrySlot == entry.SlotIndex;
+							string rowClass = selected ? "selected" : "craftable";
+
+							<div class="recipe-row @rowClass"
+								 onclick="@(() => SelectJewelry( entry.SlotIndex ))">
+								<div class="recipe-icon" style="background: #d4aa40;">
+									<img class="recipe-icon-img" src="@GetIconPath( entry.Item.ItemId )" />
+								</div>
+								<div class="recipe-info">
+									<div class="recipe-name">@entry.Item.GetDisplayName()</div>
+									<div class="recipe-sub">@entry.Item.GetShortStat()</div>
+								</div>
+							</div>
+						}
+
+						@if ( SelectedJewelrySlot >= 0 && SelectedJewelry != null )
+						{
+							<div class="detail-section-label">Choose socket</div>
+							<div class="socket-row">
+								@for ( int s = 0; s < SelectedJewelry.MaxSockets; s++ )
+								{
+									var rune = SelectedJewelry.GetSocket( s );
+									bool selSocket = SelectedSocketIndex == s;
+									string label = rune != null ? $"{s + 1}: {rune.Enchantment} +{rune.EnchantmentPercent:F1}%" : $"{s + 1}: empty";
+
+									<div class="craft-button @(selSocket ? "selected" : "") @(rune != null ? "disabled" : "")"
+										 onclick="@(() => SelectSocket( s ))">
+										@label
+									</div>
+								}
+							</div>
+
+							@if ( SelectedSocketIndex >= 0 )
+							{
+								<div class="detail-section-label">Choose rune</div>
+								@if ( EnchantedRunes.Count == 0 )
+								{
+									<div class="no-recipes">No enchanted runes available.</div>
+								}
+								@foreach ( var rEntry in EnchantedRunes )
+								{
+									bool blocked = SelectedJewelry.HasEnchantmentInSocket( rEntry.Rune.Enchantment );
+									string rowClass = blocked ? "locked" : "craftable";
+
+									<div class="recipe-row @rowClass">
+										<div class="recipe-icon" style="background: #a080d0;">
+											<img class="recipe-icon-img" src="@GetIconPath( rEntry.Rune.ItemId )" />
+										</div>
+										<div class="recipe-info">
+											<div class="recipe-name">@rEntry.Rune.GetDisplayName()</div>
+											<div class="recipe-sub">@(blocked ? "duplicate enchant" : "ready")</div>
+										</div>
+										<div class="craft-button @(blocked ? "disabled" : "")"
+											 onclick="@(() => DoSocket( rEntry.SlotIndex ))">
+											Socket
+										</div>
+									</div>
+								}
+							}
+						}
+					}
+
+					@if ( Mode == 5 )
+					{
+						<div class="detail-section-label">Select a socketed item, then choose a socket to extract</div>
+						@if ( SocketablesWithSockets.Count == 0 )
+						{
+							<div class="no-recipes">No socketed items in your inventory.</div>
+						}
+						@foreach ( var entry in SocketablesWithSockets )
+						{
+							bool selected = SelectedJewelrySlot == entry.SlotIndex;
+							string rowClass = selected ? "selected" : "craftable";
+
+							<div class="recipe-row @rowClass"
+								 onclick="@(() => SelectJewelry( entry.SlotIndex ))">
+								<div class="recipe-icon" style="background: #d4aa40;">
+									<img class="recipe-icon-img" src="@GetIconPath( entry.Item.ItemId )" />
+								</div>
+								<div class="recipe-info">
+									<div class="recipe-name">@entry.Item.GetDisplayName()</div>
+									<div class="recipe-sub">@entry.Item.GetShortStat()</div>
+								</div>
+							</div>
+						}
+
+						@if ( SelectedJewelrySlot >= 0 && SelectedJewelry != null )
+						{
+							<div class="detail-section-label">Extract</div>
+							<div class="socket-row">
+								@for ( int s = 0; s < SelectedJewelry.MaxSockets; s++ )
+								{
+									var rune = SelectedJewelry.GetSocket( s );
+									if ( rune == null )
+									{
+										<div class="craft-button disabled">@(s + 1): empty</div>
+										continue;
+									}
+									int cost = Station?.GetExtractDust( rune.RuneTier ) ?? 0;
+									int sCaptured = s;
+
+									<div class="craft-button"
+										 onclick="@(() => DoExtract( sCaptured ))">
+										@($"{s + 1}: {rune.Enchantment} +{rune.EnchantmentPercent:F1}% ({cost} dust)")
+									</div>
+								}
 							</div>
 						}
 					}
@@ -154,212 +284,268 @@
 	EnchantingStation Station => EnchantingStation.ActiveStation;
 
 	int Mode { get; set; } = 0;
-	int CombineSlotA { get; set; } = -1;
-	int CombineSlotB { get; set; } = -1;
+	int CombineA { get; set; } = -1;
+	int CombineB { get; set; } = -1;
+	List<int> TierUpSlots { get; set; } = new();
+	int SelectedJewelrySlot { get; set; } = -1;
+	int SelectedSocketIndex { get; set; } = -1;
 
 	Inventory PlayerInventory { get; set; }
 	Skills PlayerSkills { get; set; }
 
-	int ArcaneDustCount => PlayerInventory != null ? PlayerInventory.GetItemCount( ItemId.ArcaneDust ) : 0;
-	int CombineEssenceCost => Station?.CombineEssenceCost ?? 2;
+	int DustCount => PlayerInventory != null ? PlayerInventory.GetItemCount( ItemId.ArcaneDust ) : 0;
+	int StoneCount => PlayerInventory != null ? PlayerInventory.GetItemCount( ItemId.Rock ) : 0;
+	int EnchantingLevel => PlayerSkills != null ? PlayerSkills.GetLevel( SkillType.Enchanting ) : 1;
 
-	public class EnchantableEntry
+	readonly RuneTier[] CraftTiers = new[] { RuneTier.Rough, RuneTier.Fine, RuneTier.Pristine };
+
+	public class BlankRuneEntry
 	{
 		public ItemId ItemId;
+		public RuneTier Tier;
+		public int SlotIndex;
 		public int Count;
 	}
 
-	public class EnchantedEntry
+	public class EnchantedRuneEntry
 	{
-		public ItemInstance Instance;
-		public int OriginalIndex;
+		public ItemInstance Rune;
+		public int SlotIndex;
 	}
 
-	List<EnchantableEntry> EnchantableItems { get; set; } = new();
-	List<EnchantedEntry> EnchantedItems { get; set; } = new();
+	public class SocketableEntry
+	{
+		public ItemInstance Item;
+		public int SlotIndex;
+	}
+
+	List<BlankRuneEntry> BlankRunes { get; set; } = new();
+	List<EnchantedRuneEntry> EnchantedRunes { get; set; } = new();
+	List<SocketableEntry> Socketables { get; set; } = new();
+	List<SocketableEntry> SocketablesWithSockets { get; set; } = new();
+
+	ItemInstance SelectedJewelry
+	{
+		get
+		{
+			if ( PlayerInventory == null || SelectedJewelrySlot < 0 )
+				return null;
+			var slot = PlayerInventory.GetSlot( SelectedJewelrySlot );
+			return ( slot != null && slot.IsUnique ) ? slot.Unique : null;
+		}
+	}
 
 	string GetIconPath( ItemId id )
 	{
 		if ( id == ItemId.None )
 			return "";
-
 		return $"/ItemIcons/{id}.vtex";
-	}
-
-	string GetItemColor( ItemDefinition def )
-	{
-		if ( def == null ) return "#888";
-
-		switch ( def.Type )
-		{
-			case ItemType.Ring: return "#d4aa40";
-			case ItemType.Amulet: return "#40aad4";
-			default: return "#d4aa40";
-		}
-	}
-
-	bool CanCombine
-	{
-		get
-		{
-			if ( CombineSlotA < 0 || CombineSlotB < 0 || Station == null || PlayerInventory == null )
-				return false;
-
-			var items = PlayerInventory.GetUniqueItems();
-			if ( CombineSlotA >= items.Count || CombineSlotB >= items.Count )
-				return false;
-
-			var a = items[CombineSlotA];
-			var b = items[CombineSlotB];
-
-			if ( !a.IsEnchanted || !b.IsEnchanted )
-				return false;
-
-			if ( a.ItemId != b.ItemId || a.Enchantment != b.Enchantment )
-				return false;
-
-			if ( ArcaneDustCount < CombineEssenceCost )
-				return false;
-
-			return true;
-		}
 	}
 
 	void SetMode( int mode )
 	{
 		Mode = mode;
-		CombineSlotA = -1;
-		CombineSlotB = -1;
+		CombineA = -1;
+		CombineB = -1;
+		TierUpSlots.Clear();
+		SelectedJewelrySlot = -1;
+		SelectedSocketIndex = -1;
 	}
 
-	void SelectCombineSlot( int index )
+	void SelectCombineSlot( int slotIndex )
 	{
 		if ( PlayerInventory != null && Station != null )
 		{
-			var items = PlayerInventory.GetUniqueItems();
-			if ( index >= 0 && index < items.Count )
+			var slot = PlayerInventory.GetSlot( slotIndex );
+			if ( slot != null && slot.IsUnique )
 			{
-				var instance = items[index];
-				float maxCap = Station.GetMaxCap( instance.ItemId );
-				if ( instance.EnchantmentPercent >= maxCap - 0.05f )
+				var rune = slot.Unique;
+				float cap = Station.GetTierCap( rune.RuneTier );
+				if ( rune.EnchantmentPercent >= cap - 0.0001f )
 					return;
 			}
 		}
 
-		if ( CombineSlotA == index )
-		{
-			CombineSlotA = -1;
-			return;
-		}
+		if ( CombineA == slotIndex ) { CombineA = -1; return; }
+		if ( CombineB == slotIndex ) { CombineB = -1; return; }
+		if ( CombineA < 0 ) { CombineA = slotIndex; return; }
+		if ( CombineB < 0 ) { CombineB = slotIndex; return; }
 
-		if ( CombineSlotB == index )
-		{
-			CombineSlotB = -1;
-			return;
-		}
-
-		if ( CombineSlotA < 0 )
-		{
-			CombineSlotA = index;
-			return;
-		}
-
-		if ( CombineSlotB < 0 )
-		{
-			CombineSlotB = index;
-			return;
-		}
-
-		CombineSlotA = index;
-		CombineSlotB = -1;
+		CombineA = slotIndex;
+		CombineB = -1;
 	}
 
-	void DoEnchant( ItemId itemId )
+	void ToggleTierUp( int slotIndex )
 	{
-		if ( Station == null )
+		if ( TierUpSlots.Contains( slotIndex ) )
+		{
+			TierUpSlots.Remove( slotIndex );
 			return;
+		}
+		if ( TierUpSlots.Count >= 3 )
+			return;
+		TierUpSlots.Add( slotIndex );
+	}
 
-		Station.TryEnchant( itemId );
+	void SelectJewelry( int slotIndex )
+	{
+		if ( SelectedJewelrySlot == slotIndex )
+		{
+			SelectedJewelrySlot = -1;
+			SelectedSocketIndex = -1;
+			return;
+		}
+		SelectedJewelrySlot = slotIndex;
+		SelectedSocketIndex = -1;
+	}
+
+	void SelectSocket( int socketIndex )
+	{
+		var jewelry = SelectedJewelry;
+		if ( jewelry == null ) return;
+		if ( jewelry.GetSocket( socketIndex ) != null ) return;
+		SelectedSocketIndex = socketIndex;
+	}
+
+	void DoCraftBlank( RuneTier tier )
+	{
+		if ( Station == null ) return;
+		Station.TryCraftBlankRune( tier );
+	}
+
+	void DoEnchant( int slotIndex )
+	{
+		if ( Station == null ) return;
+		Station.TryEnchantBlankRune( slotIndex );
 	}
 
 	void DoCombine()
 	{
-		if ( Station == null || CombineSlotA < 0 || CombineSlotB < 0 )
-			return;
-
-		Station.TryCombine( CombineSlotA, CombineSlotB );
-		CombineSlotA = -1;
-		CombineSlotB = -1;
+		if ( Station == null || CombineA < 0 || CombineB < 0 ) return;
+		Station.TryCombineSame( CombineA, CombineB );
+		CombineA = -1;
+		CombineB = -1;
 	}
 
-	void DoSalvage( int uniqueIndex )
+	void DoTierUp()
 	{
-		if ( Station == null )
-			return;
+		if ( Station == null || TierUpSlots.Count != 3 ) return;
+		Station.TryTierUp( TierUpSlots[0], TierUpSlots[1], TierUpSlots[2] );
+		TierUpSlots.Clear();
+	}
 
-		Station.TrySalvage( uniqueIndex );
+	void DoSocket( int runeSlotIndex )
+	{
+		if ( Station == null || SelectedJewelrySlot < 0 || SelectedSocketIndex < 0 ) return;
+		Station.TrySocketRune( SelectedJewelrySlot, SelectedSocketIndex, runeSlotIndex );
+		SelectedSocketIndex = -1;
+	}
+
+	void DoExtract( int socketIndex )
+	{
+		if ( Station == null || SelectedJewelrySlot < 0 ) return;
+		Station.TryExtractRune( SelectedJewelrySlot, socketIndex );
 	}
 
 	void CloseStation()
 	{
 		Mode = 0;
-		CombineSlotA = -1;
-		CombineSlotB = -1;
+		CombineA = -1;
+		CombineB = -1;
+		TierUpSlots.Clear();
+		SelectedJewelrySlot = -1;
+		SelectedSocketIndex = -1;
 		EnchantingStation.Close();
 	}
 
 	protected override int BuildHash()
 	{
 		var station = EnchantingStation.ActiveStation;
-
 		if ( station != null )
 		{
 			PlayerInventory = PlayerHelper.GetLocalInventory();
 			PlayerSkills = PlayerHelper.GetSkills( PlayerHelper.GetLocalPlayer() );
 		}
 
-		EnchantableItems.Clear();
-		EnchantedItems.Clear();
+		BlankRunes.Clear();
+		EnchantedRunes.Clear();
+		Socketables.Clear();
+		SocketablesWithSockets.Clear();
 
 		if ( PlayerInventory != null && station != null )
 		{
-			var uniqueItems = PlayerInventory.GetUniqueItems();
-			var counted = new Dictionary<ItemId, int>();
+			var blankCounts = new Dictionary<ItemId, (RuneTier, int, int)>();
 
-			for ( int i = 0; i < uniqueItems.Count; i++ )
+			for ( int i = 0; i < PlayerInventory.MaxSlots; i++ )
 			{
-				var instance = uniqueItems[i];
+				var slot = PlayerInventory.GetSlot( i );
+				if ( slot == null ) continue;
 
-				if ( instance.IsEnchanted )
+				if ( slot.IsStack )
 				{
-					EnchantedItems.Add( new EnchantedEntry { Instance = instance, OriginalIndex = i } );
-				}
-				else if ( station.IsEnchantable( instance.ItemId ) )
-				{
-					if ( counted.ContainsKey( instance.ItemId ) )
-						counted[instance.ItemId]++;
+					var tier = EnchantingStation.GetRuneTierFromItemId( slot.ItemId );
+					if ( tier == RuneTier.None ) continue;
+
+					if ( blankCounts.TryGetValue( slot.ItemId, out var existing ) )
+						blankCounts[slot.ItemId] = (tier, existing.Item2 + slot.Count, existing.Item3);
 					else
-						counted[instance.ItemId] = 1;
+						blankCounts[slot.ItemId] = (tier, slot.Count, i);
+					continue;
+				}
+
+				if ( slot.IsUnique )
+				{
+					var inst = slot.Unique;
+					if ( inst.IsRune && inst.IsEnchanted )
+					{
+						EnchantedRunes.Add( new EnchantedRuneEntry { Rune = inst, SlotIndex = i } );
+					}
+					else if ( inst.IsSocketable )
+					{
+						var entry = new SocketableEntry { Item = inst, SlotIndex = i };
+						Socketables.Add( entry );
+						if ( inst.SocketsUsed > 0 )
+							SocketablesWithSockets.Add( entry );
+					}
 				}
 			}
 
-			foreach ( var kv in counted )
-				EnchantableItems.Add( new EnchantableEntry { ItemId = kv.Key, Count = kv.Value } );
+			foreach ( var kv in blankCounts )
+			{
+				BlankRunes.Add( new BlankRuneEntry
+				{
+					ItemId = kv.Key,
+					Tier = kv.Value.Item1,
+					Count = kv.Value.Item2,
+					SlotIndex = kv.Value.Item3
+				} );
+			}
 		}
 
-		int uniqueHash = 0;
-		foreach ( var e in EnchantedItems )
-			uniqueHash += (int)e.Instance.Enchantment * 1000 + (int)(e.Instance.EnchantmentPercent * 10);
+		int runeHash = 0;
+		foreach ( var e in EnchantedRunes )
+			runeHash += (int)e.Rune.Enchantment * 1000 + (int)( e.Rune.EnchantmentPercent * 10 ) + e.SlotIndex * 100000;
+		int jewelHash = 0;
+		foreach ( var s in Socketables )
+			jewelHash += ( s.SlotIndex + 1 ) * 17 + s.Item.SocketsUsed;
 
 		return (
 			IsOpen,
 			Mode,
-			EnchantableItems.Count,
-			EnchantedItems.Count,
-			ArcaneDustCount,
-			CombineSlotA,
-			CombineSlotB,
-			uniqueHash
+			BlankRunes.Count,
+			EnchantedRunes.Count,
+			Socketables.Count,
+			SocketablesWithSockets.Count,
+			DustCount,
+			StoneCount,
+			EnchantingLevel,
+			CombineA,
+			CombineB,
+			TierUpSlots.Count,
+			SelectedJewelrySlot,
+			SelectedSocketIndex,
+			runeHash,
+			jewelHash
 		).GetHashCode();
 	}
 }

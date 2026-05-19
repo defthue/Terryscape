@@ -24,7 +24,24 @@ public sealed class ProjectileShooter : Component
 
 	public bool IsDrawing { get; private set; }
 	public bool IsDrawReady { get; private set; }
-	public float DrawProgress => MinDrawDuration > 0f ? MathF.Min( _drawTimer / MinDrawDuration, 1f ) : 1f;
+	public float DrawProgress
+	{
+		get
+		{
+			float effective = EffectiveDrawDuration;
+			return effective > 0f ? MathF.Min( _drawTimer / effective, 1f ) : 1f;
+		}
+	}
+
+	public float EffectiveDrawDuration
+	{
+		get
+		{
+			var inventory = GameObject.Components.Get<Inventory>();
+			var penalties = CombatTriangle.GetEquippedArmorPenalties( inventory );
+			return MinDrawDuration + penalties.RangedDrawPenalty;
+		}
+	}
 
 	float _drawTimer;
 
@@ -166,7 +183,10 @@ public sealed class ProjectileShooter : Component
 		if ( potionSystem != null )
 			buffMult = potionSystem.GetBuffMultiplier( BuffType.Archery );
 
-		float totalPower = ( bowDef.WeaponPower + arrowPower ) * skillBonus * buffMult;
+		float piercingBonus = inventory.GetEnchantmentBonus( EnchantmentType.Piercing );
+		float enchantMult = 1f + piercingBonus / 100f;
+
+		float totalPower = ( bowDef.WeaponPower + arrowPower ) * skillBonus * buffMult * enchantMult;
 		int damage = (int)totalPower;
 		if ( damage < 1 ) damage = 1;
 

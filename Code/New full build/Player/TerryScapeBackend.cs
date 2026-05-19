@@ -319,38 +319,29 @@ public static class TerryScapeBackend
 
 			save.CurrentMana = json.Int( "currentMana", -1 );
 
-			if ( json.TryGetProperty( "unlockedSpells", out var unlockedSpellsEl ) && unlockedSpellsEl.ValueKind == JsonValueKind.Array )
+			if ( json.TryGetProperty( "unlockedSpells", out var unlockedSpellsEl ) )
 			{
-				foreach ( var el in unlockedSpellsEl.EnumerateArray() )
+				JsonElement? unlockedArr = null;
+				if ( unlockedSpellsEl.ValueKind == JsonValueKind.Array )
 				{
-					if ( el.ValueKind == JsonValueKind.String )
-						save.UnlockedSpells.Add( el.GetString() );
+					unlockedArr = unlockedSpellsEl;
 				}
-			}
-
-			if ( json.TryGetProperty( "spellSlots", out var spellSlotsEl ) )
-			{
-				JsonElement? slotsObj = null;
-				if ( spellSlotsEl.ValueKind == JsonValueKind.Object )
+				else if ( unlockedSpellsEl.ValueKind == JsonValueKind.String )
 				{
-					slotsObj = spellSlotsEl;
-				}
-				else if ( spellSlotsEl.ValueKind == JsonValueKind.String )
-				{
-					var raw = spellSlotsEl.GetString();
+					var raw = unlockedSpellsEl.GetString();
 					if ( !string.IsNullOrEmpty( raw ) )
 					{
-						try { slotsObj = JsonDocument.Parse( raw ).RootElement; }
+						try { unlockedArr = JsonDocument.Parse( raw ).RootElement; }
 						catch { }
 					}
 				}
 
-				if ( slotsObj.HasValue && slotsObj.Value.ValueKind == JsonValueKind.Object )
+				if ( unlockedArr.HasValue && unlockedArr.Value.ValueKind == JsonValueKind.Array )
 				{
-					foreach ( var prop in slotsObj.Value.EnumerateObject() )
+					foreach ( var el in unlockedArr.Value.EnumerateArray() )
 					{
-						if ( prop.Value.ValueKind == JsonValueKind.String )
-							save.SpellSlots[prop.Name] = prop.Value.GetString();
+						if ( el.ValueKind == JsonValueKind.String )
+							save.UnlockedSpells.Add( el.GetString() );
 					}
 				}
 			}
@@ -380,7 +371,7 @@ public static class TerryScapeBackend
 			string uniqueItemsJson = JsonSerializer.Serialize( BuildUniqueItemsPayload( data.UniqueItems ) );
 			string equippedSlotIndicesJson = JsonSerializer.Serialize( data.EquippedSlotIndices ?? new Dictionary<string, int>() );
 			string chestClaimsJson = JsonSerializer.Serialize( data.ChestClaims ?? new Dictionary<string, string>() );
-			string spellSlotsJson = JsonSerializer.Serialize( data.SpellSlots ?? new Dictionary<string, string>() );
+			string unlockedSpellsJson = JsonSerializer.Serialize( data.UnlockedSpells ?? new List<string>() );
 
 			var payload = new
 			{
@@ -410,8 +401,7 @@ public static class TerryScapeBackend
 				totalKills = data.TotalKills,
 				chestClaims = chestClaimsJson,
 				currentMana = data.CurrentMana,
-				unlockedSpells = data.UnlockedSpells ?? new List<string>(),
-				spellSlots = spellSlotsJson
+				unlockedSpells = unlockedSpellsJson
 			};
 
 			var result = await CallEndpointWithRetry( "save-player", payload, SaveMaxAttempts );

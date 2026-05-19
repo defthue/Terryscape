@@ -625,7 +625,7 @@ public sealed class Boss : Component
 		CombatStyle playerStyle = CombatTriangle.GetStyleFromWeapon( playerWeaponDef );
 		float triangleMult = CombatTriangle.GetDealMultiplier( CombatStyle, playerStyle );
 
-		float armorValue = playerInventory != null ? CombatTriangle.GetEffectiveArmorValue( CombatStyle, playerInventory ) : 0f;
+		float armorValue = playerInventory != null ? CombatTriangle.GetEffectiveArmorValue( playerInventory ) : 0f;
 		float armorReduction = CombatTriangle.GetArmorReduction( armorValue );
 
 		float defenceMult = playerSkills != null ? playerSkills.GetDefenceMultiplier() : 1f;
@@ -851,7 +851,7 @@ public sealed class Boss : Component
 		CombatStyle playerStyle = CombatTriangle.GetStyleFromWeapon( playerWeaponDef );
 		float triangleMult = CombatTriangle.GetDealMultiplier( CombatStyle.Magic, playerStyle );
 
-		float armorValue = playerInventory != null ? CombatTriangle.GetEffectiveArmorValue( CombatStyle.Magic, playerInventory ) : 0f;
+		float armorValue = playerInventory != null ? CombatTriangle.GetEffectiveArmorValue( playerInventory ) : 0f;
 		float armorReduction = CombatTriangle.GetArmorReduction( armorValue );
 
 		float defenceMult = playerSkills != null ? playerSkills.GetDefenceMultiplier() : 1f;

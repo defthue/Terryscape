@@ -31,7 +31,7 @@ public static class ShopDefaults
 		switch ( id )
 		{
 			case ShopId.GeneralStore:
-				list.Add( new DefaultOffer { Item = ItemId.LesserHealingPotion, Price = 5 } );
+				list.Add( new DefaultOffer { Item = ItemId.LesserHealingPotion, Price = 50 } );
 				list.Add( new DefaultOffer { Item = ItemId.LesserManaPotion, Price = 5 } );
 				list.Add( new DefaultOffer { Item = ItemId.RoughFiber, Price = 3 } );
 				list.Add( new DefaultOffer { Item = ItemId.MonsterHide, Price = 4 } );

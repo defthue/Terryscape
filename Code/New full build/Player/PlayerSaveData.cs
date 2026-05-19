@@ -41,7 +41,6 @@ public class PlayerSaveData
 
 	public int CurrentMana { get; set; } = -1;
 	public List<string> UnlockedSpells { get; set; } = new();
-	public Dictionary<string, string> SpellSlots { get; set; } = new();
 
 	public class SkillEntry
 	{
@@ -54,6 +53,14 @@ public class PlayerSaveData
 		public string ItemId { get; set; } = "None";
 		public string Enchantment { get; set; } = "None";
 		public float EnchantmentPercent { get; set; } = 0f;
+
+		public string Socket1ItemId { get; set; } = "None";
+		public string Socket1Enchantment { get; set; } = "None";
+		public float Socket1Percent { get; set; } = 0f;
+
+		public string Socket2ItemId { get; set; } = "None";
+		public string Socket2Enchantment { get; set; } = "None";
+		public float Socket2Percent { get; set; } = 0f;
 	}
 
 	public class InventorySlotEntry
@@ -64,5 +71,13 @@ public class PlayerSaveData
 		public bool IsUnique { get; set; } = false;
 		public string Enchantment { get; set; } = "None";
 		public float EnchantmentPercent { get; set; } = 0f;
+
+		public string Socket1ItemId { get; set; } = "None";
+		public string Socket1Enchantment { get; set; } = "None";
+		public float Socket1Percent { get; set; } = 0f;
+
+		public string Socket2ItemId { get; set; } = "None";
+		public string Socket2Enchantment { get; set; } = "None";
+		public float Socket2Percent { get; set; } = 0f;
 	}
 }
