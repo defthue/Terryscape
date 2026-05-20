@@ -1,0 +1,39 @@
+{
+  "slug": "save-progression",
+  "name": "Save Progression",
+  "method": "POST",
+  "description": "Writes recipes, stones, quests, spells, and chest claim data",
+  "enabled": true,
+  "input": {
+    "type": "object",
+    "properties": {
+      "recipes": { "type": "array" },
+      "stones": { "type": "array" },
+      "quests": { "type": "array" },
+      "discoveredQuests": { "type": "array" },
+      "unlockedSpells": { "type": "array" },
+      "chestClaims": { "type": "object" }
+    },
+    "required": []
+  },
+  "steps": [
+    {
+      "id": "save",
+      "type": "write",
+      "collection": "progression",
+      "key": "{{steamId}}_default",
+      "ops": [
+        { "op": "set", "path": "recipes", "value": "{{input.recipes}}" },
+        { "op": "set", "path": "stones", "value": "{{input.stones}}" },
+        { "op": "set", "path": "quests", "value": "{{input.quests}}" },
+        { "op": "set", "path": "discoveredQuests", "value": "{{input.discoveredQuests}}" },
+        { "op": "set", "path": "unlockedSpells", "value": "{{input.unlockedSpells}}" },
+        { "op": "set", "path": "chestClaims", "value": "{{input.chestClaims}}" }
+      ]
+    }
+  ],
+  "response": {
+    "status": 200,
+    "body": { "ok": true }
+  }
+}

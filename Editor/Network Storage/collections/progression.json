@@ -1,0 +1,20 @@
+{
+  "name": "progression",
+  "description": "Unlocks, quests, recipes, stones, spells, and chest claim timestamps",
+  "collectionType": "per-steamid",
+  "accessMode": "public",
+  "maxRecords": 1,
+  "allowRecordDelete": false,
+  "requireSaveVersion": false,
+  "rateLimits": { "mode": "none" },
+  "rateLimitAction": "reject",
+  "webhookOnRateLimit": false,
+  "schema": {
+    "recipes": { "type": "array", "default": [] },
+    "stones": { "type": "array", "default": [] },
+    "quests": { "type": "array", "default": [] },
+    "discoveredQuests": { "type": "array", "default": [] },
+    "unlockedSpells": { "type": "array", "default": [] },
+    "chestClaims": { "type": "object", "default": {} }
+  }
+}

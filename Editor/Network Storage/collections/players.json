@@ -1,9 +1,27 @@
 {
   "name": "players",
-  "scope": "user",
+  "description": "Core player profile, stats, and meta fields",
+  "collectionType": "per-steamid",
+  "accessMode": "public",
+  "maxRecords": 1,
+  "allowRecordDelete": false,
+  "requireSaveVersion": false,
+  "rateLimits": { "mode": "none" },
+  "rateLimitAction": "reject",
+  "webhookOnRateLimit": false,
   "schema": {
+    "version": { "type": "number", "default": 1 },
+    "savedAt": { "type": "string", "default": "" },
+    "playerName": { "type": "string", "default": "" },
     "currency": { "type": "number", "default": 0 },
-    "xp": { "type": "number", "default": 0 },
-    "level": { "type": "number", "default": 1 }
+    "currentMana": { "type": "number", "default": -1 },
+    "totalLevel": { "type": "number", "default": 0 },
+    "totalGold": { "type": "number", "default": 0 },
+    "totalKills": { "type": "number", "default": 0 },
+    "nodesMined": { "type": "number", "default": 0 },
+    "inventoryExpansions": { "type": "number", "default": 0 },
+    "equippedAmmoId": { "type": "string", "default": "None" },
+    "equippedAmmoQty": { "type": "number", "default": 0 },
+    "equippedAmmoSlotIndex": { "type": "number", "default": 0 }
   }
 }

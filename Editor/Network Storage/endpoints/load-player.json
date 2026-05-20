@@ -1,0 +1,31 @@
+{
+  "slug": "load-player",
+  "name": "Load Player",
+  "method": "GET",
+  "description": "Reads all 8 collections and returns the merged player state",
+  "enabled": true,
+  "steps": [
+    { "id": "players", "type": "read", "collection": "players", "key": "{{steamId}}_default" },
+    { "id": "skills", "type": "read", "collection": "skills", "key": "{{steamId}}_default" },
+    { "id": "inventory", "type": "read", "collection": "inventory", "key": "{{steamId}}_default" },
+    { "id": "equipment", "type": "read", "collection": "equipment", "key": "{{steamId}}_default" },
+    { "id": "bank", "type": "read", "collection": "bank", "key": "{{steamId}}_default" },
+    { "id": "bank_unique", "type": "read", "collection": "bank_unique", "key": "{{steamId}}_default" },
+    { "id": "progression", "type": "read", "collection": "progression", "key": "{{steamId}}_default" },
+    { "id": "kills", "type": "read", "collection": "kills", "key": "{{steamId}}_default" }
+  ],
+  "response": {
+    "status": 200,
+    "body": {
+      "ok": true,
+      "players": "{{players}}",
+      "skills": "{{skills}}",
+      "inventory": "{{inventory}}",
+      "equipment": "{{equipment}}",
+      "bank": "{{bank}}",
+      "bank_unique": "{{bank_unique}}",
+      "progression": "{{progression}}",
+      "kills": "{{kills}}"
+    }
+  }
+}

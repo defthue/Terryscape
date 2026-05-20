@@ -25,25 +25,54 @@
 
 							<div class="welcome-controls-block">
 								<div class="welcome-controls-title">Basic Controls</div>
-								<div class="welcome-control-row">
-									<div class="welcome-key">Q</div>
-									<div class="welcome-action">Open Inventory</div>
-								</div>
-								<div class="welcome-control-row">
-									<div class="welcome-key">E</div>
-									<div class="welcome-action">Interact</div>
-								</div>
+
 								<div class="welcome-control-row">
 									<div class="welcome-key">LEFT CLICK</div>
 									<div class="welcome-action">Attack / Gather</div>
+								</div>
+								<div class="welcome-control-row">
+									<div class="welcome-key">RIGHT CLICK</div>
+									<div class="welcome-action">Secondary attack / cast spell</div>
+								</div>
+								<div class="welcome-control-row">
+									<div class="welcome-key">E</div>
+									<div class="welcome-action">Interact with NPCs, stations, chests</div>
+								</div>
+								<div class="welcome-control-row">
+									<div class="welcome-key">Q</div>
+									<div class="welcome-action">Open / Close Inventory</div>
+								</div>
+								<div class="welcome-control-row">
+									<div class="welcome-key">F</div>
+									<div class="welcome-action">Cycle hotbar tools and weapons</div>
+								</div>
+								<div class="welcome-control-row">
+									<div class="welcome-key">1 - 5</div>
+									<div class="welcome-action">Equip hotbar slot</div>
 								</div>
 								<div class="welcome-control-row">
 									<div class="welcome-key">T</div>
 									<div class="welcome-action">Open Chat</div>
 								</div>
 								<div class="welcome-control-row">
+									<div class="welcome-key">M</div>
+									<div class="welcome-action">Open World Map</div>
+								</div>
+								<div class="welcome-control-row">
+									<div class="welcome-key">J</div>
+									<div class="welcome-action">Quest Journal</div>
+								</div>
+								<div class="welcome-control-row">
+									<div class="welcome-key">B</div>
+									<div class="welcome-action">Spellbook</div>
+								</div>
+								<div class="welcome-control-row">
 									<div class="welcome-key">C</div>
 									<div class="welcome-action">Switch First / Third Person View</div>
+								</div>
+								<div class="welcome-control-row">
+									<div class="welcome-key">H</div>
+									<div class="welcome-action">Open this Help guide</div>
 								</div>
 								<div class="welcome-control-row">
 									<div class="welcome-key">WASD</div>
@@ -52,14 +81,6 @@
 								<div class="welcome-control-row">
 									<div class="welcome-key">SPACE</div>
 									<div class="welcome-action">Jump</div>
-								</div>
-								<div class="welcome-control-row">
-									<div class="welcome-key">M</div>
-									<div class="welcome-action">Open World Map</div>
-								</div>
-								<div class="welcome-control-row">
-									<div class="welcome-key">H</div>
-									<div class="welcome-action">Open Help / Controls</div>
 								</div>
 							</div>
 						</div>
@@ -245,9 +266,14 @@
 		if ( Input.Pressed( "Help" ) )
 		{
 			if ( IsOpen )
+			{
 				OnCloseClick();
+			}
 			else
+			{
 				IsOpen = true;
+				Mouse.Visibility = MouseVisibility.Visible;
+			}
 		}
 	}
 
@@ -282,6 +308,7 @@
 	void OnCloseClick()
 	{
 		IsOpen = false;
+		Mouse.Visibility = MouseVisibility.Hidden;
 
 		PlayerGatherResource.ForceCloseUI();
 	}

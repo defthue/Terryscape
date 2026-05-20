@@ -1,0 +1,15 @@
+{
+  "name": "inventory",
+  "description": "Carried items in inventory slots",
+  "collectionType": "per-steamid",
+  "accessMode": "public",
+  "maxRecords": 1,
+  "allowRecordDelete": false,
+  "requireSaveVersion": false,
+  "rateLimits": { "mode": "none" },
+  "rateLimitAction": "reject",
+  "webhookOnRateLimit": false,
+  "schema": {
+    "slots": { "type": "array", "default": [] }
+  }
+}

@@ -1,0 +1,148 @@
+{
+  "slug": "save-all",
+  "name": "Save All",
+  "method": "POST",
+  "description": "Writes every collection in one atomic call and updates the global leaderboard entry. Used for autosave and logout.",
+  "enabled": true,
+  "input": {
+    "type": "object",
+    "properties": {
+      "savedAt": { "type": "string" },
+      "playerName": { "type": "string" },
+      "currency": { "type": "number" },
+      "currentMana": { "type": "number" },
+      "totalLevel": { "type": "number" },
+      "totalGold": { "type": "number" },
+      "totalKills": { "type": "number" },
+      "nodesMined": { "type": "number" },
+      "inventoryExpansions": { "type": "number" },
+      "equippedAmmoId": { "type": "string" },
+      "equippedAmmoQty": { "type": "number" },
+      "equippedAmmoSlotIndex": { "type": "number" },
+      "skills": { "type": "object" },
+      "slots": { "type": "array" },
+      "equipped": { "type": "object" },
+      "equippedSlotIndices": { "type": "object" },
+      "bankStackables": { "type": "object" },
+      "bankUnique": { "type": "array" },
+      "recipes": { "type": "array" },
+      "stones": { "type": "array" },
+      "quests": { "type": "array" },
+      "discoveredQuests": { "type": "array" },
+      "unlockedSpells": { "type": "array" },
+      "chestClaims": { "type": "object" },
+      "kills": { "type": "object" }
+    },
+    "required": []
+  },
+  "steps": [
+    {
+      "id": "save_players",
+      "type": "write",
+      "collection": "players",
+      "key": "{{steamId}}_default",
+      "ops": [
+        { "op": "set", "path": "savedAt", "value": "{{input.savedAt}}" },
+        { "op": "set", "path": "playerName", "value": "{{input.playerName}}" },
+        { "op": "set", "path": "currency", "value": "{{input.currency}}" },
+        { "op": "set", "path": "currentMana", "value": "{{input.currentMana}}" },
+        { "op": "set", "path": "totalLevel", "value": "{{input.totalLevel}}" },
+        { "op": "set", "path": "totalGold", "value": "{{input.totalGold}}" },
+        { "op": "set", "path": "totalKills", "value": "{{input.totalKills}}" },
+        { "op": "set", "path": "nodesMined", "value": "{{input.nodesMined}}" },
+        { "op": "set", "path": "inventoryExpansions", "value": "{{input.inventoryExpansions}}" },
+        { "op": "set", "path": "equippedAmmoId", "value": "{{input.equippedAmmoId}}" },
+        { "op": "set", "path": "equippedAmmoQty", "value": "{{input.equippedAmmoQty}}" },
+        { "op": "set", "path": "equippedAmmoSlotIndex", "value": "{{input.equippedAmmoSlotIndex}}" }
+      ]
+    },
+    {
+      "id": "save_skills",
+      "type": "write",
+      "collection": "skills",
+      "key": "{{steamId}}_default",
+      "ops": [
+        { "op": "set", "path": "entries", "value": "{{input.skills}}" }
+      ]
+    },
+    {
+      "id": "save_inventory",
+      "type": "write",
+      "collection": "inventory",
+      "key": "{{steamId}}_default",
+      "ops": [
+        { "op": "set", "path": "slots", "value": "{{input.slots}}" }
+      ]
+    },
+    {
+      "id": "save_equipment",
+      "type": "write",
+      "collection": "equipment",
+      "key": "{{steamId}}_default",
+      "ops": [
+        { "op": "set", "path": "equipped", "value": "{{input.equipped}}" },
+        { "op": "set", "path": "equippedSlotIndices", "value": "{{input.equippedSlotIndices}}" }
+      ]
+    },
+    {
+      "id": "save_bank",
+      "type": "write",
+      "collection": "bank",
+      "key": "{{steamId}}_default",
+      "ops": [
+        { "op": "set", "path": "stackables", "value": "{{input.bankStackables}}" }
+      ]
+    },
+    {
+      "id": "save_bank_unique",
+      "type": "write",
+      "collection": "bank_unique",
+      "key": "{{steamId}}_default",
+      "ops": [
+        { "op": "set", "path": "items", "value": "{{input.bankUnique}}" }
+      ]
+    },
+    {
+      "id": "save_progression",
+      "type": "write",
+      "collection": "progression",
+      "key": "{{steamId}}_default",
+      "ops": [
+        { "op": "set", "path": "recipes", "value": "{{input.recipes}}" },
+        { "op": "set", "path": "stones", "value": "{{input.stones}}" },
+        { "op": "set", "path": "quests", "value": "{{input.quests}}" },
+        { "op": "set", "path": "discoveredQuests", "value": "{{input.discoveredQuests}}" },
+        { "op": "set", "path": "unlockedSpells", "value": "{{input.unlockedSpells}}" },
+        { "op": "set", "path": "chestClaims", "value": "{{input.chestClaims}}" }
+      ]
+    },
+    {
+      "id": "save_kills",
+      "type": "write",
+      "collection": "kills",
+      "key": "{{steamId}}_default",
+      "ops": [
+        { "op": "set", "path": "counts", "value": "{{input.kills}}" }
+      ]
+    },
+    {
+      "id": "save_leaderboard",
+      "type": "write",
+      "collection": "leaderboard_global",
+      "key": "default",
+      "ops": [
+        { "op": "set", "path": "entriesByPlayer.{{steamId}}.steamId", "value": "{{steamId}}" },
+        { "op": "set", "path": "entriesByPlayer.{{steamId}}.playerName", "value": "{{input.playerName}}" },
+        { "op": "set", "path": "entriesByPlayer.{{steamId}}.totalLevel", "value": "{{input.totalLevel}}" },
+        { "op": "set", "path": "entriesByPlayer.{{steamId}}.totalGold", "value": "{{input.totalGold}}" },
+        { "op": "set", "path": "entriesByPlayer.{{steamId}}.totalKills", "value": "{{input.totalKills}}" },
+        { "op": "set", "path": "entriesByPlayer.{{steamId}}.nodesMined", "value": "{{input.nodesMined}}" },
+        { "op": "set", "path": "entriesByPlayer.{{steamId}}.updatedAt", "value": "{{input.savedAt}}" }
+      ]
+    }
+  ],
+  "response": {
+    "status": 200,
+    "body": { "ok": true }
+  }
+}

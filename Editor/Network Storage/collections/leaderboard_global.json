@@ -1,0 +1,15 @@
+{
+  "name": "leaderboard_global",
+  "description": "Global aggregator record holding every player's leaderboard summary, keyed by steamId",
+  "collectionType": "global",
+  "accessMode": "public",
+  "maxRecords": 1,
+  "allowRecordDelete": false,
+  "requireSaveVersion": false,
+  "rateLimits": { "mode": "none" },
+  "rateLimitAction": "reject",
+  "webhookOnRateLimit": false,
+  "schema": {
+    "entriesByPlayer": { "type": "object", "default": {} }
+  }
+}

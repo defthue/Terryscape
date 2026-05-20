@@ -92,6 +92,7 @@ public sealed class PlayerPersistence : Component
 		{
 			Log.Warning( "[PlayerPersistence] Load failed — saves are blocked for this session to prevent overwriting real data with empty state. Reconnect or restart to retry." );
 			GameLog.Add( "Could not load your save. Please rejoin the server — playing now will not save your progress.", "#e87878" );
+			GameManager.Instance?.AddLocalChatMessage( "[Save] Load failed. Please rejoin — playing now will not save progress." );
 			return;
 		}
 
@@ -185,12 +186,31 @@ public sealed class PlayerPersistence : Component
 
 	public async System.Threading.Tasks.Task SaveAsync()
 	{
+		var data = BuildSaveData();
+		if ( data == null )
+			return;
+
+		var ok = await TerryScapeBackend.SaveAllAsync( data );
+		if ( ok )
+		{
+			Log.Info( "[PlayerPersistence] Save successful." );
+		}
+		else
+		{
+			Log.Warning( "[PlayerPersistence] Save failed." );
+			GameLog.Add( "Save failed. Your recent progress may not be stored — please try again or rejoin.", "#e87878" );
+			GameManager.Instance?.AddLocalChatMessage( "[Save] Save failed. Recent progress may be lost — please try again or rejoin." );
+		}
+	}
+
+	PlayerSaveData BuildSaveData()
+	{
 		var inventory = FindComponentInPlayer<Inventory>();
 		var skills = FindComponentInPlayer<Skills>();
 		var bank = FindComponentInPlayer<BankStorage>();
 
 		if ( inventory == null || skills == null )
-			return;
+			return null;
 
 		var data = new PlayerSaveData
 		{
@@ -222,9 +242,7 @@ public sealed class PlayerPersistence : Component
 			+ ( bank != null ? bank.GetItemCount( ItemId.GoldCoin ) : 0 );
 		data.TotalKills = inventory.GetTotalKills();
 
-		var ok = await TerryScapeBackend.SaveAsync( data );
-		if ( ok )
-			Log.Info( "[PlayerPersistence] Save successful." );
+		return data;
 	}
 
 	static int ComputeTotalLevel( System.Collections.Generic.Dictionary<string, PlayerSaveData.SkillEntry> skills )

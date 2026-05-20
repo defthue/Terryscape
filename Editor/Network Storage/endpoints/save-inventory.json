@@ -1,0 +1,41 @@
+{
+  "slug": "save-inventory",
+  "name": "Save Inventory",
+  "method": "POST",
+  "description": "Writes the inventory slots and equipment state in one call",
+  "enabled": true,
+  "input": {
+    "type": "object",
+    "properties": {
+      "slots": { "type": "array" },
+      "equipped": { "type": "object" },
+      "equippedSlotIndices": { "type": "object" }
+    },
+    "required": []
+  },
+  "steps": [
+    {
+      "id": "save_inv",
+      "type": "write",
+      "collection": "inventory",
+      "key": "{{steamId}}_default",
+      "ops": [
+        { "op": "set", "path": "slots", "value": "{{input.slots}}" }
+      ]
+    },
+    {
+      "id": "save_eq",
+      "type": "write",
+      "collection": "equipment",
+      "key": "{{steamId}}_default",
+      "ops": [
+        { "op": "set", "path": "equipped", "value": "{{input.equipped}}" },
+        { "op": "set", "path": "equippedSlotIndices", "value": "{{input.equippedSlotIndices}}" }
+      ]
+    }
+  ],
+  "response": {
+    "status": 200,
+    "body": { "ok": true }
+  }
+}

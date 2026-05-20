@@ -6,10 +6,6 @@ using Sandbox;
 
 public static class LeaderboardBackend
 {
-	/// <summary>
-	/// One row in the leaderboard, parsed from the player_data record. We pull only
-	/// the fields needed for sorting and display — not the full save payload.
-	/// </summary>
 	public class Entry
 	{
 		public string PlayerName { get; set; } = "";
@@ -19,23 +15,6 @@ public static class LeaderboardBackend
 		public int TotalKills { get; set; }
 	}
 
-	/// <summary>
-	/// Fetches every player record from the cloud and returns them as a flat list.
-	/// The HUD sorts client-side by whichever stat the player is viewing.
-	/// Returns an empty list on any failure.
-	///
-	/// IMPORTANT: We compute TotalLevel/TotalGold/TotalKills client-side from the raw
-	/// skills/stackables/kills fields rather than reading the denormalized totalLevel/
-	/// totalGold/totalKills fields directly. Reason: those denormalized fields were
-	/// added recently — older save records don't have them. Computing client-side
-	/// means old records still show accurate stats without forcing every player to
-	/// re-save first.
-	///
-	/// NodesMined is the exception — we read it from the field directly because there's
-	/// no fallback way to compute lifetime nodes mined from existing fields. Old records
-	/// will show 0 nodes mined, which is correct behavior since we only just started
-	/// tracking it.
-	/// </summary>
 	public static async Task<List<Entry>> FetchAllAsync()
 	{
 		var entries = new List<Entry>();
@@ -53,25 +32,33 @@ public static class LeaderboardBackend
 
 			var json = result.Value;
 
-			if ( !json.TryGetProperty( "players", out var playersEl ) || playersEl.ValueKind != JsonValueKind.Array )
+			if ( !json.TryGetProperty( "entriesByPlayer", out var byPlayerEl ) )
 			{
-				Log.Warning( "[LeaderboardBackend] response missing 'players' array." );
+				Log.Warning( "[LeaderboardBackend] response missing 'entriesByPlayer'." );
 				return entries;
 			}
 
-			foreach ( var record in playersEl.EnumerateArray() )
+			var byPlayer = UnwrapToObject( byPlayerEl );
+			if ( !byPlayer.HasValue )
 			{
+				Log.Warning( "[LeaderboardBackend] 'entriesByPlayer' is not an object." );
+				return entries;
+			}
+
+			foreach ( var prop in byPlayer.Value.EnumerateObject() )
+			{
+				if ( prop.Value.ValueKind != JsonValueKind.Object )
+					continue;
+
 				var entry = new Entry
 				{
-					PlayerName = record.Str( "playerName", "Unknown" ),
-					TotalLevel = ComputeTotalLevel( record ),
-					TotalGold = ComputeTotalGold( record ),
-					NodesMined = record.Int( "nodesMined", 0 ),
-					TotalKills = ComputeTotalKills( record )
+					PlayerName = prop.Value.Str( "playerName", "Unknown" ),
+					TotalLevel = prop.Value.Int( "totalLevel", 0 ),
+					TotalGold = prop.Value.Int( "totalGold", 0 ),
+					NodesMined = prop.Value.Int( "nodesMined", 0 ),
+					TotalKills = prop.Value.Int( "totalKills", 0 )
 				};
 
-				// Skip records with empty player names — these are usually stale or
-				// half-initialized rows that would clutter the leaderboard.
 				if ( string.IsNullOrEmpty( entry.PlayerName ) )
 					continue;
 
@@ -88,63 +75,26 @@ public static class LeaderboardBackend
 		return entries;
 	}
 
-	// Sums all skill levels from the "skills" object in a player record.
-	// Each skill is an object with "level" and "xp" properties.
-	static int ComputeTotalLevel( JsonElement record )
+	static JsonElement? UnwrapToObject( JsonElement el )
 	{
-		if ( !record.TryGetProperty( "skills", out var skillsEl ) || skillsEl.ValueKind != JsonValueKind.Object )
-			return 0;
+		if ( el.ValueKind == JsonValueKind.Object )
+			return el;
 
-		int total = 0;
-		foreach ( var skill in skillsEl.EnumerateObject() )
+		if ( el.ValueKind == JsonValueKind.String )
 		{
-			if ( skill.Value.ValueKind != JsonValueKind.Object )
-				continue;
+			var raw = el.GetString();
+			if ( string.IsNullOrEmpty( raw ) )
+				return null;
 
-			if ( skill.Value.TryGetProperty( "level", out var levelEl ) && levelEl.ValueKind == JsonValueKind.Number )
+			try
 			{
-				total += levelEl.GetInt32();
+				var parsed = JsonDocument.Parse( raw ).RootElement;
+				if ( parsed.ValueKind == JsonValueKind.Object )
+					return parsed;
 			}
-		}
-		return total;
-	}
-
-	// Sums the GoldCoin entries from both "stackables" (pocket) and "bank" maps.
-	// Total gold on the leaderboard reflects everything the player owns, regardless
-	// of where it's currently stored.
-	static int ComputeTotalGold( JsonElement record )
-	{
-		int total = 0;
-
-		if ( record.TryGetProperty( "stackables", out var stackablesEl ) && stackablesEl.ValueKind == JsonValueKind.Object )
-		{
-			if ( stackablesEl.TryGetProperty( "GoldCoin", out var pocketGoldEl ) && pocketGoldEl.ValueKind == JsonValueKind.Number )
-				total += pocketGoldEl.GetInt32();
+			catch { }
 		}
 
-		if ( record.TryGetProperty( "bank", out var bankEl ) && bankEl.ValueKind == JsonValueKind.Object )
-		{
-			if ( bankEl.TryGetProperty( "GoldCoin", out var bankGoldEl ) && bankGoldEl.ValueKind == JsonValueKind.Number )
-				total += bankGoldEl.GetInt32();
-		}
-
-		return total;
-	}
-
-	// Sums all kill counts across every monster type from the "kills" object.
-	static int ComputeTotalKills( JsonElement record )
-	{
-		if ( !record.TryGetProperty( "kills", out var killsEl ) || killsEl.ValueKind != JsonValueKind.Object )
-			return 0;
-
-		int total = 0;
-		foreach ( var kill in killsEl.EnumerateObject() )
-		{
-			if ( kill.Value.ValueKind == JsonValueKind.Number )
-			{
-				total += kill.Value.GetInt32();
-			}
-		}
-		return total;
+		return null;
 	}
 }

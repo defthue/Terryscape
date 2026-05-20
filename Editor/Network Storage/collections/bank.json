@@ -1,0 +1,15 @@
+{
+  "name": "bank",
+  "description": "Banked stackable items by item id",
+  "collectionType": "per-steamid",
+  "accessMode": "public",
+  "maxRecords": 1,
+  "allowRecordDelete": false,
+  "requireSaveVersion": false,
+  "rateLimits": { "mode": "none" },
+  "rateLimitAction": "reject",
+  "webhookOnRateLimit": false,
+  "schema": {
+    "stackables": { "type": "object", "default": {} }
+  }
+}

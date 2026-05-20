@@ -1,0 +1,16 @@
+{
+  "name": "equipment",
+  "description": "Currently equipped items per slot with socket data",
+  "collectionType": "per-steamid",
+  "accessMode": "public",
+  "maxRecords": 1,
+  "allowRecordDelete": false,
+  "requireSaveVersion": false,
+  "rateLimits": { "mode": "none" },
+  "rateLimitAction": "reject",
+  "webhookOnRateLimit": false,
+  "schema": {
+    "equipped": { "type": "object", "default": {} },
+    "equippedSlotIndices": { "type": "object", "default": {} }
+  }
+}

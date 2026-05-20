@@ -1,0 +1,39 @@
+{
+  "slug": "save-bank",
+  "name": "Save Bank",
+  "method": "POST",
+  "description": "Writes the bank stackables and bank unique items collections",
+  "enabled": true,
+  "input": {
+    "type": "object",
+    "properties": {
+      "stackables": { "type": "object" },
+      "items": { "type": "array" }
+    },
+    "required": []
+  },
+  "steps": [
+    {
+      "id": "save_bank",
+      "type": "write",
+      "collection": "bank",
+      "key": "{{steamId}}_default",
+      "ops": [
+        { "op": "set", "path": "stackables", "value": "{{input.stackables}}" }
+      ]
+    },
+    {
+      "id": "save_bank_unique",
+      "type": "write",
+      "collection": "bank_unique",
+      "key": "{{steamId}}_default",
+      "ops": [
+        { "op": "set", "path": "items", "value": "{{input.items}}" }
+      ]
+    }
+  ],
+  "response": {
+    "status": 200,
+    "body": { "ok": true }
+  }
+}
