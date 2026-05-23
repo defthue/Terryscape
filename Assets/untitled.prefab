@@ -1,0 +1,2030 @@
+{
+  "RootObject": {
+    "__guid": "a4ba3f81-0eec-4e6a-a04e-63bc50e6effb",
+    "__version": 2,
+    "Flags": 0,
+    "Name": "prefaberino",
+    "Position": "0,0,0",
+    "Rotation": "0,0,0,1",
+    "Scale": "1,1,1",
+    "Tags": "",
+    "Enabled": true,
+    "NetworkMode": 2,
+    "NetworkFlags": 0,
+    "NetworkOrphaned": 0,
+    "NetworkTransmit": true,
+    "OwnerTransfer": 1,
+    "Components": [],
+    "Children": [
+      {
+        "__guid": "9a831be9-e725-4264-91f2-5df869aa7b37",
+        "__version": 2,
+        "Flags": 0,
+        "Name": "stone_1 (50)",
+        "Position": "277.848633,-122.931946,-57.9087067",
+        "Rotation": "0,0,0.230558991,0.973058343",
+        "Scale": "2,2,2",
+        "Tags": "",
+        "Enabled": true,
+        "NetworkMode": 2,
+        "NetworkFlags": 0,
+        "NetworkOrphaned": 0,
+        "NetworkTransmit": true,
+        "OwnerTransfer": 1,
+        "Components": [
+          {
+            "__type": "Sandbox.Prop",
+            "__guid": "9c8514b3-b8f5-4d54-a433-d1f27206977e",
+            "__enabled": true,
+            "Flags": 0,
+            "BodyGroups": 18446744073709551615,
+            "Health": 0,
+            "IsStatic": true,
+            "MaterialGroup": null,
+            "Model": "models/asset-quest/halloween/stone_1.vmdl",
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "OnPropBreak": null,
+            "OnPropTakeDamage": null,
+            "StartAsleep": false,
+            "Tint": "1,1,1,1"
+          },
+          {
+            "__type": "Sandbox.ModelRenderer",
+            "__guid": "479e5143-3ee9-4960-88f6-2482fda6eb52",
+            "__enabled": true,
+            "Flags": 0,
+            "BodyGroups": 18446744073709551615,
+            "CreateAttachments": false,
+            "LodOverride": null,
+            "MaterialGroup": null,
+            "MaterialOverride": null,
+            "Materials": null,
+            "Model": "models/asset-quest/halloween/stone_1.vmdl",
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "RenderOptions": {
+              "GameLayer": true,
+              "OverlayLayer": false,
+              "BloomLayer": false,
+              "AfterUILayer": false
+            },
+            "RenderType": "On",
+            "Tint": "1,1,1,1"
+          },
+          {
+            "__type": "Sandbox.ModelCollider",
+            "__guid": "432e625e-6d4a-427e-9bb4-2a7983bc5103",
+            "__enabled": true,
+            "Flags": 0,
+            "ColliderFlags": 0,
+            "Elasticity": null,
+            "Friction": null,
+            "IsTrigger": false,
+            "Model": "models/asset-quest/halloween/stone_1.vmdl",
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "OnObjectTriggerEnter": null,
+            "OnObjectTriggerExit": null,
+            "OnTriggerEnter": null,
+            "OnTriggerExit": null,
+            "RollingResistance": null,
+            "Static": true,
+            "Surface": null,
+            "SurfaceVelocity": "0,0,0"
+          }
+        ],
+        "Children": []
+      },
+      {
+        "__guid": "dc877104-7ab6-4deb-8bb0-8423484d8983",
+        "__version": 2,
+        "Flags": 0,
+        "Name": "stone_1 (55)",
+        "Position": "277.207275,-158.139618,-57.9087677",
+        "Rotation": "0,0,0.0205931403,0.999787927",
+        "Scale": "2,2,2",
+        "Tags": "",
+        "Enabled": true,
+        "NetworkMode": 2,
+        "NetworkFlags": 0,
+        "NetworkOrphaned": 0,
+        "NetworkTransmit": true,
+        "OwnerTransfer": 1,
+        "Components": [
+          {
+            "__type": "Sandbox.Prop",
+            "__guid": "4f867f3f-75f8-4a9c-a7cb-df8a4ea79558",
+            "__enabled": true,
+            "Flags": 0,
+            "BodyGroups": 18446744073709551615,
+            "Health": 0,
+            "IsStatic": true,
+            "MaterialGroup": null,
+            "Model": "models/asset-quest/halloween/stone_1.vmdl",
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "OnPropBreak": null,
+            "OnPropTakeDamage": null,
+            "StartAsleep": false,
+            "Tint": "1,1,1,1"
+          },
+          {
+            "__type": "Sandbox.ModelRenderer",
+            "__guid": "b7c3555c-74c1-45a8-b7db-a823d7beb621",
+            "__enabled": true,
+            "Flags": 0,
+            "BodyGroups": 18446744073709551615,
+            "CreateAttachments": false,
+            "LodOverride": null,
+            "MaterialGroup": null,
+            "MaterialOverride": null,
+            "Materials": null,
+            "Model": "models/asset-quest/halloween/stone_1.vmdl",
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "RenderOptions": {
+              "GameLayer": true,
+              "OverlayLayer": false,
+              "BloomLayer": false,
+              "AfterUILayer": false
+            },
+            "RenderType": "On",
+            "Tint": "1,1,1,1"
+          },
+          {
+            "__type": "Sandbox.ModelCollider",
+            "__guid": "6dc9aa0e-5083-4069-b0af-af47c1a8b132",
+            "__enabled": true,
+            "Flags": 0,
+            "ColliderFlags": 0,
+            "Elasticity": null,
+            "Friction": null,
+            "IsTrigger": false,
+            "Model": "models/asset-quest/halloween/stone_1.vmdl",
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "OnObjectTriggerEnter": null,
+            "OnObjectTriggerExit": null,
+            "OnTriggerEnter": null,
+            "OnTriggerExit": null,
+            "RollingResistance": null,
+            "Static": true,
+            "Surface": null,
+            "SurfaceVelocity": "0,0,0"
+          }
+        ],
+        "Children": []
+      },
+      {
+        "__guid": "3380b313-0c7f-482d-8978-35999ada22d5",
+        "__version": 2,
+        "Flags": 0,
+        "Name": "stone_1 (61)",
+        "Position": "277.849365,-122.932144,30.250946",
+        "Rotation": "0,0,0.230558991,0.973058343",
+        "Scale": "2,2,2",
+        "Tags": "",
+        "Enabled": true,
+        "NetworkMode": 2,
+        "NetworkFlags": 0,
+        "NetworkOrphaned": 0,
+        "NetworkTransmit": true,
+        "OwnerTransfer": 1,
+        "Components": [
+          {
+            "__type": "Sandbox.Prop",
+            "__guid": "36cd281f-a326-46da-ac66-98009e8ac295",
+            "__enabled": true,
+            "Flags": 0,
+            "BodyGroups": 18446744073709551615,
+            "Health": 0,
+            "IsStatic": true,
+            "MaterialGroup": null,
+            "Model": "models/asset-quest/halloween/stone_1.vmdl",
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "OnPropBreak": null,
+            "OnPropTakeDamage": null,
+            "StartAsleep": false,
+            "Tint": "1,1,1,1"
+          },
+          {
+            "__type": "Sandbox.ModelRenderer",
+            "__guid": "c9713a34-8938-4673-b64e-79ab45c49f46",
+            "__enabled": true,
+            "Flags": 0,
+            "BodyGroups": 18446744073709551615,
+            "CreateAttachments": false,
+            "LodOverride": null,
+            "MaterialGroup": null,
+            "MaterialOverride": null,
+            "Materials": null,
+            "Model": "models/asset-quest/halloween/stone_1.vmdl",
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "RenderOptions": {
+              "GameLayer": true,
+              "OverlayLayer": false,
+              "BloomLayer": false,
+              "AfterUILayer": false
+            },
+            "RenderType": "On",
+            "Tint": "1,1,1,1"
+          },
+          {
+            "__type": "Sandbox.ModelCollider",
+            "__guid": "79b9a5c2-ff4f-441d-9665-99fcf5f9131a",
+            "__enabled": true,
+            "Flags": 0,
+            "ColliderFlags": 0,
+            "Elasticity": null,
+            "Friction": null,
+            "IsTrigger": false,
+            "Model": "models/asset-quest/halloween/stone_1.vmdl",
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "OnObjectTriggerEnter": null,
+            "OnObjectTriggerExit": null,
+            "OnTriggerEnter": null,
+            "OnTriggerExit": null,
+            "RollingResistance": null,
+            "Static": true,
+            "Surface": null,
+            "SurfaceVelocity": "0,0,0"
+          }
+        ],
+        "Children": []
+      },
+      {
+        "__guid": "7ada5f59-897d-4b10-8a4a-18ee89bd4166",
+        "__version": 2,
+        "Flags": 0,
+        "Name": "stone_1 (60)",
+        "Position": "277.208008,-158.139816,30.250885",
+        "Rotation": "0,0,0.0205931403,0.999787927",
+        "Scale": "2,2,2",
+        "Tags": "",
+        "Enabled": true,
+        "NetworkMode": 2,
+        "NetworkFlags": 0,
+        "NetworkOrphaned": 0,
+        "NetworkTransmit": true,
+        "OwnerTransfer": 1,
+        "Components": [
+          {
+            "__type": "Sandbox.Prop",
+            "__guid": "3b109ff9-8316-4ce1-bb59-8c230409d5fa",
+            "__enabled": true,
+            "Flags": 0,
+            "BodyGroups": 18446744073709551615,
+            "Health": 0,
+            "IsStatic": true,
+            "MaterialGroup": null,
+            "Model": "models/asset-quest/halloween/stone_1.vmdl",
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "OnPropBreak": null,
+            "OnPropTakeDamage": null,
+            "StartAsleep": false,
+            "Tint": "1,1,1,1"
+          },
+          {
+            "__type": "Sandbox.ModelRenderer",
+            "__guid": "da7169e4-9087-4125-bea0-33fb18d2c159",
+            "__enabled": true,
+            "Flags": 0,
+            "BodyGroups": 18446744073709551615,
+            "CreateAttachments": false,
+            "LodOverride": null,
+            "MaterialGroup": null,
+            "MaterialOverride": null,
+            "Materials": null,
+            "Model": "models/asset-quest/halloween/stone_1.vmdl",
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "RenderOptions": {
+              "GameLayer": true,
+              "OverlayLayer": false,
+              "BloomLayer": false,
+              "AfterUILayer": false
+            },
+            "RenderType": "On",
+            "Tint": "1,1,1,1"
+          },
+          {
+            "__type": "Sandbox.ModelCollider",
+            "__guid": "63ab166d-d73a-4b4e-bcc2-6ee853b42941",
+            "__enabled": true,
+            "Flags": 0,
+            "ColliderFlags": 0,
+            "Elasticity": null,
+            "Friction": null,
+            "IsTrigger": false,
+            "Model": "models/asset-quest/halloween/stone_1.vmdl",
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "OnObjectTriggerEnter": null,
+            "OnObjectTriggerExit": null,
+            "OnTriggerEnter": null,
+            "OnTriggerExit": null,
+            "RollingResistance": null,
+            "Static": true,
+            "Surface": null,
+            "SurfaceVelocity": "0,0,0"
+          }
+        ],
+        "Children": []
+      },
+      {
+        "__guid": "5b3dd31c-f9ff-4010-b983-cb4379e48fa5",
+        "__version": 2,
+        "__Prefab": "high box metal fence.prefab",
+        "__PrefabInstancePatch": {
+          "AddedObjects": [
+            {
+              "Id": {
+                "Type": "Component",
+                "IdValue": "811465b2-722a-4ff8-b077-73ff52355ee0"
+              },
+              "Parent": {
+                "Type": "GameObject",
+                "IdValue": "6c5a4182-dc19-4b36-8eae-36194530182c"
+              },
+              "PreviousElement": {
+                "Type": "Component",
+                "IdValue": "721ee22a-ac78-438d-965b-f32dacaf85c1"
+              },
+              "ContainerProperty": "Components",
+              "IsContainerArray": true,
+              "Data": {
+                "__type": "Sandbox.ModelRenderer",
+                "__guid": "811465b2-722a-4ff8-b077-73ff52355ee0",
+                "__enabled": true,
+                "Flags": 0,
+                "BodyGroups": 18446744073709551615,
+                "CreateAttachments": false,
+                "LodOverride": null,
+                "MaterialGroup": null,
+                "MaterialOverride": null,
+                "Materials": null,
+                "Model": "models/sbox_props/metal_fences/metal_fence_panel/metal_fence_panel.vmdl",
+                "OnComponentDestroy": null,
+                "OnComponentDisabled": null,
+                "OnComponentEnabled": null,
+                "OnComponentFixedUpdate": null,
+                "OnComponentStart": null,
+                "OnComponentUpdate": null,
+                "RenderOptions": {
+                  "GameLayer": true,
+                  "OverlayLayer": false,
+                  "BloomLayer": false,
+                  "AfterUILayer": false
+                },
+                "RenderType": "On",
+                "Tint": "1,1,1,1"
+              }
+            },
+            {
+              "Id": {
+                "Type": "Component",
+                "IdValue": "c6a8f046-a421-4bdc-a6e6-d0b3221cab58"
+              },
+              "Parent": {
+                "Type": "GameObject",
+                "IdValue": "6c5a4182-dc19-4b36-8eae-36194530182c"
+              },
+              "PreviousElement": {
+                "Type": "Component",
+                "IdValue": "811465b2-722a-4ff8-b077-73ff52355ee0"
+              },
+              "ContainerProperty": "Components",
+              "IsContainerArray": true,
+              "Data": {
+                "__type": "Sandbox.ModelCollider",
+                "__guid": "c6a8f046-a421-4bdc-a6e6-d0b3221cab58",
+                "__enabled": true,
+                "Flags": 0,
+                "ColliderFlags": 0,
+                "Elasticity": null,
+                "Friction": null,
+                "IsTrigger": false,
+                "Model": "models/sbox_props/metal_fences/metal_fence_panel/metal_fence_panel.vmdl",
+                "OnComponentDestroy": null,
+                "OnComponentDisabled": null,
+                "OnComponentEnabled": null,
+                "OnComponentFixedUpdate": null,
+                "OnComponentStart": null,
+                "OnComponentUpdate": null,
+                "OnObjectTriggerEnter": null,
+                "OnObjectTriggerExit": null,
+                "OnTriggerEnter": null,
+                "OnTriggerExit": null,
+                "RollingResistance": null,
+                "Static": true,
+                "Surface": null,
+                "SurfaceVelocity": "0,0,0"
+              }
+            }
+          ],
+          "RemovedObjects": [
+            {
+              "Id": {
+                "Type": "Component",
+                "IdValue": "d350e0dc-366a-4cc1-9a82-dd842fde141d"
+              }
+            },
+            {
+              "Id": {
+                "Type": "Component",
+                "IdValue": "d9781342-bb33-4bc9-a7bf-f2b4f12c17ab"
+              }
+            }
+          ],
+          "PropertyOverrides": [
+            {
+              "Target": {
+                "Type": "GameObject",
+                "IdValue": "6c5a4182-dc19-4b36-8eae-36194530182c"
+              },
+              "Property": "Name",
+              "Value": "Object (191)"
+            },
+            {
+              "Target": {
+                "Type": "GameObject",
+                "IdValue": "6c5a4182-dc19-4b36-8eae-36194530182c"
+              },
+              "Property": "Position",
+              "Value": "273.419678,-159.546875,-37.9871826"
+            },
+            {
+              "Target": {
+                "Type": "GameObject",
+                "IdValue": "6c5a4182-dc19-4b36-8eae-36194530182c"
+              },
+              "Property": "Rotation",
+              "Value": "0,0,-0.661116242,0.75028348"
+            },
+            {
+              "Target": {
+                "Type": "GameObject",
+                "IdValue": "6c5a4182-dc19-4b36-8eae-36194530182c"
+              },
+              "Property": "Scale",
+              "Value": "0.5,0.5,0.889999807"
+            },
+            {
+              "Target": {
+                "Type": "Component",
+                "IdValue": "ea2c05d7-255c-4c10-868d-49bb3fc69fc2"
+              },
+              "Property": "IsStatic",
+              "Value": true
+            },
+            {
+              "Target": {
+                "Type": "Component",
+                "IdValue": "721ee22a-ac78-438d-965b-f32dacaf85c1"
+              },
+              "Property": "Center",
+              "Value": "-6.03170776,0.669492722,21"
+            },
+            {
+              "Target": {
+                "Type": "Component",
+                "IdValue": "721ee22a-ac78-438d-965b-f32dacaf85c1"
+              },
+              "Property": "Scale",
+              "Value": "117.692001,50,138.520905"
+            }
+          ],
+          "MovedObjects": [
+            {
+              "Id": {
+                "Type": "Component",
+                "IdValue": "721ee22a-ac78-438d-965b-f32dacaf85c1"
+              },
+              "NewParent": {
+                "Type": "GameObject",
+                "IdValue": "6c5a4182-dc19-4b36-8eae-36194530182c"
+              },
+              "NewContainerProperty": "Components",
+              "IsNewContainerArray": true,
+              "NewPreviousElement": {
+                "Type": "Component",
+                "IdValue": "ea2c05d7-255c-4c10-868d-49bb3fc69fc2"
+              }
+            },
+            {
+              "Id": {
+                "Type": "Component",
+                "IdValue": "ba1b4880-5c74-4482-be87-88cc4b2344ea"
+              },
+              "NewParent": {
+                "Type": "GameObject",
+                "IdValue": "6c5a4182-dc19-4b36-8eae-36194530182c"
+              },
+              "NewContainerProperty": "Components",
+              "IsNewContainerArray": true,
+              "NewPreviousElement": {
+                "Type": "Component",
+                "IdValue": "c6a8f046-a421-4bdc-a6e6-d0b3221cab58"
+              }
+            }
+          ]
+        },
+        "__PrefabIdToInstanceId": {
+          "6c5a4182-dc19-4b36-8eae-36194530182c": "5b3dd31c-f9ff-4010-b983-cb4379e48fa5",
+          "ea2c05d7-255c-4c10-868d-49bb3fc69fc2": "eefbe4b3-6be6-48a8-8782-c794ba71a341",
+          "721ee22a-ac78-438d-965b-f32dacaf85c1": "2765d003-3ee1-4ca6-b4df-b9a905b9f69e",
+          "ba1b4880-5c74-4482-be87-88cc4b2344ea": "4bee0dfb-fea3-4d0c-9570-56cc4bfd48c3",
+          "d350e0dc-366a-4cc1-9a82-dd842fde141d": "e764683b-86d5-4ed6-b0dd-c9c1edeba5fc",
+          "d9781342-bb33-4bc9-a7bf-f2b4f12c17ab": "366cb3b6-358c-48a1-bba0-26604839f706"
+        }
+      },
+      {
+        "__guid": "42523300-a7ac-4f39-8459-a8b245ac8dc8",
+        "__version": 2,
+        "__Prefab": "high box metal fence.prefab",
+        "__PrefabInstancePatch": {
+          "AddedObjects": [
+            {
+              "Id": {
+                "Type": "Component",
+                "IdValue": "0ebd15fb-5f0e-4e62-bfe1-1e545c4578a9"
+              },
+              "Parent": {
+                "Type": "GameObject",
+                "IdValue": "6c5a4182-dc19-4b36-8eae-36194530182c"
+              },
+              "PreviousElement": {
+                "Type": "Component",
+                "IdValue": "721ee22a-ac78-438d-965b-f32dacaf85c1"
+              },
+              "ContainerProperty": "Components",
+              "IsContainerArray": true,
+              "Data": {
+                "__type": "Sandbox.ModelRenderer",
+                "__guid": "0ebd15fb-5f0e-4e62-bfe1-1e545c4578a9",
+                "__enabled": true,
+                "Flags": 0,
+                "BodyGroups": 18446744073709551615,
+                "CreateAttachments": false,
+                "LodOverride": null,
+                "MaterialGroup": null,
+                "MaterialOverride": null,
+                "Materials": null,
+                "Model": "models/sbox_props/metal_fences/metal_fence_panel/metal_fence_panel.vmdl",
+                "OnComponentDestroy": null,
+                "OnComponentDisabled": null,
+                "OnComponentEnabled": null,
+                "OnComponentFixedUpdate": null,
+                "OnComponentStart": null,
+                "OnComponentUpdate": null,
+                "RenderOptions": {
+                  "GameLayer": true,
+                  "OverlayLayer": false,
+                  "BloomLayer": false,
+                  "AfterUILayer": false
+                },
+                "RenderType": "On",
+                "Tint": "1,1,1,1"
+              }
+            },
+            {
+              "Id": {
+                "Type": "Component",
+                "IdValue": "24262121-d2c0-4970-97f3-ee68710fd02b"
+              },
+              "Parent": {
+                "Type": "GameObject",
+                "IdValue": "6c5a4182-dc19-4b36-8eae-36194530182c"
+              },
+              "PreviousElement": {
+                "Type": "Component",
+                "IdValue": "0ebd15fb-5f0e-4e62-bfe1-1e545c4578a9"
+              },
+              "ContainerProperty": "Components",
+              "IsContainerArray": true,
+              "Data": {
+                "__type": "Sandbox.ModelCollider",
+                "__guid": "24262121-d2c0-4970-97f3-ee68710fd02b",
+                "__enabled": true,
+                "Flags": 0,
+                "ColliderFlags": 0,
+                "Elasticity": null,
+                "Friction": null,
+                "IsTrigger": false,
+                "Model": "models/sbox_props/metal_fences/metal_fence_panel/metal_fence_panel.vmdl",
+                "OnComponentDestroy": null,
+                "OnComponentDisabled": null,
+                "OnComponentEnabled": null,
+                "OnComponentFixedUpdate": null,
+                "OnComponentStart": null,
+                "OnComponentUpdate": null,
+                "OnObjectTriggerEnter": null,
+                "OnObjectTriggerExit": null,
+                "OnTriggerEnter": null,
+                "OnTriggerExit": null,
+                "RollingResistance": null,
+                "Static": true,
+                "Surface": null,
+                "SurfaceVelocity": "0,0,0"
+              }
+            }
+          ],
+          "RemovedObjects": [
+            {
+              "Id": {
+                "Type": "Component",
+                "IdValue": "d350e0dc-366a-4cc1-9a82-dd842fde141d"
+              }
+            },
+            {
+              "Id": {
+                "Type": "Component",
+                "IdValue": "d9781342-bb33-4bc9-a7bf-f2b4f12c17ab"
+              }
+            }
+          ],
+          "PropertyOverrides": [
+            {
+              "Target": {
+                "Type": "GameObject",
+                "IdValue": "6c5a4182-dc19-4b36-8eae-36194530182c"
+              },
+              "Property": "Name",
+              "Value": "Object (192)"
+            },
+            {
+              "Target": {
+                "Type": "GameObject",
+                "IdValue": "6c5a4182-dc19-4b36-8eae-36194530182c"
+              },
+              "Property": "Position",
+              "Value": "252.888184,-100.981079,-37.9871826"
+            },
+            {
+              "Target": {
+                "Type": "GameObject",
+                "IdValue": "6c5a4182-dc19-4b36-8eae-36194530182c"
+              },
+              "Property": "Rotation",
+              "Value": "0,0,-0.491285115,0.8709988"
+            },
+            {
+              "Target": {
+                "Type": "GameObject",
+                "IdValue": "6c5a4182-dc19-4b36-8eae-36194530182c"
+              },
+              "Property": "Scale",
+              "Value": "0.5,0.5,0.889999807"
+            },
+            {
+              "Target": {
+                "Type": "Component",
+                "IdValue": "ea2c05d7-255c-4c10-868d-49bb3fc69fc2"
+              },
+              "Property": "IsStatic",
+              "Value": true
+            },
+            {
+              "Target": {
+                "Type": "Component",
+                "IdValue": "721ee22a-ac78-438d-965b-f32dacaf85c1"
+              },
+              "Property": "Center",
+              "Value": "-6.03170776,0.669492722,21"
+            },
+            {
+              "Target": {
+                "Type": "Component",
+                "IdValue": "721ee22a-ac78-438d-965b-f32dacaf85c1"
+              },
+              "Property": "Scale",
+              "Value": "117.692001,50,138.520905"
+            }
+          ],
+          "MovedObjects": [
+            {
+              "Id": {
+                "Type": "Component",
+                "IdValue": "721ee22a-ac78-438d-965b-f32dacaf85c1"
+              },
+              "NewParent": {
+                "Type": "GameObject",
+                "IdValue": "6c5a4182-dc19-4b36-8eae-36194530182c"
+              },
+              "NewContainerProperty": "Components",
+              "IsNewContainerArray": true,
+              "NewPreviousElement": {
+                "Type": "Component",
+                "IdValue": "ea2c05d7-255c-4c10-868d-49bb3fc69fc2"
+              }
+            },
+            {
+              "Id": {
+                "Type": "Component",
+                "IdValue": "ba1b4880-5c74-4482-be87-88cc4b2344ea"
+              },
+              "NewParent": {
+                "Type": "GameObject",
+                "IdValue": "6c5a4182-dc19-4b36-8eae-36194530182c"
+              },
+              "NewContainerProperty": "Components",
+              "IsNewContainerArray": true,
+              "NewPreviousElement": {
+                "Type": "Component",
+                "IdValue": "24262121-d2c0-4970-97f3-ee68710fd02b"
+              }
+            }
+          ]
+        },
+        "__PrefabIdToInstanceId": {
+          "6c5a4182-dc19-4b36-8eae-36194530182c": "42523300-a7ac-4f39-8459-a8b245ac8dc8",
+          "ea2c05d7-255c-4c10-868d-49bb3fc69fc2": "c150fff8-791a-41dd-ba42-48c8b11f40c6",
+          "721ee22a-ac78-438d-965b-f32dacaf85c1": "9dc7bdbe-16bb-4b2b-ba87-a2cd0bd49de6",
+          "ba1b4880-5c74-4482-be87-88cc4b2344ea": "8f9f29e4-18b9-4660-a4c4-38927d050b31",
+          "d350e0dc-366a-4cc1-9a82-dd842fde141d": "fe9c2bb6-23c2-4319-a262-21ed48f94180",
+          "d9781342-bb33-4bc9-a7bf-f2b4f12c17ab": "7a32ab2f-496d-40aa-80fe-85b7c322f9cd"
+        }
+      },
+      {
+        "__guid": "e14602e2-949b-44b4-b8d8-d442bc0958db",
+        "__version": 2,
+        "__Prefab": "high box metal fence.prefab",
+        "__PrefabInstancePatch": {
+          "AddedObjects": [
+            {
+              "Id": {
+                "Type": "Component",
+                "IdValue": "d9922db6-a3c0-486b-8b9a-bd0014d14f74"
+              },
+              "Parent": {
+                "Type": "GameObject",
+                "IdValue": "6c5a4182-dc19-4b36-8eae-36194530182c"
+              },
+              "PreviousElement": {
+                "Type": "Component",
+                "IdValue": "721ee22a-ac78-438d-965b-f32dacaf85c1"
+              },
+              "ContainerProperty": "Components",
+              "IsContainerArray": true,
+              "Data": {
+                "__type": "Sandbox.ModelRenderer",
+                "__guid": "d9922db6-a3c0-486b-8b9a-bd0014d14f74",
+                "__enabled": true,
+                "Flags": 0,
+                "BodyGroups": 18446744073709551615,
+                "CreateAttachments": false,
+                "LodOverride": null,
+                "MaterialGroup": null,
+                "MaterialOverride": null,
+                "Materials": null,
+                "Model": "models/sbox_props/metal_fences/metal_fence_panel/metal_fence_panel.vmdl",
+                "OnComponentDestroy": null,
+                "OnComponentDisabled": null,
+                "OnComponentEnabled": null,
+                "OnComponentFixedUpdate": null,
+                "OnComponentStart": null,
+                "OnComponentUpdate": null,
+                "RenderOptions": {
+                  "GameLayer": true,
+                  "OverlayLayer": false,
+                  "BloomLayer": false,
+                  "AfterUILayer": false
+                },
+                "RenderType": "On",
+                "Tint": "1,1,1,1"
+              }
+            },
+            {
+              "Id": {
+                "Type": "Component",
+                "IdValue": "c3bc623c-069b-4cbf-9b7b-957decad2e15"
+              },
+              "Parent": {
+                "Type": "GameObject",
+                "IdValue": "6c5a4182-dc19-4b36-8eae-36194530182c"
+              },
+              "PreviousElement": {
+                "Type": "Component",
+                "IdValue": "d9922db6-a3c0-486b-8b9a-bd0014d14f74"
+              },
+              "ContainerProperty": "Components",
+              "IsContainerArray": true,
+              "Data": {
+                "__type": "Sandbox.ModelCollider",
+                "__guid": "c3bc623c-069b-4cbf-9b7b-957decad2e15",
+                "__enabled": true,
+                "Flags": 0,
+                "ColliderFlags": 0,
+                "Elasticity": null,
+                "Friction": null,
+                "IsTrigger": false,
+                "Model": "models/sbox_props/metal_fences/metal_fence_panel/metal_fence_panel.vmdl",
+                "OnComponentDestroy": null,
+                "OnComponentDisabled": null,
+                "OnComponentEnabled": null,
+                "OnComponentFixedUpdate": null,
+                "OnComponentStart": null,
+                "OnComponentUpdate": null,
+                "OnObjectTriggerEnter": null,
+                "OnObjectTriggerExit": null,
+                "OnTriggerEnter": null,
+                "OnTriggerExit": null,
+                "RollingResistance": null,
+                "Static": true,
+                "Surface": null,
+                "SurfaceVelocity": "0,0,0"
+              }
+            }
+          ],
+          "RemovedObjects": [
+            {
+              "Id": {
+                "Type": "Component",
+                "IdValue": "d350e0dc-366a-4cc1-9a82-dd842fde141d"
+              }
+            },
+            {
+              "Id": {
+                "Type": "Component",
+                "IdValue": "d9781342-bb33-4bc9-a7bf-f2b4f12c17ab"
+              }
+            }
+          ],
+          "PropertyOverrides": [
+            {
+              "Target": {
+                "Type": "GameObject",
+                "IdValue": "6c5a4182-dc19-4b36-8eae-36194530182c"
+              },
+              "Property": "Name",
+              "Value": "Object (193)"
+            },
+            {
+              "Target": {
+                "Type": "GameObject",
+                "IdValue": "6c5a4182-dc19-4b36-8eae-36194530182c"
+              },
+              "Property": "Position",
+              "Value": "206.984863,-62.0046387,-37.9871979"
+            },
+            {
+              "Target": {
+                "Type": "GameObject",
+                "IdValue": "6c5a4182-dc19-4b36-8eae-36194530182c"
+              },
+              "Property": "Rotation",
+              "Value": "0,0,-0.190810427,0.981626928"
+            },
+            {
+              "Target": {
+                "Type": "GameObject",
+                "IdValue": "6c5a4182-dc19-4b36-8eae-36194530182c"
+              },
+              "Property": "Scale",
+              "Value": "0.5,0.5,0.889999807"
+            },
+            {
+              "Target": {
+                "Type": "Component",
+                "IdValue": "ea2c05d7-255c-4c10-868d-49bb3fc69fc2"
+              },
+              "Property": "IsStatic",
+              "Value": true
+            },
+            {
+              "Target": {
+                "Type": "Component",
+                "IdValue": "721ee22a-ac78-438d-965b-f32dacaf85c1"
+              },
+              "Property": "Center",
+              "Value": "-6.03170776,0.669492722,21"
+            },
+            {
+              "Target": {
+                "Type": "Component",
+                "IdValue": "721ee22a-ac78-438d-965b-f32dacaf85c1"
+              },
+              "Property": "Scale",
+              "Value": "117.692001,50,138.520905"
+            }
+          ],
+          "MovedObjects": [
+            {
+              "Id": {
+                "Type": "Component",
+                "IdValue": "721ee22a-ac78-438d-965b-f32dacaf85c1"
+              },
+              "NewParent": {
+                "Type": "GameObject",
+                "IdValue": "6c5a4182-dc19-4b36-8eae-36194530182c"
+              },
+              "NewContainerProperty": "Components",
+              "IsNewContainerArray": true,
+              "NewPreviousElement": {
+                "Type": "Component",
+                "IdValue": "ea2c05d7-255c-4c10-868d-49bb3fc69fc2"
+              }
+            },
+            {
+              "Id": {
+                "Type": "Component",
+                "IdValue": "ba1b4880-5c74-4482-be87-88cc4b2344ea"
+              },
+              "NewParent": {
+                "Type": "GameObject",
+                "IdValue": "6c5a4182-dc19-4b36-8eae-36194530182c"
+              },
+              "NewContainerProperty": "Components",
+              "IsNewContainerArray": true,
+              "NewPreviousElement": {
+                "Type": "Component",
+                "IdValue": "c3bc623c-069b-4cbf-9b7b-957decad2e15"
+              }
+            }
+          ]
+        },
+        "__PrefabIdToInstanceId": {
+          "6c5a4182-dc19-4b36-8eae-36194530182c": "e14602e2-949b-44b4-b8d8-d442bc0958db",
+          "ea2c05d7-255c-4c10-868d-49bb3fc69fc2": "bee65cf6-c233-43dc-894d-a25e059395e7",
+          "721ee22a-ac78-438d-965b-f32dacaf85c1": "fc5d57bd-1323-4783-8c12-90c02f5a09db",
+          "ba1b4880-5c74-4482-be87-88cc4b2344ea": "d688bf9c-273c-4f7f-be41-6bb1d3552e52",
+          "d350e0dc-366a-4cc1-9a82-dd842fde141d": "555fc415-7e4f-4e76-bf26-65336958ac58",
+          "d9781342-bb33-4bc9-a7bf-f2b4f12c17ab": "729aa9eb-d46f-49d4-a737-51a593e78c41"
+        }
+      },
+      {
+        "__guid": "f9269f50-8cb4-4f56-a43c-4e11150ae6a7",
+        "__version": 2,
+        "__Prefab": "high box metal fence.prefab",
+        "__PrefabInstancePatch": {
+          "AddedObjects": [
+            {
+              "Id": {
+                "Type": "Component",
+                "IdValue": "782a14d2-c9a5-4f83-af79-970ccad42b9a"
+              },
+              "Parent": {
+                "Type": "GameObject",
+                "IdValue": "6c5a4182-dc19-4b36-8eae-36194530182c"
+              },
+              "PreviousElement": {
+                "Type": "Component",
+                "IdValue": "721ee22a-ac78-438d-965b-f32dacaf85c1"
+              },
+              "ContainerProperty": "Components",
+              "IsContainerArray": true,
+              "Data": {
+                "__type": "Sandbox.ModelRenderer",
+                "__guid": "782a14d2-c9a5-4f83-af79-970ccad42b9a",
+                "__enabled": true,
+                "Flags": 0,
+                "BodyGroups": 18446744073709551615,
+                "CreateAttachments": false,
+                "LodOverride": null,
+                "MaterialGroup": null,
+                "MaterialOverride": null,
+                "Materials": null,
+                "Model": "models/sbox_props/metal_fences/metal_fence_panel/metal_fence_panel.vmdl",
+                "OnComponentDestroy": null,
+                "OnComponentDisabled": null,
+                "OnComponentEnabled": null,
+                "OnComponentFixedUpdate": null,
+                "OnComponentStart": null,
+                "OnComponentUpdate": null,
+                "RenderOptions": {
+                  "GameLayer": true,
+                  "OverlayLayer": false,
+                  "BloomLayer": false,
+                  "AfterUILayer": false
+                },
+                "RenderType": "On",
+                "Tint": "1,1,1,1"
+              }
+            },
+            {
+              "Id": {
+                "Type": "Component",
+                "IdValue": "53ce398e-09f6-4c78-8883-5eaef34cf027"
+              },
+              "Parent": {
+                "Type": "GameObject",
+                "IdValue": "6c5a4182-dc19-4b36-8eae-36194530182c"
+              },
+              "PreviousElement": {
+                "Type": "Component",
+                "IdValue": "782a14d2-c9a5-4f83-af79-970ccad42b9a"
+              },
+              "ContainerProperty": "Components",
+              "IsContainerArray": true,
+              "Data": {
+                "__type": "Sandbox.ModelCollider",
+                "__guid": "53ce398e-09f6-4c78-8883-5eaef34cf027",
+                "__enabled": true,
+                "Flags": 0,
+                "ColliderFlags": 0,
+                "Elasticity": null,
+                "Friction": null,
+                "IsTrigger": false,
+                "Model": "models/sbox_props/metal_fences/metal_fence_panel/metal_fence_panel.vmdl",
+                "OnComponentDestroy": null,
+                "OnComponentDisabled": null,
+                "OnComponentEnabled": null,
+                "OnComponentFixedUpdate": null,
+                "OnComponentStart": null,
+                "OnComponentUpdate": null,
+                "OnObjectTriggerEnter": null,
+                "OnObjectTriggerExit": null,
+                "OnTriggerEnter": null,
+                "OnTriggerExit": null,
+                "RollingResistance": null,
+                "Static": true,
+                "Surface": null,
+                "SurfaceVelocity": "0,0,0"
+              }
+            }
+          ],
+          "RemovedObjects": [
+            {
+              "Id": {
+                "Type": "Component",
+                "IdValue": "d350e0dc-366a-4cc1-9a82-dd842fde141d"
+              }
+            },
+            {
+              "Id": {
+                "Type": "Component",
+                "IdValue": "d9781342-bb33-4bc9-a7bf-f2b4f12c17ab"
+              }
+            }
+          ],
+          "PropertyOverrides": [
+            {
+              "Target": {
+                "Type": "GameObject",
+                "IdValue": "6c5a4182-dc19-4b36-8eae-36194530182c"
+              },
+              "Property": "Name",
+              "Value": "Object (194)"
+            },
+            {
+              "Target": {
+                "Type": "GameObject",
+                "IdValue": "6c5a4182-dc19-4b36-8eae-36194530182c"
+              },
+              "Property": "Position",
+              "Value": "146.870117,-51.3810577,-37.9871368"
+            },
+            {
+              "Target": {
+                "Type": "GameObject",
+                "IdValue": "6c5a4182-dc19-4b36-8eae-36194530182c"
+              },
+              "Property": "Rotation",
+              "Value": "0,0,0.0266989097,0.999643505"
+            },
+            {
+              "Target": {
+                "Type": "GameObject",
+                "IdValue": "6c5a4182-dc19-4b36-8eae-36194530182c"
+              },
+              "Property": "Scale",
+              "Value": "0.5,0.5,0.889999807"
+            },
+            {
+              "Target": {
+                "Type": "Component",
+                "IdValue": "ea2c05d7-255c-4c10-868d-49bb3fc69fc2"
+              },
+              "Property": "IsStatic",
+              "Value": true
+            },
+            {
+              "Target": {
+                "Type": "Component",
+                "IdValue": "721ee22a-ac78-438d-965b-f32dacaf85c1"
+              },
+              "Property": "Center",
+              "Value": "-6.03170776,0.669492722,21"
+            },
+            {
+              "Target": {
+                "Type": "Component",
+                "IdValue": "721ee22a-ac78-438d-965b-f32dacaf85c1"
+              },
+              "Property": "Scale",
+              "Value": "117.692001,50,138.520905"
+            }
+          ],
+          "MovedObjects": [
+            {
+              "Id": {
+                "Type": "Component",
+                "IdValue": "721ee22a-ac78-438d-965b-f32dacaf85c1"
+              },
+              "NewParent": {
+                "Type": "GameObject",
+                "IdValue": "6c5a4182-dc19-4b36-8eae-36194530182c"
+              },
+              "NewContainerProperty": "Components",
+              "IsNewContainerArray": true,
+              "NewPreviousElement": {
+                "Type": "Component",
+                "IdValue": "ea2c05d7-255c-4c10-868d-49bb3fc69fc2"
+              }
+            },
+            {
+              "Id": {
+                "Type": "Component",
+                "IdValue": "ba1b4880-5c74-4482-be87-88cc4b2344ea"
+              },
+              "NewParent": {
+                "Type": "GameObject",
+                "IdValue": "6c5a4182-dc19-4b36-8eae-36194530182c"
+              },
+              "NewContainerProperty": "Components",
+              "IsNewContainerArray": true,
+              "NewPreviousElement": {
+                "Type": "Component",
+                "IdValue": "53ce398e-09f6-4c78-8883-5eaef34cf027"
+              }
+            }
+          ]
+        },
+        "__PrefabIdToInstanceId": {
+          "6c5a4182-dc19-4b36-8eae-36194530182c": "f9269f50-8cb4-4f56-a43c-4e11150ae6a7",
+          "ea2c05d7-255c-4c10-868d-49bb3fc69fc2": "6173a68a-0a66-4f76-9e71-a8aeb28f24af",
+          "721ee22a-ac78-438d-965b-f32dacaf85c1": "1b4cbce9-f712-4fb5-8b69-15d51f9a4573",
+          "ba1b4880-5c74-4482-be87-88cc4b2344ea": "db9a50fc-f24c-4b33-990a-5c1c81d2829c",
+          "d350e0dc-366a-4cc1-9a82-dd842fde141d": "21648004-be27-49ef-b7d7-8068cdcd27a8",
+          "d9781342-bb33-4bc9-a7bf-f2b4f12c17ab": "b3b29fc8-0100-4594-aa92-77279e57c986"
+        }
+      },
+      {
+        "__guid": "2aa79594-7262-472c-86f8-74866f8f3c6c",
+        "__version": 2,
+        "Flags": 0,
+        "Name": "stone_1 (51)",
+        "Position": "261.241943,-89.855896,-57.9087219",
+        "Rotation": "0,0,0.373796999,0.92751056",
+        "Scale": "2,2,2",
+        "Tags": "",
+        "Enabled": true,
+        "NetworkMode": 2,
+        "NetworkFlags": 0,
+        "NetworkOrphaned": 0,
+        "NetworkTransmit": true,
+        "OwnerTransfer": 1,
+        "Components": [
+          {
+            "__type": "Sandbox.Prop",
+            "__guid": "d22a3a9b-a89c-45c7-aa98-5f475511e87c",
+            "__enabled": true,
+            "Flags": 0,
+            "BodyGroups": 18446744073709551615,
+            "Health": 0,
+            "IsStatic": true,
+            "MaterialGroup": null,
+            "Model": "models/asset-quest/halloween/stone_1.vmdl",
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "OnPropBreak": null,
+            "OnPropTakeDamage": null,
+            "StartAsleep": false,
+            "Tint": "1,1,1,1"
+          },
+          {
+            "__type": "Sandbox.ModelRenderer",
+            "__guid": "51c6a38b-5cc3-4d13-b3f1-140b49f76bfe",
+            "__enabled": true,
+            "Flags": 0,
+            "BodyGroups": 18446744073709551615,
+            "CreateAttachments": false,
+            "LodOverride": null,
+            "MaterialGroup": null,
+            "MaterialOverride": null,
+            "Materials": null,
+            "Model": "models/asset-quest/halloween/stone_1.vmdl",
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "RenderOptions": {
+              "GameLayer": true,
+              "OverlayLayer": false,
+              "BloomLayer": false,
+              "AfterUILayer": false
+            },
+            "RenderType": "On",
+            "Tint": "1,1,1,1"
+          },
+          {
+            "__type": "Sandbox.ModelCollider",
+            "__guid": "9bc5db82-6463-413e-8426-fc48066fccc9",
+            "__enabled": true,
+            "Flags": 0,
+            "ColliderFlags": 0,
+            "Elasticity": null,
+            "Friction": null,
+            "IsTrigger": false,
+            "Model": "models/asset-quest/halloween/stone_1.vmdl",
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "OnObjectTriggerEnter": null,
+            "OnObjectTriggerExit": null,
+            "OnTriggerEnter": null,
+            "OnTriggerExit": null,
+            "RollingResistance": null,
+            "Static": true,
+            "Surface": null,
+            "SurfaceVelocity": "0,0,0"
+          }
+        ],
+        "Children": []
+      },
+      {
+        "__guid": "aee9f003-c835-4006-9bbc-035e8396baf6",
+        "__version": 2,
+        "Flags": 0,
+        "Name": "Sphere (1)",
+        "Position": "185.381592,-119.537491,-75.8540039",
+        "Rotation": "0,0,0,1",
+        "Scale": "2.79999948,2.6099999,0.979999304",
+        "Tags": "",
+        "Enabled": true,
+        "NetworkMode": 2,
+        "NetworkFlags": 0,
+        "NetworkOrphaned": 0,
+        "NetworkTransmit": true,
+        "OwnerTransfer": 1,
+        "Components": [
+          {
+            "__type": "Sandbox.ModelRenderer",
+            "__guid": "05ba4713-ce26-4a4b-b515-6b48b800d10b",
+            "__enabled": true,
+            "Flags": 0,
+            "BodyGroups": 18446744073709551615,
+            "CreateAttachments": false,
+            "LodOverride": null,
+            "MaterialGroup": null,
+            "MaterialOverride": "models/castle _kit/fbx format/lava text.vmat",
+            "Materials": null,
+            "Model": "models/dev/sphere.vmdl",
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "RenderOptions": {
+              "GameLayer": true,
+              "OverlayLayer": false,
+              "BloomLayer": false,
+              "AfterUILayer": false
+            },
+            "RenderType": "On",
+            "Tint": "1,1,1,1"
+          }
+        ],
+        "Children": []
+      },
+      {
+        "__guid": "9cb163c3-ef7c-45b7-9e2c-83622b95e9cc",
+        "__version": 2,
+        "Flags": 0,
+        "Name": "stone_1 (52)",
+        "Position": "232.431885,-62.1448975,-57.9087219",
+        "Rotation": "0,0,0.4986386,0.866809964",
+        "Scale": "2,2,2",
+        "Tags": "",
+        "Enabled": true,
+        "NetworkMode": 2,
+        "NetworkFlags": 0,
+        "NetworkOrphaned": 0,
+        "NetworkTransmit": true,
+        "OwnerTransfer": 1,
+        "Components": [
+          {
+            "__type": "Sandbox.Prop",
+            "__guid": "3f031a18-43a2-4b08-8bf8-3a08b60b31a9",
+            "__enabled": true,
+            "Flags": 0,
+            "BodyGroups": 18446744073709551615,
+            "Health": 0,
+            "IsStatic": true,
+            "MaterialGroup": null,
+            "Model": "models/asset-quest/halloween/stone_1.vmdl",
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "OnPropBreak": null,
+            "OnPropTakeDamage": null,
+            "StartAsleep": false,
+            "Tint": "1,1,1,1"
+          },
+          {
+            "__type": "Sandbox.ModelRenderer",
+            "__guid": "205110ba-dd56-4dee-81c4-b7ee083d296c",
+            "__enabled": true,
+            "Flags": 0,
+            "BodyGroups": 18446744073709551615,
+            "CreateAttachments": false,
+            "LodOverride": null,
+            "MaterialGroup": null,
+            "MaterialOverride": null,
+            "Materials": null,
+            "Model": "models/asset-quest/halloween/stone_1.vmdl",
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "RenderOptions": {
+              "GameLayer": true,
+              "OverlayLayer": false,
+              "BloomLayer": false,
+              "AfterUILayer": false
+            },
+            "RenderType": "On",
+            "Tint": "1,1,1,1"
+          },
+          {
+            "__type": "Sandbox.ModelCollider",
+            "__guid": "b08d781f-9b29-47da-bc7e-7826defb8860",
+            "__enabled": true,
+            "Flags": 0,
+            "ColliderFlags": 0,
+            "Elasticity": null,
+            "Friction": null,
+            "IsTrigger": false,
+            "Model": "models/asset-quest/halloween/stone_1.vmdl",
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "OnObjectTriggerEnter": null,
+            "OnObjectTriggerExit": null,
+            "OnTriggerEnter": null,
+            "OnTriggerExit": null,
+            "RollingResistance": null,
+            "Static": true,
+            "Surface": null,
+            "SurfaceVelocity": "0,0,0"
+          }
+        ],
+        "Children": []
+      },
+      {
+        "__guid": "bb4fc41f-b2ce-4b23-9291-8b49193bddd8",
+        "__version": 2,
+        "Flags": 0,
+        "Name": "stone_1 (53)",
+        "Position": "203.172607,-43.4162598,-57.9087219",
+        "Rotation": "0,0,0.654608667,0.755967915",
+        "Scale": "2,2,2",
+        "Tags": "",
+        "Enabled": true,
+        "NetworkMode": 2,
+        "NetworkFlags": 0,
+        "NetworkOrphaned": 0,
+        "NetworkTransmit": true,
+        "OwnerTransfer": 1,
+        "Components": [
+          {
+            "__type": "Sandbox.Prop",
+            "__guid": "5c63dbdf-c73e-4072-9035-66fe4db13163",
+            "__enabled": true,
+            "Flags": 0,
+            "BodyGroups": 18446744073709551615,
+            "Health": 0,
+            "IsStatic": true,
+            "MaterialGroup": null,
+            "Model": "models/asset-quest/halloween/stone_1.vmdl",
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "OnPropBreak": null,
+            "OnPropTakeDamage": null,
+            "StartAsleep": false,
+            "Tint": "1,1,1,1"
+          },
+          {
+            "__type": "Sandbox.ModelRenderer",
+            "__guid": "b344f97d-67db-4ca0-8052-49afb4600035",
+            "__enabled": true,
+            "Flags": 0,
+            "BodyGroups": 18446744073709551615,
+            "CreateAttachments": false,
+            "LodOverride": null,
+            "MaterialGroup": null,
+            "MaterialOverride": null,
+            "Materials": null,
+            "Model": "models/asset-quest/halloween/stone_1.vmdl",
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "RenderOptions": {
+              "GameLayer": true,
+              "OverlayLayer": false,
+              "BloomLayer": false,
+              "AfterUILayer": false
+            },
+            "RenderType": "On",
+            "Tint": "1,1,1,1"
+          },
+          {
+            "__type": "Sandbox.ModelCollider",
+            "__guid": "d81e4d8a-4ee1-41f7-83e2-344eaa9d38c0",
+            "__enabled": true,
+            "Flags": 0,
+            "ColliderFlags": 0,
+            "Elasticity": null,
+            "Friction": null,
+            "IsTrigger": false,
+            "Model": "models/asset-quest/halloween/stone_1.vmdl",
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "OnObjectTriggerEnter": null,
+            "OnObjectTriggerExit": null,
+            "OnTriggerEnter": null,
+            "OnTriggerExit": null,
+            "RollingResistance": null,
+            "Static": true,
+            "Surface": null,
+            "SurfaceVelocity": "0,0,0"
+          }
+        ],
+        "Children": []
+      },
+      {
+        "__guid": "80221c8b-02d0-419f-8a4e-7342e94ab8c9",
+        "__version": 2,
+        "Flags": 0,
+        "Name": "stone_1 (54)",
+        "Position": "169.358398,-38.5313721,-57.9087219",
+        "Rotation": "0,0,0.786988795,0.616967261",
+        "Scale": "2,2,2",
+        "Tags": "",
+        "Enabled": true,
+        "NetworkMode": 2,
+        "NetworkFlags": 0,
+        "NetworkOrphaned": 0,
+        "NetworkTransmit": true,
+        "OwnerTransfer": 1,
+        "Components": [
+          {
+            "__type": "Sandbox.Prop",
+            "__guid": "a18919e9-3a00-451c-8ee9-60d451a7ae0e",
+            "__enabled": true,
+            "Flags": 0,
+            "BodyGroups": 18446744073709551615,
+            "Health": 0,
+            "IsStatic": true,
+            "MaterialGroup": null,
+            "Model": "models/asset-quest/halloween/stone_1.vmdl",
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "OnPropBreak": null,
+            "OnPropTakeDamage": null,
+            "StartAsleep": false,
+            "Tint": "1,1,1,1"
+          },
+          {
+            "__type": "Sandbox.ModelRenderer",
+            "__guid": "c13082cc-17c7-4f11-82ea-b31635965d39",
+            "__enabled": true,
+            "Flags": 0,
+            "BodyGroups": 18446744073709551615,
+            "CreateAttachments": false,
+            "LodOverride": null,
+            "MaterialGroup": null,
+            "MaterialOverride": null,
+            "Materials": null,
+            "Model": "models/asset-quest/halloween/stone_1.vmdl",
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "RenderOptions": {
+              "GameLayer": true,
+              "OverlayLayer": false,
+              "BloomLayer": false,
+              "AfterUILayer": false
+            },
+            "RenderType": "On",
+            "Tint": "1,1,1,1"
+          },
+          {
+            "__type": "Sandbox.ModelCollider",
+            "__guid": "b5b75f25-ae5a-4849-937a-d61efb569351",
+            "__enabled": true,
+            "Flags": 0,
+            "ColliderFlags": 0,
+            "Elasticity": null,
+            "Friction": null,
+            "IsTrigger": false,
+            "Model": "models/asset-quest/halloween/stone_1.vmdl",
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "OnObjectTriggerEnter": null,
+            "OnObjectTriggerExit": null,
+            "OnTriggerEnter": null,
+            "OnTriggerExit": null,
+            "RollingResistance": null,
+            "Static": true,
+            "Surface": null,
+            "SurfaceVelocity": "0,0,0"
+          }
+        ],
+        "Children": []
+      },
+      {
+        "__guid": "4f50e7b9-d05f-438c-9c97-64106c65873d",
+        "__version": 2,
+        "Flags": 0,
+        "Name": "stone_1 (59)",
+        "Position": "261.242676,-89.8560944,30.2509308",
+        "Rotation": "0,0,0.373796999,0.92751056",
+        "Scale": "2,2,2",
+        "Tags": "",
+        "Enabled": true,
+        "NetworkMode": 2,
+        "NetworkFlags": 0,
+        "NetworkOrphaned": 0,
+        "NetworkTransmit": true,
+        "OwnerTransfer": 1,
+        "Components": [
+          {
+            "__type": "Sandbox.Prop",
+            "__guid": "d17bda9f-2f16-42bb-a38f-aefe3abcdb5d",
+            "__enabled": true,
+            "Flags": 0,
+            "BodyGroups": 18446744073709551615,
+            "Health": 0,
+            "IsStatic": true,
+            "MaterialGroup": null,
+            "Model": "models/asset-quest/halloween/stone_1.vmdl",
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "OnPropBreak": null,
+            "OnPropTakeDamage": null,
+            "StartAsleep": false,
+            "Tint": "1,1,1,1"
+          },
+          {
+            "__type": "Sandbox.ModelRenderer",
+            "__guid": "dac9a0ad-9c33-41f4-92a9-b991f7576321",
+            "__enabled": true,
+            "Flags": 0,
+            "BodyGroups": 18446744073709551615,
+            "CreateAttachments": false,
+            "LodOverride": null,
+            "MaterialGroup": null,
+            "MaterialOverride": null,
+            "Materials": null,
+            "Model": "models/asset-quest/halloween/stone_1.vmdl",
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "RenderOptions": {
+              "GameLayer": true,
+              "OverlayLayer": false,
+              "BloomLayer": false,
+              "AfterUILayer": false
+            },
+            "RenderType": "On",
+            "Tint": "1,1,1,1"
+          },
+          {
+            "__type": "Sandbox.ModelCollider",
+            "__guid": "0eefaa35-a24f-48d3-bc97-61283ea1f749",
+            "__enabled": true,
+            "Flags": 0,
+            "ColliderFlags": 0,
+            "Elasticity": null,
+            "Friction": null,
+            "IsTrigger": false,
+            "Model": "models/asset-quest/halloween/stone_1.vmdl",
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "OnObjectTriggerEnter": null,
+            "OnObjectTriggerExit": null,
+            "OnTriggerEnter": null,
+            "OnTriggerExit": null,
+            "RollingResistance": null,
+            "Static": true,
+            "Surface": null,
+            "SurfaceVelocity": "0,0,0"
+          }
+        ],
+        "Children": []
+      },
+      {
+        "__guid": "bb66abfd-40d3-4fc0-95cd-6547c045625e",
+        "__version": 2,
+        "Flags": 0,
+        "Name": "stone_1 (58)",
+        "Position": "232.432617,-62.1450958,30.2509308",
+        "Rotation": "0,0,0.4986386,0.866809964",
+        "Scale": "2,2,2",
+        "Tags": "",
+        "Enabled": true,
+        "NetworkMode": 2,
+        "NetworkFlags": 0,
+        "NetworkOrphaned": 0,
+        "NetworkTransmit": true,
+        "OwnerTransfer": 1,
+        "Components": [
+          {
+            "__type": "Sandbox.Prop",
+            "__guid": "2f997c21-52f1-43fa-bb3c-b886a9ef55c1",
+            "__enabled": true,
+            "Flags": 0,
+            "BodyGroups": 18446744073709551615,
+            "Health": 0,
+            "IsStatic": true,
+            "MaterialGroup": null,
+            "Model": "models/asset-quest/halloween/stone_1.vmdl",
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "OnPropBreak": null,
+            "OnPropTakeDamage": null,
+            "StartAsleep": false,
+            "Tint": "1,1,1,1"
+          },
+          {
+            "__type": "Sandbox.ModelRenderer",
+            "__guid": "4c4bd92e-38f0-40ba-b35f-18909d304199",
+            "__enabled": true,
+            "Flags": 0,
+            "BodyGroups": 18446744073709551615,
+            "CreateAttachments": false,
+            "LodOverride": null,
+            "MaterialGroup": null,
+            "MaterialOverride": null,
+            "Materials": null,
+            "Model": "models/asset-quest/halloween/stone_1.vmdl",
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "RenderOptions": {
+              "GameLayer": true,
+              "OverlayLayer": false,
+              "BloomLayer": false,
+              "AfterUILayer": false
+            },
+            "RenderType": "On",
+            "Tint": "1,1,1,1"
+          },
+          {
+            "__type": "Sandbox.ModelCollider",
+            "__guid": "88380dec-3245-4318-a6c7-3cb52662fcfd",
+            "__enabled": true,
+            "Flags": 0,
+            "ColliderFlags": 0,
+            "Elasticity": null,
+            "Friction": null,
+            "IsTrigger": false,
+            "Model": "models/asset-quest/halloween/stone_1.vmdl",
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "OnObjectTriggerEnter": null,
+            "OnObjectTriggerExit": null,
+            "OnTriggerEnter": null,
+            "OnTriggerExit": null,
+            "RollingResistance": null,
+            "Static": true,
+            "Surface": null,
+            "SurfaceVelocity": "0,0,0"
+          }
+        ],
+        "Children": []
+      },
+      {
+        "__guid": "fa15719f-08a9-41b5-8231-51221edc9938",
+        "__version": 2,
+        "Flags": 0,
+        "Name": "stone_1 (57)",
+        "Position": "203.17334,-43.4164581,30.2509308",
+        "Rotation": "0,0,0.654608667,0.755967915",
+        "Scale": "2,2,2",
+        "Tags": "",
+        "Enabled": true,
+        "NetworkMode": 2,
+        "NetworkFlags": 0,
+        "NetworkOrphaned": 0,
+        "NetworkTransmit": true,
+        "OwnerTransfer": 1,
+        "Components": [
+          {
+            "__type": "Sandbox.Prop",
+            "__guid": "4618a0ee-744b-4779-a137-8cbc97ee638c",
+            "__enabled": true,
+            "Flags": 0,
+            "BodyGroups": 18446744073709551615,
+            "Health": 0,
+            "IsStatic": true,
+            "MaterialGroup": null,
+            "Model": "models/asset-quest/halloween/stone_1.vmdl",
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "OnPropBreak": null,
+            "OnPropTakeDamage": null,
+            "StartAsleep": false,
+            "Tint": "1,1,1,1"
+          },
+          {
+            "__type": "Sandbox.ModelRenderer",
+            "__guid": "5343b2b8-4681-4f12-8065-5d5bf0f49c4d",
+            "__enabled": true,
+            "Flags": 0,
+            "BodyGroups": 18446744073709551615,
+            "CreateAttachments": false,
+            "LodOverride": null,
+            "MaterialGroup": null,
+            "MaterialOverride": null,
+            "Materials": null,
+            "Model": "models/asset-quest/halloween/stone_1.vmdl",
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "RenderOptions": {
+              "GameLayer": true,
+              "OverlayLayer": false,
+              "BloomLayer": false,
+              "AfterUILayer": false
+            },
+            "RenderType": "On",
+            "Tint": "1,1,1,1"
+          },
+          {
+            "__type": "Sandbox.ModelCollider",
+            "__guid": "a14f6bbd-78ea-4e04-88cf-b83190b936fd",
+            "__enabled": true,
+            "Flags": 0,
+            "ColliderFlags": 0,
+            "Elasticity": null,
+            "Friction": null,
+            "IsTrigger": false,
+            "Model": "models/asset-quest/halloween/stone_1.vmdl",
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "OnObjectTriggerEnter": null,
+            "OnObjectTriggerExit": null,
+            "OnTriggerEnter": null,
+            "OnTriggerExit": null,
+            "RollingResistance": null,
+            "Static": true,
+            "Surface": null,
+            "SurfaceVelocity": "0,0,0"
+          }
+        ],
+        "Children": []
+      },
+      {
+        "__guid": "fd66dc40-cb2e-4e3d-92cc-17d05bbfe063",
+        "__version": 2,
+        "Flags": 0,
+        "Name": "stone_1 (56)",
+        "Position": "169.359131,-38.5315704,30.2509308",
+        "Rotation": "0,0,0.786988795,0.616967261",
+        "Scale": "2,2,2",
+        "Tags": "",
+        "Enabled": true,
+        "NetworkMode": 2,
+        "NetworkFlags": 0,
+        "NetworkOrphaned": 0,
+        "NetworkTransmit": true,
+        "OwnerTransfer": 1,
+        "Components": [
+          {
+            "__type": "Sandbox.Prop",
+            "__guid": "db223028-dd18-41bf-854e-d747fd4739fd",
+            "__enabled": true,
+            "Flags": 0,
+            "BodyGroups": 18446744073709551615,
+            "Health": 0,
+            "IsStatic": true,
+            "MaterialGroup": null,
+            "Model": "models/asset-quest/halloween/stone_1.vmdl",
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "OnPropBreak": null,
+            "OnPropTakeDamage": null,
+            "StartAsleep": false,
+            "Tint": "1,1,1,1"
+          },
+          {
+            "__type": "Sandbox.ModelRenderer",
+            "__guid": "951d5f0c-f708-46bf-8e07-8966fa4e510f",
+            "__enabled": true,
+            "Flags": 0,
+            "BodyGroups": 18446744073709551615,
+            "CreateAttachments": false,
+            "LodOverride": null,
+            "MaterialGroup": null,
+            "MaterialOverride": null,
+            "Materials": null,
+            "Model": "models/asset-quest/halloween/stone_1.vmdl",
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "RenderOptions": {
+              "GameLayer": true,
+              "OverlayLayer": false,
+              "BloomLayer": false,
+              "AfterUILayer": false
+            },
+            "RenderType": "On",
+            "Tint": "1,1,1,1"
+          },
+          {
+            "__type": "Sandbox.ModelCollider",
+            "__guid": "fb5a0acf-a832-48f7-904e-d76e081d0eae",
+            "__enabled": true,
+            "Flags": 0,
+            "ColliderFlags": 0,
+            "Elasticity": null,
+            "Friction": null,
+            "IsTrigger": false,
+            "Model": "models/asset-quest/halloween/stone_1.vmdl",
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "OnObjectTriggerEnter": null,
+            "OnObjectTriggerExit": null,
+            "OnTriggerEnter": null,
+            "OnTriggerExit": null,
+            "RollingResistance": null,
+            "Static": true,
+            "Surface": null,
+            "SurfaceVelocity": "0,0,0"
+          }
+        ],
+        "Children": []
+      }
+    ],
+    "__properties": {
+      "NetworkInterpolation": true,
+      "TimeScale": 1,
+      "WantsSystemScene": true,
+      "Metadata": {},
+      "NavMesh": {
+        "Enabled": false,
+        "IncludeStaticBodies": true,
+        "IncludeKeyframedBodies": true,
+        "EditorAutoUpdate": false,
+        "AgentHeight": 64,
+        "AgentRadius": 16,
+        "AgentStepSize": 18,
+        "AgentMaxSlope": 40,
+        "ExcludedBodies": "",
+        "IncludedBodies": "",
+        "DeferGeneration": false,
+        "CustomBounds": false
+      }
+    },
+    "__variables": []
+  },
+  "ResourceVersion": 2,
+  "ShowInMenu": false,
+  "MenuPath": null,
+  "MenuIcon": null,
+  "DontBreakAsTemplate": false,
+  "__references": [
+    "facepunch.metal_fence_panel#143812",
+    "titanovsky.stone1#78491"
+  ],
+  "__version": 2
+}
