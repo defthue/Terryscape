@@ -1,0 +1,18 @@
+sourceVersion: 1
+kind: collection
+id: bank_unique
+name: "bank_unique"
+description: "Banked unique items with full socket and enchantment data"
+collectionType: "per-steamid"
+accessMode: "endpoint"
+maxRecords: 1
+allowRecordDelete: false
+requireSaveVersion: false
+webhookOnRateLimit: false
+rateLimitAction: "reject"
+rateLimits:
+  mode: "none"
+schema:
+  items:
+    default: []
+    type: "array"

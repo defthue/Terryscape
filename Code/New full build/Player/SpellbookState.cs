@@ -27,7 +27,7 @@ public static class SpellbookState
 		{
 			var def = SpellDatabase.Get( spellId );
 			GameLog.Add( $"Spell unlocked: {def?.Name ?? spellId.ToString()}!", "#a080d0" );
-			PlayerPersistence.Local?.RequestSaveNow();
+			PlayerPersistence.Local?.MarkDirty( SaveSection.Progress );
 		}
 	}
 

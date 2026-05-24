@@ -4,11 +4,130 @@ using System.Linq;
 using System.Text.Json;
 
 /// <summary>
-/// Transforms between local JSON file format and the server's expected format.
+/// Transforms between local YAML source canonical data and the server's expected format.
 /// Handles endpoints and collections (with constants/tables for game config).
 /// </summary>
 public static class SyncToolTransforms
 {
+	private static readonly HashSet<string> ServerManagedFields = new() { "id", "createdAt", "version" };
+	private static readonly HashSet<string> AuthoringOnlyFields = new() { "authoringMode", "sourceFormat", "sourcePath", "sourceText", "sourceVersion" };
+
+	/// <summary>
+	/// Strip server-managed and authoring-only fields from local Dictionary data for fair comparison.
+	/// </summary>
+	public static Dictionary<string, object> StripServerManagedFields( Dictionary<string, object> local )
+	{
+		var result = new Dictionary<string, object>();
+		foreach ( var kv in local )
+		{
+			if ( !ServerManagedFields.Contains( kv.Key ) && !AuthoringOnlyFields.Contains( kv.Key ) )
+				result[kv.Key] = kv.Value;
+		}
+		return result;
+	}
+
+	public static bool TryGetSourceText( JsonElement resource, out string sourceText )
+	{
+		if ( resource.TryGetProperty( "sourceText", out var value ) && value.ValueKind == JsonValueKind.String )
+		{
+			sourceText = value.GetString();
+			return !string.IsNullOrWhiteSpace( sourceText );
+		}
+
+		sourceText = null;
+		return false;
+	}
+
+	public static string GetSourcePath( JsonElement resource )
+	{
+		return resource.TryGetProperty( "sourcePath", out var value ) && value.ValueKind == JsonValueKind.String
+			? value.GetString()
+			: null;
+	}
+
+	public static bool TryGetCanonicalDefinition( JsonElement resource, out JsonElement canonical )
+	{
+		if ( resource.TryGetProperty( "canonicalDefinition", out var value ) && value.ValueKind == JsonValueKind.Object )
+		{
+			canonical = value;
+			return true;
+		}
+
+		canonical = default;
+		return false;
+	}
+
+	/// <summary>
+	/// Build the management API payload for a source-authored resource. Pushes raw
+	/// source only; the backend compiler owns canonicalization and validation.
+	/// </summary>
+	public static bool TryBuildSourceOnlyPayload( JsonElement resource, string kind, out Dictionary<string, object> entry )
+	{
+		entry = null;
+		if ( !TryGetSourceText( resource, out var sourceText ) )
+			return false;
+
+		entry = new Dictionary<string, object>
+		{
+			["kind"] = kind,
+			["authoringMode"] = "source",
+			["sourceFormat"] = resource.TryGetProperty( "sourceFormat", out var sourceFormat ) && sourceFormat.ValueKind == JsonValueKind.String ? sourceFormat.GetString() : "yaml",
+			["sourcePath"] = resource.TryGetProperty( "sourcePath", out var sourcePath ) && sourcePath.ValueKind == JsonValueKind.String ? sourcePath.GetString() : null,
+			["sourceText"] = sourceText
+		};
+		if ( resource.TryGetProperty( "sourceVersion", out var sourceVersion ) )
+			entry["sourceVersion"] = JsonElementToObject( sourceVersion );
+		return true;
+	}
+
+	public static bool TryBuildSourceOnlyPayload( Dictionary<string, object> resource, string kind, out Dictionary<string, object> entry )
+	{
+		entry = null;
+		if ( resource == null || !resource.TryGetValue( "sourceText", out var sourceTextValue ) || string.IsNullOrWhiteSpace( sourceTextValue?.ToString() ) )
+			return false;
+
+		entry = new Dictionary<string, object>
+		{
+			["kind"] = kind,
+			["authoringMode"] = "source",
+			["sourceFormat"] = resource.TryGetValue( "sourceFormat", out var sourceFormat ) ? sourceFormat?.ToString() ?? "yaml" : "yaml",
+			["sourcePath"] = resource.TryGetValue( "sourcePath", out var sourcePath ) ? sourcePath?.ToString() : null,
+			["sourceText"] = sourceTextValue.ToString()
+		};
+		if ( resource.TryGetValue( "sourceVersion", out var sourceVersion ) && sourceVersion != null )
+			entry["sourceVersion"] = sourceVersion;
+		return true;
+	}
+
+	private static JsonElement GetComparableResourceView( JsonElement resource )
+	{
+		if ( TryGetCanonicalDefinition( resource, out var canonical ) )
+			return canonical;
+
+		if ( resource.ValueKind == JsonValueKind.Object
+			&& resource.TryGetProperty( "definition", out var definition )
+			&& definition.ValueKind == JsonValueKind.Object )
+		{
+			var flattened = new Dictionary<string, object>( StringComparer.OrdinalIgnoreCase );
+			foreach ( var prop in resource.EnumerateObject() )
+			{
+				if ( prop.NameEquals( "definition" ) )
+					continue;
+				if ( IsSourceEnvelopeField( prop.Name ) || IsServerManagedOrCompilerField( prop.Name ) )
+					continue;
+
+				flattened[prop.Name] = JsonElementToObject( prop.Value );
+			}
+
+			foreach ( var prop in definition.EnumerateObject() )
+				flattened[prop.Name] = JsonElementToObject( prop.Value );
+
+			return JsonSerializer.Deserialize<JsonElement>( JsonSerializer.Serialize( flattened ) );
+		}
+
+		return resource;
+	}
+
 	/// <summary>
 	/// Convert local endpoint definitions to server format, preserving IDs by slug.
 	/// </summary>
@@ -29,6 +148,12 @@ public static class SyncToolTransforms
 
 		foreach ( var ep in localEndpoints )
 		{
+			if ( TryBuildSourceOnlyPayload( ep, "endpoint", out var sourceEntry ) )
+			{
+				result.Add( sourceEntry );
+				continue;
+			}
+
 			var slug = ep.TryGetProperty( "slug", out var s ) ? s.GetString() : "";
 			var existing = slugToExisting.GetValueOrDefault( slug );
 			var existingId = existing.ValueKind != JsonValueKind.Undefined && existing.TryGetProperty( "id", out var id ) ? id.GetString() : Guid.NewGuid().ToString( "N" )[..16];
@@ -68,24 +193,30 @@ public static class SyncToolTransforms
 	/// </summary>
 	public static Dictionary<string, object> ServerEndpointToLocal( JsonElement ep )
 	{
-		var slugStr = ep.TryGetProperty( "slug", out var slug ) ? slug.GetString() : "";
+		var source = GetComparableResourceView( ep );
+		var slugStr = source.TryGetProperty( "slug", out var slug ) ? slug.GetString() : "";
+		if ( string.IsNullOrEmpty( slugStr ) && ep.TryGetProperty( "slug", out var wrappedSlug ) )
+			slugStr = wrappedSlug.GetString();
 
 		var local = new Dictionary<string, object>
 		{
 			["slug"] = slugStr,
-			["name"] = ep.TryGetProperty( "name", out var name ) ? name.GetString() : slugStr.Replace( "-", " " ),
-			["method"] = ep.TryGetProperty( "method", out var method ) ? method.GetString() : "POST",
-			["description"] = ep.TryGetProperty( "description", out var desc ) ? desc.GetString() : "",
-			["notes"] = ep.TryGetProperty( "notes", out var notes ) ? notes.GetString() : "",
-			["enabled"] = !ep.TryGetProperty( "enabled", out var enabled ) || enabled.ValueKind != JsonValueKind.False,
-			["input"] = ep.TryGetProperty( "input", out var input ) ? (object)input : new Dictionary<string, object>(),
-			["steps"] = ep.TryGetProperty( "steps", out var steps ) ? (object)steps : new List<object>(),
-			["response"] = ep.TryGetProperty( "response", out var response )
+			["name"] = source.TryGetProperty( "name", out var name ) ? name.GetString() : slugStr.Replace( "-", " " ),
+			["method"] = source.TryGetProperty( "method", out var method ) ? method.GetString() : "POST",
+			["enabled"] = !source.TryGetProperty( "enabled", out var enabled ) || enabled.ValueKind != JsonValueKind.False,
+			["input"] = source.TryGetProperty( "input", out var input ) ? (object)input : new Dictionary<string, object>(),
+			["steps"] = NormalizeStepsField( source ),
+			["response"] = source.TryGetProperty( "response", out var response )
 				? (object)response
 				: new Dictionary<string, object> { ["status"] = 200, ["body"] = new Dictionary<string, object> { ["ok"] = true } }
 		};
 
-		if ( SyncToolConfig.IsEndpointDeprecated( ep ) )
+		if ( source.TryGetProperty( "description", out var desc ) && !string.IsNullOrEmpty( desc.GetString() ) )
+			local["description"] = desc.GetString();
+		if ( source.TryGetProperty( "notes", out var notes ) && !string.IsNullOrEmpty( notes.GetString() ) )
+			local["notes"] = notes.GetString();
+
+		if ( SyncToolConfig.IsEndpointDeprecated( ep ) || SyncToolConfig.IsEndpointDeprecated( source ) )
 			local["deprecated"] = true;
 
 		// Intentionally omit: id, createdAt (server-managed)
@@ -95,39 +226,46 @@ public static class SyncToolTransforms
 	/// <summary>
 	/// Convert a single server collection to local file format.
 	/// Includes schema + config fields. Strips server-managed fields (id, createdAt, version).
-	/// Each collection is saved as its own file: collections/{name}.json
+	/// Each collection is saved as its own source file: collections/{name}.collection.yml
 	/// </summary>
 	public static Dictionary<string, object> ServerCollectionToLocal( JsonElement col )
 	{
-		var nameStr = col.TryGetProperty( "name", out var n ) ? n.GetString() : "unknown";
+		var source = GetComparableResourceView( col );
+		var nameStr = source.TryGetProperty( "name", out var n ) ? n.GetString() : "unknown";
+		if ( string.IsNullOrEmpty( nameStr ) && col.TryGetProperty( "name", out var wrappedName ) )
+			nameStr = wrappedName.GetString();
 
 		var local = new Dictionary<string, object>
 		{
 			["name"] = nameStr,
-			["description"] = col.TryGetProperty( "description", out var desc ) ? desc.GetString() : "",
-			["collectionType"] = col.TryGetProperty( "collectionType", out var ct ) ? ct.GetString() : "per-steamid",
-			["accessMode"] = col.TryGetProperty( "accessMode", out var am ) ? am.GetString() : "public",
-			["maxRecords"] = col.TryGetProperty( "maxRecords", out var mr ) ? mr.GetInt32() : 1,
-			["allowRecordDelete"] = col.TryGetProperty( "allowRecordDelete", out var ard ) && ard.ValueKind == JsonValueKind.True,
-			["requireSaveVersion"] = col.TryGetProperty( "requireSaveVersion", out var rsv ) && rsv.ValueKind == JsonValueKind.True,
-			["webhookOnRateLimit"] = col.TryGetProperty( "webhookOnRateLimit", out var wrl ) && wrl.ValueKind == JsonValueKind.True,
-			["rateLimitAction"] = col.TryGetProperty( "rateLimitAction", out var rla ) ? rla.GetString() : "reject",
+			["collectionType"] = source.TryGetProperty( "collectionType", out var ct ) ? ct.GetString() : "per-steamid",
+			["accessMode"] = source.TryGetProperty( "accessMode", out var am ) ? am.GetString() : "public",
+			["maxRecords"] = source.TryGetProperty( "maxRecords", out var mr ) ? mr.GetInt32() : 1,
+			["allowRecordDelete"] = source.TryGetProperty( "allowRecordDelete", out var ard ) && ard.ValueKind == JsonValueKind.True,
+			["requireSaveVersion"] = source.TryGetProperty( "requireSaveVersion", out var rsv ) && rsv.ValueKind == JsonValueKind.True,
+			["webhookOnRateLimit"] = source.TryGetProperty( "webhookOnRateLimit", out var wrl ) && wrl.ValueKind == JsonValueKind.True,
+			["rateLimitAction"] = source.TryGetProperty( "rateLimitAction", out var rla ) ? rla.GetString() : "reject",
 		};
 
-		if ( col.TryGetProperty( "rateLimits", out var rl ) )
+		if ( source.TryGetProperty( "description", out var desc ) && !string.IsNullOrEmpty( desc.GetString() ) )
+			local["description"] = desc.GetString();
+		if ( source.TryGetProperty( "notes", out var notes ) && !string.IsNullOrEmpty( notes.GetString() ) )
+			local["notes"] = notes.GetString();
+
+		if ( source.TryGetProperty( "rateLimits", out var rl ) )
 			local["rateLimits"] = rl;
 		else
 			local["rateLimits"] = new Dictionary<string, object> { ["mode"] = "none" };
 
-		if ( col.TryGetProperty( "schema", out var schema ) )
+		if ( source.TryGetProperty( "schema", out var schema ) )
 			local["schema"] = schema;
 		else
 			local["schema"] = new Dictionary<string, object>();
 
 		// Game config data (constants = groups, tables = structured data)
-		if ( col.TryGetProperty( "constants", out var constants ) )
+		if ( source.TryGetProperty( "constants", out var constants ) )
 			local["constants"] = constants;
-		if ( col.TryGetProperty( "tables", out var tables ) )
+		if ( source.TryGetProperty( "tables", out var tables ) )
 			local["tables"] = tables;
 
 		// Intentionally omit: id, createdAt, version (server-managed)
@@ -167,6 +305,12 @@ public static class SyncToolTransforms
 		var payload = new List<Dictionary<string, object>>();
 		foreach ( var col in localCollections )
 		{
+			if ( TryBuildSourceOnlyPayload( col, "collection", out var sourceEntry ) )
+			{
+				payload.Add( sourceEntry );
+				continue;
+			}
+
 			var entry = new Dictionary<string, object>
 			{
 				["name"] = col.GetValueOrDefault( "name", "unknown" ),
@@ -194,6 +338,7 @@ public static class SyncToolTransforms
 				entry["rateLimits"] = rl;
 			if ( col.TryGetValue( "rateLimitAction", out var rla ) )
 				entry["rateLimitAction"] = rla;
+			TryAddSourceEnvelope( col, entry );
 			payload.Add( entry );
 		}
 		return JsonSerializer.Deserialize<JsonElement>( JsonSerializer.Serialize( payload ) );
@@ -232,13 +377,20 @@ public static class SyncToolTransforms
 	/// </summary>
 	public static Dictionary<string, object> ServerWorkflowToLocal( JsonElement wf )
 	{
+		var source = GetComparableResourceView( wf );
 		var local = new Dictionary<string, object>();
 
-		foreach ( var prop in wf.EnumerateObject() )
+		foreach ( var prop in source.EnumerateObject() )
 		{
-			// Skip server-managed fields
-			if ( prop.Name is "createdAt" or "versionHash" or "updatedAt" )
+			if ( IsServerManagedOrCompilerField( prop.Name ) )
 				continue;
+
+			if ( prop.NameEquals( "steps" ) && prop.Value.ValueKind == JsonValueKind.Array )
+			{
+				local[prop.Name] = SyncToolFlowCanonicalizer.NormalizeSteps( prop.Value )
+					?? new List<object>();
+				continue;
+			}
 
 			local[prop.Name] = prop.Value.ValueKind switch
 			{
@@ -251,6 +403,51 @@ public static class SyncToolTransforms
 		}
 
 		return local;
+	}
+
+	/// <summary>
+	/// Read the steps array from a resource and run it through the canonical
+	/// route normalizer so legacy <c>onFail</c> shapes compare equal to the
+	/// canonical <c>routes.true</c> / <c>routes.false</c> form.
+	/// </summary>
+	private static object NormalizeStepsField( JsonElement source )
+	{
+		if ( !source.TryGetProperty( "steps", out var steps ) || steps.ValueKind != JsonValueKind.Array )
+			return new List<object>();
+		return SyncToolFlowCanonicalizer.NormalizeSteps( steps ) ?? new List<object>();
+	}
+
+	private static bool IsServerManagedOrCompilerField( string name )
+	{
+		return name is "createdAt"
+			or "updatedAt"
+			or "versionHash"
+			or "sourceText"
+			or "sourceFormat"
+			or "sourceVersion"
+			or "sourcePath"
+			or "authoringMode"
+			or "compilerFingerprint"
+			or "compilerFingerprintHash"
+			or "sourceHash"
+			or "dependencyHash"
+			or "canonicalHash"
+			or "executionPlanHash"
+			or "dependencies"
+			or "canonicalDefinition"
+			or "executionPlan"
+			or "diagnostics"
+			or "revisionTarget"
+			or "hasStaged";
+	}
+
+	private static bool IsSourceEnvelopeField( string name )
+	{
+		return name is "sourceText"
+			or "sourceFormat"
+			or "sourceVersion"
+			or "sourcePath"
+			or "authoringMode";
 	}
 
 	/// <summary>
@@ -278,6 +475,12 @@ public static class SyncToolTransforms
 
 		foreach ( var wf in localWorkflows )
 		{
+			if ( TryBuildSourceOnlyPayload( wf, "workflow", out var sourceEntry ) )
+			{
+				result.Add( sourceEntry );
+				continue;
+			}
+
 			var entry = ServerWorkflowToLocal( wf );
 
 			// Preserve server-managed fields from existing if available
@@ -297,6 +500,42 @@ public static class SyncToolTransforms
 	// ── Tests ──
 
 	/// <summary>Parse server tests response into id → local dict pairs.</summary>
+	private static void TryAddSourceEnvelope( JsonElement resource, Dictionary<string, object> entry )
+	{
+		if ( resource.TryGetProperty( "authoringMode", out var authoringMode ) && authoringMode.ValueKind == JsonValueKind.String )
+			entry["authoringMode"] = authoringMode.GetString();
+		if ( resource.TryGetProperty( "sourceFormat", out var sourceFormat ) && sourceFormat.ValueKind == JsonValueKind.String )
+			entry["sourceFormat"] = sourceFormat.GetString();
+		if ( resource.TryGetProperty( "sourceVersion", out var sourceVersion ) )
+			entry["sourceVersion"] = JsonElementToObject( sourceVersion );
+		if ( resource.TryGetProperty( "sourcePath", out var sourcePath ) && sourcePath.ValueKind == JsonValueKind.String )
+			entry["sourcePath"] = sourcePath.GetString();
+		if ( resource.TryGetProperty( "sourceText", out var sourceText ) && sourceText.ValueKind == JsonValueKind.String )
+			entry["sourceText"] = sourceText.GetString();
+	}
+
+	private static void TryAddSourceEnvelope( Dictionary<string, object> resource, Dictionary<string, object> entry )
+	{
+		foreach ( var key in new[] { "authoringMode", "sourceFormat", "sourceVersion", "sourcePath", "sourceText" } )
+		{
+			if ( resource.TryGetValue( key, out var value ) && value != null )
+				entry[key] = value;
+		}
+	}
+
+	private static object JsonElementToObject( JsonElement value )
+	{
+		return value.ValueKind switch
+		{
+			JsonValueKind.String => value.GetString(),
+			JsonValueKind.Number => value.TryGetInt32( out var i ) ? i : value.GetDouble(),
+			JsonValueKind.True => true,
+			JsonValueKind.False => false,
+			JsonValueKind.Null => null,
+			_ => value.Clone()
+		};
+	}
+
 	public static Dictionary<string, Dictionary<string, object>> ServerToTests( JsonElement serverResponse )
 	{
 		var result = new Dictionary<string, Dictionary<string, object>>();

@@ -101,7 +101,9 @@ public sealed class Skills : Component
 		}
 
 		if ( leveledUp )
-			PlayerPersistence.Local?.RequestSaveNow();
+			PlayerPersistence.Local?.SaveNow( SaveSection.Skills | SaveSection.Stats );
+		else
+			PlayerPersistence.Local?.MarkDirty( SaveSection.Skills | SaveSection.Stats );
 	}
 
 	public void AddCombatXp( SkillType combatStyle, int amount )

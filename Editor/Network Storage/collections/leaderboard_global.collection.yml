@@ -1,0 +1,18 @@
+sourceVersion: 1
+kind: collection
+id: leaderboard_global
+name: "leaderboard_global"
+description: "Global aggregator record holding every player\u0027s leaderboard summary, keyed by steamId"
+collectionType: "global"
+accessMode: "endpoint"
+maxRecords: 1
+allowRecordDelete: false
+requireSaveVersion: false
+webhookOnRateLimit: false
+rateLimitAction: "reject"
+rateLimits:
+  mode: "none"
+schema:
+  entriesByPlayer:
+    default: {}
+    type: "object"

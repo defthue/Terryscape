@@ -838,7 +838,7 @@ public sealed class BlackjackTable : Component
 				var persistence = localPlayer.Components.Get<PlayerPersistence>();
 				if ( persistence != null )
 				{
-					persistence.RequestSaveNow();
+					persistence.SaveNow( SaveSection.Inventory | SaveSection.Stats );
 					Log.Info( "[Blackjack] Triggered save for local player" );
 				}
 				break;

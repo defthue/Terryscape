@@ -1,0 +1,33 @@
+sourceVersion: 1
+kind: collection
+id: progression
+name: "progression"
+description: "Unlocks, quests, recipes, stones, spells, and chest claim timestamps"
+collectionType: "per-steamid"
+accessMode: "endpoint"
+maxRecords: 1
+allowRecordDelete: false
+requireSaveVersion: false
+webhookOnRateLimit: false
+rateLimitAction: "reject"
+rateLimits:
+  mode: "none"
+schema:
+  chestClaims:
+    default: {}
+    type: "object"
+  discoveredQuests:
+    default: []
+    type: "array"
+  quests:
+    default: []
+    type: "array"
+  recipes:
+    default: []
+    type: "array"
+  stones:
+    default: []
+    type: "array"
+  unlockedSpells:
+    default: []
+    type: "array"

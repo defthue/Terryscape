@@ -1,0 +1,21 @@
+sourceVersion: 1
+kind: collection
+id: equipment
+name: "equipment"
+description: "Currently equipped items per slot with socket data"
+collectionType: "per-steamid"
+accessMode: "endpoint"
+maxRecords: 1
+allowRecordDelete: false
+requireSaveVersion: false
+webhookOnRateLimit: false
+rateLimitAction: "reject"
+rateLimits:
+  mode: "none"
+schema:
+  equipped:
+    default: {}
+    type: "object"
+  equippedSlotIndices:
+    default: {}
+    type: "object"

@@ -14,9 +14,18 @@ using Editor;
 public class SettingsWindow : DockWindow
 {
 	private bool _proxyEnabled;
+	private SyncToolConfig.SourceExportMode _sourceExportMode;
 	private bool _saved;
 	private float _savedTimer;
 	private string _generateStatus = "";
+
+	// Logging config state
+	private bool _logRequests;
+	private bool _logResponses;
+	private bool _logTokens;
+	private bool _logProxy;
+	private bool _logErrors;
+	private bool _logConfig;
 
 	private List<ButtonRect> _buttons = new();
 	private Vector2 _mousePos;
@@ -43,12 +52,34 @@ public class SettingsWindow : DockWindow
 	public SettingsWindow()
 	{
 		Title = "Network Storage Settings";
-		Size = new Vector2( 520, 600 );
+		Size = new Vector2( 520, 700 );
 		MinimumSize = new Vector2( 400, 400 );
 
 		SyncToolConfig.Load();
 		_proxyEnabled = SyncToolConfig.ProxyEnabled;
+		_sourceExportMode = SyncToolConfig.SourceExport;
 		RebuildMappingWidgets();
+		LoadLogConfig();
+	}
+
+	private void LoadLogConfig()
+	{
+		_logRequests = NetworkStorageLogConfig.LogRequests;
+		_logResponses = NetworkStorageLogConfig.LogResponses;
+		_logTokens = NetworkStorageLogConfig.LogTokens;
+		_logProxy = NetworkStorageLogConfig.LogProxy;
+		_logErrors = NetworkStorageLogConfig.LogErrors;
+		_logConfig = NetworkStorageLogConfig.LogConfig;
+	}
+
+	private void ApplyLogConfig()
+	{
+		NetworkStorageLogConfig.LogRequests = _logRequests;
+		NetworkStorageLogConfig.LogResponses = _logResponses;
+		NetworkStorageLogConfig.LogTokens = _logTokens;
+		NetworkStorageLogConfig.LogProxy = _logProxy;
+		NetworkStorageLogConfig.LogErrors = _logErrors;
+		NetworkStorageLogConfig.LogConfig = _logConfig;
 	}
 
 	[Menu( "Editor", "Network Storage/Settings" )]
@@ -98,9 +129,9 @@ public class SettingsWindow : DockWindow
 		Paint.SetDefaultFont( size: 9 );
 		Paint.SetPen( Color.White.WithAlpha( 0.45f ) );
 		DrawWrappedText( ref y, pad, w, lineH + 2,
-			"Map C# data files or directories to collection JSON. " +
+			"Map C# data files or directories to collection YAML source. " +
 			"The Sync Tool's Generate button parses C# records and " +
-			"writes the collection JSON automatically." );
+			"writes the collection source automatically." );
 		y += 12;
 
 		// ── Mapping rows with LineEdit widgets ──
@@ -203,6 +234,38 @@ public class SettingsWindow : DockWindow
 
 		y += addBtnH + 12;
 
+		DrawSeparator( ref y, w, pad );
+
+		Paint.SetDefaultFont( size: 11, weight: 700 );
+		Paint.SetPen( Color.White.WithAlpha( 0.9f ) );
+		Paint.DrawText( new Rect( pad, y, w, 20 ), "Pull / Export Format", TextFlag.LeftCenter );
+		y += 26;
+
+		Paint.SetDefaultFont( size: 9 );
+		Paint.SetPen( Color.White.WithAlpha( 0.45f ) );
+		DrawWrappedText( ref y, pad, w, lineH + 2,
+			"The Sync Tool writes YAML source only. Legacy JSON export and local JSON fallback are no longer supported." );
+		y += 8;
+
+		DrawReadonlyStatusRow( ref y, pad, w, "Export Format", "YAML Source Only", true );
+		y += 6;
+
+		DrawSeparator( ref y, w, pad );
+
+		Paint.SetDefaultFont( size: 11, weight: 700 );
+		Paint.SetPen( Color.White.WithAlpha( 0.9f ) );
+		Paint.DrawText( new Rect( pad, y, w, 20 ), "Project Security", TextFlag.LeftCenter );
+		y += 26;
+
+		DrawReadonlyStatusRow( ref y, pad, w, "Auth Sessions", SyncToolConfig.AuthSessionsLabel, SyncToolConfig.EnableAuthSessions );
+		DrawReadonlyStatusRow( ref y, pad, w, "Encrypted Requests", SyncToolConfig.EncryptedRequestsLabel, SyncToolConfig.EnableEncryptedRequests );
+
+		Paint.SetDefaultFont( size: 9 );
+		Paint.SetPen( Color.White.WithAlpha( 0.45f ) );
+		DrawWrappedText( ref y, pad, w, lineH + 2,
+			"Read-only project settings. Go to Sync Tool and pull changes to resync these settings." );
+		y += 12;
+
 		// ── Multiplayer Auth Proxy ──
 		DrawSeparator( ref y, w, pad );
 
@@ -270,6 +333,8 @@ public class SettingsWindow : DockWindow
 
 		y += checkboxSize + 14;
 
+		DrawProxySecurityNotice( ref y, pad, w, lineH );
+
 		// Save button
 		var btnW = 120f;
 		var btnH = 30f;
@@ -277,7 +342,8 @@ public class SettingsWindow : DockWindow
 		var btnScreenRect = new Rect( pad, y + _scrollY, btnW, btnH );
 		var btnHovered = btnScreenRect.IsInside( _mousePos );
 
-		var isDirty = _proxyEnabled != SyncToolConfig.ProxyEnabled;
+		var isDirty = _proxyEnabled != SyncToolConfig.ProxyEnabled
+			|| _sourceExportMode != SyncToolConfig.SourceExport;
 		var btnColor = _saved ? Color.Green : ( isDirty ? Color.Cyan : Color.White );
 		Paint.SetBrush( btnColor.WithAlpha( btnHovered ? 0.2f : 0.1f ) );
 		Paint.SetPen( btnColor.WithAlpha( btnHovered ? 0.6f : 0.35f ) );
@@ -295,6 +361,7 @@ public class SettingsWindow : DockWindow
 			OnClick = () =>
 			{
 				SyncToolConfig.SetProxyEnabled( _proxyEnabled );
+				SyncToolConfig.SetSourceExportMode( _sourceExportMode );
 				_saved = true;
 				_savedTimer = 2f;
 				Update();
@@ -353,6 +420,91 @@ public class SettingsWindow : DockWindow
 		}
 
 		y += genBtnH + 20;
+
+		// ── Console Logging ──
+		DrawSeparator( ref y, w, pad );
+
+		Paint.SetDefaultFont( size: 11, weight: 700 );
+		Paint.SetPen( Color.White.WithAlpha( 0.9f ) );
+		Paint.DrawText( new Rect( pad, y, w, 20 ), "Console Logging", TextFlag.LeftCenter );
+		y += 26;
+
+		Paint.SetDefaultFont( size: 9 );
+		Paint.SetPen( Color.White.WithAlpha( 0.45f ) );
+		DrawWrappedText( ref y, pad, w, lineH + 2,
+			"Control which [Network Storage] log messages appear in the console. " +
+			"Changes apply immediately at runtime (not persisted across sessions)." );
+		y += 8;
+
+		// Enable All / Disable All buttons
+		var logBtnW = 90f;
+		var logBtnH = 24f;
+		var logBtnGap = 8f;
+
+		var enableAllRect = new Rect( pad, y, logBtnW, logBtnH );
+		var enableAllScreenRect = new Rect( pad, y + _scrollY, logBtnW, logBtnH );
+		var enableAllHovered = enableAllScreenRect.IsInside( _mousePos );
+
+		Paint.SetBrush( Color.Green.WithAlpha( enableAllHovered ? 0.15f : 0.06f ) );
+		Paint.SetPen( Color.Green.WithAlpha( enableAllHovered ? 0.5f : 0.2f ) );
+		Paint.DrawRect( enableAllRect, 4 );
+		Paint.SetDefaultFont( size: 9, weight: 600 );
+		Paint.SetPen( Color.Green.WithAlpha( enableAllHovered ? 0.9f : 0.6f ) );
+		Paint.DrawText( enableAllRect, "Enable All", TextFlag.Center );
+
+		_buttons.Add( new ButtonRect
+		{
+			Rect = enableAllScreenRect,
+			Id = "log_enable_all",
+			OnClick = () =>
+			{
+				_logRequests = _logResponses = _logTokens = _logProxy = _logErrors = _logConfig = true;
+				ApplyLogConfig();
+				Update();
+			}
+		} );
+
+		var disableAllRect = new Rect( pad + logBtnW + logBtnGap, y, logBtnW, logBtnH );
+		var disableAllScreenRect = new Rect( pad + logBtnW + logBtnGap, y + _scrollY, logBtnW, logBtnH );
+		var disableAllHovered = disableAllScreenRect.IsInside( _mousePos );
+
+		Paint.SetBrush( Color.Red.WithAlpha( disableAllHovered ? 0.15f : 0.06f ) );
+		Paint.SetPen( Color.Red.WithAlpha( disableAllHovered ? 0.5f : 0.2f ) );
+		Paint.DrawRect( disableAllRect, 4 );
+		Paint.SetDefaultFont( size: 9, weight: 600 );
+		Paint.SetPen( Color.Red.WithAlpha( disableAllHovered ? 0.9f : 0.6f ) );
+		Paint.DrawText( disableAllRect, "Disable All", TextFlag.Center );
+
+		_buttons.Add( new ButtonRect
+		{
+			Rect = disableAllScreenRect,
+			Id = "log_disable_all",
+			OnClick = () =>
+			{
+				_logRequests = _logResponses = _logTokens = _logProxy = _logErrors = _logConfig = false;
+				ApplyLogConfig();
+				Update();
+			}
+		} );
+
+		y += logBtnH + 12;
+
+		// Log category checkboxes (2 columns)
+		var colW = (w - 10) / 2f;
+		var checkSize = 18f;
+		var checkRowH = 26f;
+
+		DrawLogCheckbox( ref y, pad, colW, checkSize, checkRowH, "Requests", ref _logRequests );
+		DrawLogCheckbox( ref y, pad + colW + 10, colW, checkSize, checkRowH, "Responses", ref _logResponses, sameRow: true );
+		y += checkRowH;
+
+		DrawLogCheckbox( ref y, pad, colW, checkSize, checkRowH, "Tokens", ref _logTokens );
+		DrawLogCheckbox( ref y, pad + colW + 10, colW, checkSize, checkRowH, "Proxy", ref _logProxy, sameRow: true );
+		y += checkRowH;
+
+		DrawLogCheckbox( ref y, pad, colW, checkSize, checkRowH, "Errors", ref _logErrors );
+		DrawLogCheckbox( ref y, pad + colW + 10, colW, checkSize, checkRowH, "Config", ref _logConfig, sameRow: true );
+		y += checkRowH + 8;
 
 		// Bottom padding so content isn't flush against the edge
 		y += 100;
@@ -425,9 +577,80 @@ public class SettingsWindow : DockWindow
 		y += 10;
 	}
 
+	private void DrawSourceExportButton( SyncToolConfig.SourceExportMode mode, string label, Rect rect, Rect screenRect )
+	{
+		var selected = _sourceExportMode == mode;
+		var hovered = screenRect.IsInside( _mousePos );
+		var color = selected ? Color.Cyan : Color.White;
+
+		Paint.SetBrush( color.WithAlpha( selected ? 0.16f : hovered ? 0.09f : 0.04f ) );
+		Paint.SetPen( color.WithAlpha( selected ? 0.55f : hovered ? 0.35f : 0.18f ) );
+		Paint.DrawRect( rect, 4 );
+		Paint.SetDefaultFont( size: 9, weight: 600 );
+		Paint.SetPen( color.WithAlpha( selected || hovered ? 0.9f : 0.6f ) );
+		Paint.DrawText( rect, label, TextFlag.Center );
+
+		_buttons.Add( new ButtonRect
+		{
+			Rect = screenRect,
+			Id = $"source_export_{mode}",
+			OnClick = () =>
+			{
+				_sourceExportMode = mode;
+				_saved = false;
+				Update();
+			}
+		} );
+	}
+
 	// ──────────────────────────────────────────────────────
 	//  Sync mapping helpers
 	// ──────────────────────────────────────────────────────
+
+	private void DrawReadonlyStatusRow( ref float y, float pad, float w, string label, string value, bool enabled )
+	{
+		var rowH = 24f;
+		Paint.SetBrush( Color.White.WithAlpha( 0.035f ) );
+		Paint.SetPen( Color.White.WithAlpha( 0.08f ) );
+		Paint.DrawRect( new Rect( pad, y, w, rowH ), 4 );
+
+		Paint.SetDefaultFont( size: 9, weight: 600 );
+		Paint.SetPen( Color.White.WithAlpha( 0.82f ) );
+		Paint.DrawText( new Rect( pad + 10, y, w * 0.55f, rowH ), label, TextFlag.LeftCenter );
+
+		var color = enabled ? Color.Green : Color.White;
+		Paint.SetPen( color.WithAlpha( enabled ? 0.9f : 0.55f ) );
+		Paint.DrawText( new Rect( pad + w * 0.55f, y, w * 0.45f - 10, rowH ), value, TextFlag.RightCenter );
+		y += rowH + 6;
+	}
+
+	private void DrawProxySecurityNotice( ref float y, float pad, float w, float lineH )
+	{
+		var noticeY = y;
+		var noticeH = 138f;
+		Paint.SetBrush( Color.Orange.WithAlpha( 0.055f ) );
+		Paint.SetPen( Color.Orange.WithAlpha( 0.22f ) );
+		Paint.DrawRect( new Rect( pad, noticeY, w, noticeH ), 4 );
+
+		var textY = noticeY + 10f;
+		var textX = pad + 12f;
+		var textW = w - 24f;
+		Paint.SetDefaultFont( size: 9, weight: 600 );
+		Paint.SetPen( Color.Orange.WithAlpha( 0.9f ) );
+		Paint.DrawText( new Rect( textX, textY, textW, 14 ), "Encryption is recommended when proxy mode is enabled.", TextFlag.LeftCenter );
+		textY += 18f;
+
+		Paint.SetDefaultFont( size: 8 );
+		Paint.SetPen( Color.White.WithAlpha( 0.62f ) );
+		DrawWrappedText( ref textY, textX, textW, lineH + 1,
+			"Proxy mode routes non-host Network Storage calls through the host. Without encrypted requests, that host can inspect endpoint payloads." );
+		DrawWrappedText( ref textY, textX, textW, lineH + 1,
+			"Encryption hides the payload, but it does not stop replay by itself. A hostile host could resend the same encrypted auth-session request, like a Drop $500 call." );
+		DrawWrappedText( ref textY, textX, textW, lineH + 1,
+			"Encrypted requests should include a one-use key such as unixSeconds_random6+. The backend rejects keys that are too old or already used." );
+
+		y = noticeY + noticeH + 12f;
+	}
 
 	private void PositionInput( LineEdit input, float x, float y, float w, float h )
 	{
@@ -521,6 +744,55 @@ public class SettingsWindow : DockWindow
 		return false;
 	}
 
+	private void DrawLogCheckbox( ref float y, float x, float colW, float checkSize, float rowH, string label, ref bool value, bool sameRow = false )
+	{
+		var checkRect = new Rect( x, y, checkSize, checkSize );
+		var checkScreenRect = new Rect( x, y + _scrollY, checkSize, checkSize );
+		var checkHovered = checkScreenRect.IsInside( _mousePos );
+
+		var checkColor = value ? Color.Cyan : Color.White;
+		Paint.SetBrush( checkColor.WithAlpha( value ? 0.15f : checkHovered ? 0.08f : 0.04f ) );
+		Paint.SetPen( checkColor.WithAlpha( value ? 0.5f : checkHovered ? 0.25f : 0.15f ) );
+		Paint.DrawRect( checkRect, 3 );
+
+		if ( value )
+		{
+			Paint.SetDefaultFont( size: 12, weight: 700 );
+			Paint.SetPen( Color.Cyan );
+			Paint.DrawText( checkRect, "✓", TextFlag.Center );
+		}
+
+		Paint.SetDefaultFont( size: 9, weight: 500 );
+		Paint.SetPen( Color.White.WithAlpha( 0.8f ) );
+		Paint.DrawText( new Rect( x + checkSize + 8, y, colW - checkSize - 8, checkSize ), label, TextFlag.LeftCenter );
+
+		var fieldName = label;
+		_buttons.Add( new ButtonRect
+		{
+			Rect = checkScreenRect,
+			Id = $"log_{label.ToLower()}",
+			OnClick = () =>
+			{
+				ToggleLogField( fieldName );
+				ApplyLogConfig();
+				Update();
+			}
+		} );
+	}
+
+	private void ToggleLogField( string fieldName )
+	{
+		switch ( fieldName )
+		{
+			case "Requests": _logRequests = !_logRequests; break;
+			case "Responses": _logResponses = !_logResponses; break;
+			case "Tokens": _logTokens = !_logTokens; break;
+			case "Proxy": _logProxy = !_logProxy; break;
+			case "Errors": _logErrors = !_logErrors; break;
+			case "Config": _logConfig = !_logConfig; break;
+		}
+	}
+
 	// ──────────────────────────────────────────────────────
 	//  Input handling
 	// ──────────────────────────────────────────────────────
@@ -546,9 +818,9 @@ public class SettingsWindow : DockWindow
 		Update();
 	}
 
-	protected override void OnWheel( WheelEvent e )
+	protected override void OnMouseWheel( WheelEvent e )
 	{
-		base.OnWheel( e );
+		base.OnMouseWheel( e );
 
 		var maxScroll = Math.Max( 0f, _contentHeight - Height );
 		_scrollY = Math.Clamp( _scrollY - e.Delta * 30f, 0f, maxScroll );

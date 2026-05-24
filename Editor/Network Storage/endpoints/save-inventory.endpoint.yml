@@ -1,0 +1,46 @@
+sourceVersion: 1
+kind: endpoint
+id: save-inventory
+name: "Save Inventory"
+description: "Writes the inventory slots and equipment state in one call"
+method: "POST"
+enabled: true
+input:
+  properties:
+    equipped:
+      type: "object"
+    equippedSlotIndices:
+      type: "object"
+    slots:
+      type: "array"
+  required: []
+  type: "object"
+steps:
+  -
+    collection: "inventory"
+    id: "save_inv"
+    key: "{{steamId}}_default"
+    ops:
+      -
+        op: "set"
+        path: "slots"
+        value: "{{input.slots}}"
+    type: "write"
+  -
+    collection: "equipment"
+    id: "save_eq"
+    key: "{{steamId}}_default"
+    ops:
+      -
+        op: "set"
+        path: "equipped"
+        value: "{{input.equipped}}"
+      -
+        op: "set"
+        path: "equippedSlotIndices"
+        value: "{{input.equippedSlotIndices}}"
+    type: "write"
+response:
+  body:
+    ok: true
+  status: 200

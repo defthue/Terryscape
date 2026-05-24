@@ -1,0 +1,18 @@
+sourceVersion: 1
+kind: collection
+id: inventory
+name: "inventory"
+description: "Carried items in inventory slots"
+collectionType: "per-steamid"
+accessMode: "endpoint"
+maxRecords: 1
+allowRecordDelete: false
+requireSaveVersion: false
+webhookOnRateLimit: false
+rateLimitAction: "reject"
+rateLimits:
+  mode: "none"
+schema:
+  slots:
+    default: []
+    type: "array"

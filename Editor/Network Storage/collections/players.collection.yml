@@ -1,0 +1,54 @@
+sourceVersion: 1
+kind: collection
+id: players
+name: "players"
+description: "Core player profile, stats, and meta fields"
+collectionType: "per-steamid"
+accessMode: "endpoint"
+maxRecords: 1
+allowRecordDelete: false
+requireSaveVersion: false
+webhookOnRateLimit: false
+rateLimitAction: "reject"
+rateLimits:
+  mode: "none"
+schema:
+  currency:
+    default: 0
+    type: "number"
+  currentMana:
+    default: -1
+    type: "number"
+  equippedAmmoId:
+    default: "None"
+    type: "string"
+  equippedAmmoQty:
+    default: 0
+    type: "number"
+  equippedAmmoSlotIndex:
+    default: 0
+    type: "number"
+  inventoryExpansions:
+    default: 0
+    type: "number"
+  nodesMined:
+    default: 0
+    type: "number"
+  playerName:
+    default: ""
+    type: "string"
+  savedAt:
+    default: ""
+    type: "string"
+  totalGold:
+    default: 0
+    type: "number"
+  totalKills:
+    default: 0
+    type: "number"
+  totalLevel:
+    default: 0
+    type: "number"
+  version:
+    default: 1
+    type: "number"

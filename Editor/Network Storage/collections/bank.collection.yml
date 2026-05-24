@@ -1,0 +1,18 @@
+sourceVersion: 1
+kind: collection
+id: bank
+name: "bank"
+description: "Banked stackable items by item id"
+collectionType: "per-steamid"
+accessMode: "endpoint"
+maxRecords: 1
+allowRecordDelete: false
+requireSaveVersion: false
+webhookOnRateLimit: false
+rateLimitAction: "reject"
+rateLimits:
+  mode: "none"
+schema:
+  stackables:
+    default: {}
+    type: "object"

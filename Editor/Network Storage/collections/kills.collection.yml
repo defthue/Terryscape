@@ -1,0 +1,18 @@
+sourceVersion: 1
+kind: collection
+id: kills
+name: "kills"
+description: "Per-monster kill counts"
+collectionType: "per-steamid"
+accessMode: "endpoint"
+maxRecords: 1
+allowRecordDelete: false
+requireSaveVersion: false
+webhookOnRateLimit: false
+rateLimitAction: "reject"
+rateLimits:
+  mode: "none"
+schema:
+  counts:
+    default: {}
+    type: "object"

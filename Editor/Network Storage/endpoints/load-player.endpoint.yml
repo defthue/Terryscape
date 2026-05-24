@@ -1,0 +1,61 @@
+sourceVersion: 1
+kind: endpoint
+id: load-player
+name: "Load Player"
+description: "Reads all 8 collections and returns the merged player state"
+method: "GET"
+enabled: true
+input: {}
+steps:
+  -
+    collection: "players"
+    id: "players"
+    key: "{{steamId}}_default"
+    type: "read"
+  -
+    collection: "skills"
+    id: "skills"
+    key: "{{steamId}}_default"
+    type: "read"
+  -
+    collection: "inventory"
+    id: "inventory"
+    key: "{{steamId}}_default"
+    type: "read"
+  -
+    collection: "equipment"
+    id: "equipment"
+    key: "{{steamId}}_default"
+    type: "read"
+  -
+    collection: "bank"
+    id: "bank"
+    key: "{{steamId}}_default"
+    type: "read"
+  -
+    collection: "bank_unique"
+    id: "bank_unique"
+    key: "{{steamId}}_default"
+    type: "read"
+  -
+    collection: "progression"
+    id: "progression"
+    key: "{{steamId}}_default"
+    type: "read"
+  -
+    collection: "kills"
+    id: "kills"
+    key: "{{steamId}}_default"
+    type: "read"
+response:
+  body:
+    bank: "{{bank}}"
+    bank_unique: "{{bank_unique}}"
+    equipment: "{{equipment}}"
+    inventory: "{{inventory}}"
+    kills: "{{kills}}"
+    ok: true
+    players: "{{players}}"
+    progression: "{{progression}}"
+    skills: "{{skills}}"
+  status: 200

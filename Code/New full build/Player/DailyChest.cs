@@ -109,7 +109,7 @@ public sealed class DailyChest : Component
 
 		SoundLibrary.PlaySellBuy();
 
-		PlayerPersistence.Local?.RequestSaveNow();
+		PlayerPersistence.Local?.SaveNow( SaveSection.Progress | SaveSection.Inventory | SaveSection.Stats );
 	}
 
 	List<DailyChestRewardEntry> RollLoot()

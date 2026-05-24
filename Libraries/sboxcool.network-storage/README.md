@@ -11,11 +11,11 @@ Persistent cloud storage, server-side endpoints, and an editor sync tool for s&b
 ## Features
 
 - **Runtime Client** — Call server endpoints, fetch game values, read/write documents from your game code
-- **Editor Sync Tool** — Push and pull collections and endpoints between local JSON files and the sboxcool.com dashboard
+- **Editor Sync Tool** — Push and pull collections and endpoints between local YAML source files and the sboxcool.com dashboard
 - **Setup Wizard** — Editor window for entering and validating your API credentials
 - **Diff Viewer** — Side-by-side comparison of local vs remote data before syncing
 - **Network Logger** — Ring buffer that captures all API traffic for in-game debug panels
-- **JSON Helpers** — Extension methods for safe deserialization with fallbacks
+- **JSON Helpers** — Extension methods for reading API response payloads
 
 ## Installation
 
@@ -69,6 +69,16 @@ git submodule add https://github.com/sbox-cool/sbox-network-storage "Libraries/N
 
 Your credentials are saved to `Editor/Network Storage/.env` — this file is in the `Editor/` directory which s&box excludes from publishing. Your secret key never ships with your game.
 
+### Dedicated server endpoint secret (optional)
+
+Dedicated servers can supply a runtime endpoint secret without putting it in the published bundle:
+
+```bash
+sbox-server.exe +game your.org.game your.map +hostname "My Server" +network_storage_secret_key sbox_sk_your_secret_key
+```
+
+The primary dedicated launch key is `+network_storage_secret_key`. The library also accepts aliases (`+network-storage-secret-key`, `+sboxcool_secret_key`, `+networkStorageSecretKey`, `+sboxcoolSecretKey`, `+nsSecretKey`, `+ns_secret_key`) on `Application.IsDedicatedServer` hosts, and validates the supplied key at game startup. Generic names such as `+secret-key`, `+secret_key`, and `+secretKey` are intentionally not supported. When the dedicated key is used, the library does not request or send s&box auth tokens. Endpoint requests use an internal backend flag while the actual launch secret travels in the `x-secret-key` HTTPS header. Storage document row reads/writes/deletes use the secret as the HTTPS `x-api-key` header without a URL secret flag so secret keys with `collections:execute` can access endpoint-only collections. Do not put `sbox_sk_` values in code, public credentials, or client-callable URLs. Collection schema deletion remains website-only.
+
 ## Quick Start
 
 Create a config class in your game project:
@@ -105,6 +115,18 @@ var result = await NetworkStorage.CallEndpoint( "mine-ore", new
     kg = 5.0f
 } );
 
+// Endpoint URLs from the dashboard are also accepted; the slug is extracted.
+var sameResult = await NetworkStorage.CallEndpoint(
+    "https://api.sboxcool.com/v3/endpoints/your_project_id/mine-ore?apiKey=sbox_ns_your_public_key",
+    new { ore_id = "iron", kg = 5.0f } );
+
+// Update collection documents directly (dedicated servers attach +network_storage_secret_key automatically)
+await NetworkStorage.SaveDocument( "player-data", Game.SteamId.ToString(), new { level = 2, xp = 100 } );
+await NetworkStorage.UpdateDocument( "player-data", Game.SteamId.ToString(),
+    NetworkStorageOperation.Increment( "xp", 50, source: "server", reason: "quest" ),
+    NetworkStorageOperation.Set( "lastSeen", DateTimeOffset.UtcNow.ToUnixTimeSeconds() ) );
+await NetworkStorage.DeleteDocument( "player-data", Game.SteamId.ToString() );
+
 // Read the response
 if ( result.HasValue )
 {
@@ -122,15 +144,25 @@ See the [Examples/](Examples/) folder for complete working patterns.
 | Method | Description |
 |————|——————-|
 | `Configure(projectId, apiKey)` | Set credentials. Call once at startup. |
-| `CallEndpoint(slug, input?)` | Call a server endpoint by slug. Returns `JsonElement?`. |
+| `CallEndpoint(slugOrUrl, input?)` | Call a server endpoint by slug or endpoint URL. Returns `JsonElement?`. |
 | `GetGameValues()` | Fetch all game values (constants + tables). Returns `JsonElement?`. |
 | `GetDocument(collectionId, documentId?)` | Read a document from a collection. Defaults to current player's Steam ID. |
+| `SaveDocument(collectionId, documentId, data)` | Save/replace a collection document. Dedicated servers attach the configured secret key automatically. |
+| `UpdateDocument(collectionId, documentId, ops)` | Apply server-side operations (`set`, `inc`, `push`, `pull`, `remove`) to a document. |
+| `DeleteDocument(collectionId, documentId?)` | Delete one collection document/row. Public calls require record deletes to be enabled; dedicated secret keys with collection execute permission can delete rows for diagnostics/backoffice cleanup. Does not delete collection schemas. |
+| `ListRecords/CreateRecord/RenameRecord/DeleteRecord` | Manage multi-record save slots. |
+| `NetworkStorageAnalytics.TrackEvent(eventType, payload?)` | Report an allowlisted custom Player Analytics event. |
+| `NetworkStorageAnalytics.Warning(code, message?, context?)` | Report a recoverable warning/pain point to the player timeline. |
+| `NetworkStorageAnalytics.Error(exception, code?, context?)` | Report an exception/error to the player timeline without breaking gameplay. |
+| `NetworkStorageAnalytics.SessionStart/SessionEnd` | Report managed session boundaries when analytics is enabled. |
 | `IsConfigured` | `true` after `Configure()` has been called. |
 | `ApiRoot` | The full versioned API URL (e.g. `https://api.sboxcool.com/v3`). |
 
+See [analytics.md](analytics.md) for Player Analytics setup, custom events, warnings, and error reporting examples.
+
 ### JsonHelpers (static)
 
-Safe extraction from `JsonElement` with fallback defaults. Handles missing keys and string-to-number coercion.
+Safe extraction from API `JsonElement` payloads with caller-provided defaults. Handles missing keys and string-to-number coercion.
 
 ```csharp
 var name = JsonHelpers.GetString( data, "playerName", "Unknown" );
@@ -202,7 +234,8 @@ var version = NetLog.Version; // increments on every add/clear
 
 ## Editor Sync Tool
 
-The Sync Tool lets you manage your sboxcool.com project data as local JSON files, then push/pull changes.
+The Sync Tool lets you manage your sboxcool.com project data as local YAML source files, then push/pull changes through the API.
+YAML source definitions are the only supported local authoring format. Legacy JSON authoring and local JSON fallback are no longer supported.
 
 ### Open the Sync Tool
 
@@ -210,11 +243,46 @@ The Sync Tool lets you manage your sboxcool.com project data as local JSON files
 
 ### Workflow
 
-1. **Define collections and endpoints** as JSON files in `Editor/Network Storage/`
-2. Click **Check for Updates** to compare local files against the remote server
-3. **Push** sends your local changes to sboxcool.com
-4. **Pull** downloads the latest from sboxcool.com to your local files
-5. **View Diff** shows a side-by-side comparison before overwriting
+1. **Define new collections, endpoints, workflows, tests, and libraries** as YAML source files in `Editor/Network Storage/`
+2. Migrate existing JSON resources to YAML before editing them; `.json` resources are ignored by the tooling
+3. Click **Check for Updates** to compare local files against the remote server
+4. **Push** sends your local changes to sboxcool.com
+5. **Pull** downloads the latest from sboxcool.com to your local files
+6. **View Diff** shows a side-by-side comparison before overwriting
+
+### Source Authoring
+
+YAML source files use kind-specific names:
+
+```text
+collections/<id>.collection.yml
+endpoints/<slug>.endpoint.yml
+workflows/<id>.workflow.yml
+tests/<id>.test.yml
+libraries/<id>.library.yml
+```
+
+`.yaml` is also accepted, but project documentation and generated examples should prefer `.yml`. Legacy JSON files are unsupported and are not automatically reverse-converted into YAML.
+
+Each source file starts with:
+
+```yaml
+sourceVersion: 1
+kind: endpoint
+id: mine-ore
+definition:
+  method: POST
+  steps: []
+```
+
+See `source-authoring.md`, `source-authoring.schema.json`, and `Examples/SourceAuthoring/` for the current source model and examples.
+
+Validate and preview source files locally:
+
+```powershell
+python Libraries/sboxcool.network-storage/Editor/source_compiler.py --project-root .
+python Libraries/sboxcool.network-storage/Editor/sync.py --project-root . --sources --dry-run
+```
 
 ### Status Indicators
 
@@ -231,13 +299,17 @@ The Sync Tool lets you manage your sboxcool.com project data as local JSON files
 Editor/
   Network Storage/              # Configurable in Setup
     .env                        # Credentials (gitignored, never published)
-    collections/                # One JSON file per collection
-      player_data.json
-      game_values.json
-    endpoints/                  # One JSON file per endpoint
-      load-player.json
-      mine-ore.json
-      sell-ore.json
+    collections/                # YAML source collections
+      player_data.collection.yml
+      game_values.collection.yml
+    endpoints/                  # YAML source endpoints
+      load-player.endpoint.yml
+      mine-ore.endpoint.yml
+      sell-ore.endpoint.yml
+    workflows/
+      check-currency.workflow.yml
+    libraries/
+      economy.library.yml
 ```
 
 ## Security
@@ -247,15 +319,9 @@ Editor/
 - The `.env` file is gitignored by default — never commit it to version control
 - See `.env.example` for the expected format
 
-## Data Source Modes
+## Data Source Mode
 
-Configure in **Editor > Network Storage > Setup** under "Data Source":
-
-| Mode | Behavior |
-|———|—————|
-| **API + Fallback** (default) | Try API first, fall back to local JSON files if unavailable |
-| **API Only** | Always fetch from API, no fallback |
-| **JSON Only** | Read from local JSON files only, no API calls |
+Network Storage runs in **API Only** mode. Runtime reads and editor sync operations use the API; local JSON files and API fallback modes are unsupported.
 
 ## MCP Server (for AI Agents)
 
@@ -263,7 +329,7 @@ This repo includes an MCP (Model Context Protocol) server that gives AI coding a
 
 ### What It Provides
 
-- **10 tools** — validate JSON files, scaffold new collections/endpoints/workflows, get documentation, diagnose errors
+- **10 tools** — validate source files, scaffold new collections/endpoints/workflows, get documentation, diagnose errors
 - **8 resources** — all documentation files exposed for contextual reading
 
 ### Setup
@@ -298,13 +364,13 @@ Set the working directory to this repository root.
 | Tool | Description |
 |———|——————-|
 | `get_documentation` | Retrieve docs by topic (collections, endpoints, workflows, setup, errors, etc.) |
-| `validate_collection` | Validate a collection JSON for correct schema and naming |
-| `validate_endpoint` | Validate an endpoint JSON — steps, operators, templates, constraints |
-| `validate_workflow` | Validate a workflow JSON — conditions, onFail config |
-| `scaffold_collection` | Generate a collection JSON template |
-| `scaffold_endpoint` | Generate an endpoint JSON template |
-| `scaffold_workflow` | Generate a workflow JSON template |
-| `get_examples` | Get example JSONs for common game scenarios (inventory, currency, leaderboard, etc.) |
+| `validate_collection` | Validate a collection definition for correct schema and naming |
+| `validate_endpoint` | Validate an endpoint definition — steps, operators, templates, constraints |
+| `validate_workflow` | Validate a workflow definition — conditions, onFail config |
+| `scaffold_collection` | Generate a collection YAML source template |
+| `scaffold_endpoint` | Generate an endpoint YAML source template |
+| `scaffold_workflow` | Generate a workflow YAML source template |
+| `get_examples` | Get examples for common game scenarios (inventory, currency, leaderboard, etc.) |
 | `validate_env_config` | Validate `.env` credential file format |
 | `diagnose_error` | Diagnose s&box console errors and suggest fixes |
 

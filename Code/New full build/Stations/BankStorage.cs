@@ -32,6 +32,7 @@ public sealed class BankStorage : Component
 
 		int current = GetItemCount( id );
 		_banked[id] = current + amount;
+		PlayerPersistence.Local?.MarkDirty( SaveSection.Bank | SaveSection.Stats );
 		return true;
 	}
 
@@ -48,12 +49,14 @@ public sealed class BankStorage : Component
 		else
 			_banked[id] = newAmount;
 
+		PlayerPersistence.Local?.MarkDirty( SaveSection.Bank | SaveSection.Stats );
 		return true;
 	}
 
 	public void DepositUnique( ItemInstance instance )
 	{
 		_bankedUnique.Add( instance );
+		PlayerPersistence.Local?.MarkDirty( SaveSection.Bank | SaveSection.Stats );
 	}
 
 	public ItemInstance WithdrawUnique( int index )
@@ -63,6 +66,7 @@ public sealed class BankStorage : Component
 
 		var instance = _bankedUnique[index];
 		_bankedUnique.RemoveAt( index );
+		PlayerPersistence.Local?.MarkDirty( SaveSection.Bank | SaveSection.Stats );
 		return instance;
 	}
 

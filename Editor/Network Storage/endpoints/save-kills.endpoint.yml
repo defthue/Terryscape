@@ -1,0 +1,29 @@
+sourceVersion: 1
+kind: endpoint
+id: save-kills
+name: "Save Kills"
+description: "Writes the per-monster kill counts"
+method: "POST"
+enabled: true
+input:
+  properties:
+    counts:
+      type: "object"
+  required:
+    - "counts"
+  type: "object"
+steps:
+  -
+    collection: "kills"
+    id: "save"
+    key: "{{steamId}}_default"
+    ops:
+      -
+        op: "set"
+        path: "counts"
+        value: "{{input.counts}}"
+    type: "write"
+response:
+  body:
+    ok: true
+  status: 200

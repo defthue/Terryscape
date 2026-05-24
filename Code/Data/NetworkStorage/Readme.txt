@@ -8,11 +8,11 @@
   HOW TO MAKE CHANGES
   —————————-
 
-  1. Edit the source JSON files in your project's Editor/Network Storage/ folder:
+  1. Edit the YAML source files in your project's Editor/Network Storage/ folder:
 
-       collections/*.json  — Collection schemas (field names, types, constraints)
-       endpoints/*.json    — Server-side endpoint pipelines (validation, writes)
-       workflows/*.json    — Reusable validation / computation workflows
+       source files: *.collection.yml, *.endpoint.yml, *.workflow.yml
+       .yml is accepted as an alias and is the preferred local format for this project
+       legacy resource JSON is unsupported; use YAML source only
        config/             — API credentials and project settings
 
   2. Push changes to the backend and regenerate this folder:

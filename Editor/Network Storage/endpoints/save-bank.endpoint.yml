@@ -1,0 +1,40 @@
+sourceVersion: 1
+kind: endpoint
+id: save-bank
+name: "Save Bank"
+description: "Writes the bank stackables and bank unique items collections"
+method: "POST"
+enabled: true
+input:
+  properties:
+    items:
+      type: "array"
+    stackables:
+      type: "object"
+  required: []
+  type: "object"
+steps:
+  -
+    collection: "bank"
+    id: "save_bank"
+    key: "{{steamId}}_default"
+    ops:
+      -
+        op: "set"
+        path: "stackables"
+        value: "{{input.stackables}}"
+    type: "write"
+  -
+    collection: "bank_unique"
+    id: "save_bank_unique"
+    key: "{{steamId}}_default"
+    ops:
+      -
+        op: "set"
+        path: "items"
+        value: "{{input.items}}"
+    type: "write"
+response:
+  body:
+    ok: true
+  status: 200

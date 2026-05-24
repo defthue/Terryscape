@@ -57,24 +57,20 @@ public static class NSEndpoints
 		/// <summary>Save All input fields.</summary>
 		public static class SaveAll
 		{
-			/// <summary>Type: string</summary>
-			public const string SavedAt = "savedAt";
-			/// <summary>Type: string</summary>
-			public const string PlayerName = "playerName";
+			/// <summary>Type: object</summary>
+			public const string BankStackables = "bankStackables";
+			/// <summary>Type: array (unknown)</summary>
+			public const string BankUnique = "bankUnique";
+			/// <summary>Type: object</summary>
+			public const string ChestClaims = "chestClaims";
 			/// <summary>Type: number</summary>
 			public const string Currency = "currency";
 			/// <summary>Type: number</summary>
 			public const string CurrentMana = "currentMana";
-			/// <summary>Type: number</summary>
-			public const string TotalLevel = "totalLevel";
-			/// <summary>Type: number</summary>
-			public const string TotalGold = "totalGold";
-			/// <summary>Type: number</summary>
-			public const string TotalKills = "totalKills";
-			/// <summary>Type: number</summary>
-			public const string NodesMined = "nodesMined";
-			/// <summary>Type: number</summary>
-			public const string InventoryExpansions = "inventoryExpansions";
+			/// <summary>Type: array (unknown)</summary>
+			public const string DiscoveredQuests = "discoveredQuests";
+			/// <summary>Type: object</summary>
+			public const string Equipped = "equipped";
 			/// <summary>Type: string</summary>
 			public const string EquippedAmmoId = "equippedAmmoId";
 			/// <summary>Type: number</summary>
@@ -82,51 +78,55 @@ public static class NSEndpoints
 			/// <summary>Type: number</summary>
 			public const string EquippedAmmoSlotIndex = "equippedAmmoSlotIndex";
 			/// <summary>Type: object</summary>
-			public const string Skills = "skills";
-			/// <summary>Type: array (unknown)</summary>
-			public const string Slots = "slots";
-			/// <summary>Type: object</summary>
-			public const string Equipped = "equipped";
-			/// <summary>Type: object</summary>
 			public const string EquippedSlotIndices = "equippedSlotIndices";
+			/// <summary>Type: number</summary>
+			public const string InventoryExpansions = "inventoryExpansions";
 			/// <summary>Type: object</summary>
-			public const string BankStackables = "bankStackables";
-			/// <summary>Type: array (unknown)</summary>
-			public const string BankUnique = "bankUnique";
-			/// <summary>Type: array (unknown)</summary>
-			public const string Recipes = "recipes";
-			/// <summary>Type: array (unknown)</summary>
-			public const string Stones = "stones";
+			public const string Kills = "kills";
+			/// <summary>Type: number</summary>
+			public const string NodesMined = "nodesMined";
+			/// <summary>Type: string</summary>
+			public const string PlayerName = "playerName";
 			/// <summary>Type: array (unknown)</summary>
 			public const string Quests = "quests";
 			/// <summary>Type: array (unknown)</summary>
-			public const string DiscoveredQuests = "discoveredQuests";
+			public const string Recipes = "recipes";
+			/// <summary>Type: string</summary>
+			public const string SavedAt = "savedAt";
+			/// <summary>Type: object</summary>
+			public const string Skills = "skills";
+			/// <summary>Type: array (unknown)</summary>
+			public const string Slots = "slots";
+			/// <summary>Type: array (unknown)</summary>
+			public const string Stones = "stones";
+			/// <summary>Type: number</summary>
+			public const string TotalGold = "totalGold";
+			/// <summary>Type: number</summary>
+			public const string TotalKills = "totalKills";
+			/// <summary>Type: number</summary>
+			public const string TotalLevel = "totalLevel";
 			/// <summary>Type: array (unknown)</summary>
 			public const string UnlockedSpells = "unlockedSpells";
-			/// <summary>Type: object</summary>
-			public const string ChestClaims = "chestClaims";
-			/// <summary>Type: object</summary>
-			public const string Kills = "kills";
 		}
 
 		/// <summary>Save Bank input fields.</summary>
 		public static class SaveBank
 		{
-			/// <summary>Type: object</summary>
-			public const string Stackables = "stackables";
 			/// <summary>Type: array (unknown)</summary>
 			public const string Items = "items";
+			/// <summary>Type: object</summary>
+			public const string Stackables = "stackables";
 		}
 
 		/// <summary>Save Inventory input fields.</summary>
 		public static class SaveInventory
 		{
-			/// <summary>Type: array (unknown)</summary>
-			public const string Slots = "slots";
 			/// <summary>Type: object</summary>
 			public const string Equipped = "equipped";
 			/// <summary>Type: object</summary>
 			public const string EquippedSlotIndices = "equippedSlotIndices";
+			/// <summary>Type: array (unknown)</summary>
+			public const string Slots = "slots";
 		}
 
 		/// <summary>Save Kills input fields.</summary>
@@ -139,18 +139,18 @@ public static class NSEndpoints
 		/// <summary>Save Progression input fields.</summary>
 		public static class SaveProgression
 		{
+			/// <summary>Type: object</summary>
+			public const string ChestClaims = "chestClaims";
+			/// <summary>Type: array (unknown)</summary>
+			public const string DiscoveredQuests = "discoveredQuests";
+			/// <summary>Type: array (unknown)</summary>
+			public const string Quests = "quests";
 			/// <summary>Type: array (unknown)</summary>
 			public const string Recipes = "recipes";
 			/// <summary>Type: array (unknown)</summary>
 			public const string Stones = "stones";
 			/// <summary>Type: array (unknown)</summary>
-			public const string Quests = "quests";
-			/// <summary>Type: array (unknown)</summary>
-			public const string DiscoveredQuests = "discoveredQuests";
-			/// <summary>Type: array (unknown)</summary>
 			public const string UnlockedSpells = "unlockedSpells";
-			/// <summary>Type: object</summary>
-			public const string ChestClaims = "chestClaims";
 		}
 
 		/// <summary>Save Skills input fields.</summary>
@@ -163,30 +163,30 @@ public static class NSEndpoints
 		/// <summary>Save Stats input fields.</summary>
 		public static class SaveStats
 		{
-			/// <summary>Type: string</summary>
-			public const string SavedAt = "savedAt";
-			/// <summary>Type: string</summary>
-			public const string PlayerName = "playerName";
 			/// <summary>Type: number</summary>
 			public const string Currency = "currency";
 			/// <summary>Type: number</summary>
 			public const string CurrentMana = "currentMana";
-			/// <summary>Type: number</summary>
-			public const string TotalLevel = "totalLevel";
-			/// <summary>Type: number</summary>
-			public const string TotalGold = "totalGold";
-			/// <summary>Type: number</summary>
-			public const string TotalKills = "totalKills";
-			/// <summary>Type: number</summary>
-			public const string NodesMined = "nodesMined";
-			/// <summary>Type: number</summary>
-			public const string InventoryExpansions = "inventoryExpansions";
 			/// <summary>Type: string</summary>
 			public const string EquippedAmmoId = "equippedAmmoId";
 			/// <summary>Type: number</summary>
 			public const string EquippedAmmoQty = "equippedAmmoQty";
 			/// <summary>Type: number</summary>
 			public const string EquippedAmmoSlotIndex = "equippedAmmoSlotIndex";
+			/// <summary>Type: number</summary>
+			public const string InventoryExpansions = "inventoryExpansions";
+			/// <summary>Type: number</summary>
+			public const string NodesMined = "nodesMined";
+			/// <summary>Type: string</summary>
+			public const string PlayerName = "playerName";
+			/// <summary>Type: string</summary>
+			public const string SavedAt = "savedAt";
+			/// <summary>Type: number</summary>
+			public const string TotalGold = "totalGold";
+			/// <summary>Type: number</summary>
+			public const string TotalKills = "totalKills";
+			/// <summary>Type: number</summary>
+			public const string TotalLevel = "totalLevel";
 		}
 	}
 }

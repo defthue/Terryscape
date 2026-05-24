@@ -185,8 +185,6 @@ public sealed class PlayerHealth : Component
 
 		GameLog.Add( $"You respawned with full health. ({CurrentHealth}/{MaxHealth} HP)", "#6db8f0" );
 
-		var persistence = Components.Get<PlayerPersistence>();
-		if ( persistence != null )
-			persistence.RequestSaveNow();
+		PlayerPersistence.Local?.SaveNow( SaveSection.Inventory | SaveSection.Stats );
 	}
 }

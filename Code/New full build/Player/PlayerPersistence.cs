@@ -1,14 +1,27 @@
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Sandbox;
 
 public sealed class PlayerPersistence : Component
 {
-	[Property] public float AutoSaveIntervalSeconds { get; set; } = 30f;
+	[Property] public float DebounceSeconds { get; set; } = 5f;
+	[Property] public float SafetyNetSeconds { get; set; } = 90f;
 
 	public static PlayerPersistence Local { get; private set; }
 
 	bool _loadAttempted;
 	bool _loadComplete;
-	RealTimeSince _timeSinceLastSave;
+	bool _savesBlocked;
+
+	SaveSection _dirty = SaveSection.None;
+	RealTimeSince _timeSinceDirty;
+	RealTimeSince _timeSinceFirstDirty;
+	bool _hasPendingDirty;
+
+	Task _saveInFlight;
+	bool _resaveQueued;
+	SaveSection _resaveQueuedSections;
 
 	protected override void OnStart()
 	{
@@ -16,11 +29,8 @@ public sealed class PlayerPersistence : Component
 			return;
 
 		ResetTransientHudState();
-
 		Local = this;
-
 		NetworkStorageConfig.EnsureInitialized();
-
 		_ = LoadOnStartAsync();
 	}
 
@@ -63,10 +73,33 @@ public sealed class PlayerPersistence : Component
 		if ( Local == this )
 			Local = null;
 
-		if ( !_loadComplete )
+		if ( !_loadComplete || _savesBlocked )
 			return;
 
-		_ = SaveAsync();
+		_ = LogoutSaveAsync();
+	}
+
+	async Task LogoutSaveAsync()
+	{
+		try
+		{
+			if ( _saveInFlight != null )
+				await _saveInFlight;
+		}
+		catch ( Exception ex )
+		{
+			Log.Warning( $"[PlayerPersistence] Logout: prior save threw: {ex.Message}" );
+		}
+
+		var data = BuildSaveData();
+		if ( data == null )
+			return;
+
+		var ok = await TerryScapeBackend.SaveAllAsync( data );
+		if ( ok )
+			Log.Info( "[PlayerPersistence] Logout save successful." );
+		else
+			Log.Warning( "[PlayerPersistence] Logout save failed." );
 	}
 
 	T FindComponentInPlayer<T>() where T : Component
@@ -78,18 +111,18 @@ public sealed class PlayerPersistence : Component
 		return Components.GetInChildren<T>();
 	}
 
-	async System.Threading.Tasks.Task LoadOnStartAsync()
+	async Task LoadOnStartAsync()
 	{
 		if ( _loadAttempted )
 			return;
 
 		_loadAttempted = true;
-		_timeSinceLastSave = 0f;
 
 		var result = await TerryScapeBackend.LoadAsync();
 
 		if ( !result.Success )
 		{
+			_savesBlocked = true;
 			Log.Warning( "[PlayerPersistence] Load failed — saves are blocked for this session to prevent overwriting real data with empty state. Reconnect or restart to retry." );
 			GameLog.Add( "Could not load your save. Please rejoin the server — playing now will not save your progress.", "#e87878" );
 			GameManager.Instance?.AddLocalChatMessage( "[Save] Load failed. Please rejoin — playing now will not save progress." );
@@ -147,7 +180,6 @@ public sealed class PlayerPersistence : Component
 		}
 
 		_loadComplete = true;
-
 		RefreshAllNpcQuestState();
 	}
 
@@ -157,49 +189,129 @@ public sealed class PlayerPersistence : Component
 			npc.RefreshFromPersistedState();
 	}
 
-	protected override void OnUpdate()
+	public void MarkDirty( SaveSection sections )
 	{
-		if ( IsProxy )
+		if ( IsProxy || !_loadComplete || _savesBlocked )
 			return;
 
-		if ( !_loadComplete )
+		if ( sections == SaveSection.None )
 			return;
 
-		if ( _timeSinceLastSave >= AutoSaveIntervalSeconds )
+		if ( _dirty == SaveSection.None )
 		{
-			_timeSinceLastSave = 0f;
-			_ = SaveAsync();
+			_timeSinceFirstDirty = 0f;
+			_hasPendingDirty = true;
 		}
+
+		_dirty |= sections;
+		_timeSinceDirty = 0f;
+	}
+
+	public void SaveNow( SaveSection sections )
+	{
+		if ( IsProxy || !_loadComplete || _savesBlocked )
+			return;
+
+		MarkDirty( sections );
+		FlushPendingSave();
 	}
 
 	public void RequestSaveNow()
 	{
-		if ( IsProxy )
+		if ( IsProxy || !_loadComplete || _savesBlocked )
 			return;
 
-		if ( !_loadComplete )
-			return;
-
-		_timeSinceLastSave = 0f;
-		_ = SaveAsync();
+		MarkDirty( SaveSection.All );
+		FlushPendingSave();
 	}
 
-	public async System.Threading.Tasks.Task SaveAsync()
+	void FlushPendingSave()
 	{
-		var data = BuildSaveData();
-		if ( data == null )
+		if ( _dirty == SaveSection.None )
 			return;
 
-		var ok = await TerryScapeBackend.SaveAllAsync( data );
-		if ( ok )
+		if ( _saveInFlight != null && !_saveInFlight.IsCompleted )
 		{
-			Log.Info( "[PlayerPersistence] Save successful." );
+			_resaveQueued = true;
+			_resaveQueuedSections |= _dirty;
+			_dirty = SaveSection.None;
+			_hasPendingDirty = false;
+			return;
 		}
-		else
+
+		var sections = _dirty;
+		_dirty = SaveSection.None;
+		_hasPendingDirty = false;
+
+		_saveInFlight = RunSaveAsync( sections );
+	}
+
+	protected override void OnUpdate()
+	{
+		if ( IsProxy || !_loadComplete || _savesBlocked )
+			return;
+
+		if ( !_hasPendingDirty )
+			return;
+
+		bool debounceElapsed = _timeSinceDirty >= DebounceSeconds;
+		bool safetyNetTripped = _timeSinceFirstDirty >= SafetyNetSeconds;
+
+		if ( !debounceElapsed && !safetyNetTripped )
+			return;
+
+		FlushPendingSave();
+	}
+
+	async Task RunSaveAsync( SaveSection sections )
+	{
+		try
 		{
-			Log.Warning( "[PlayerPersistence] Save failed." );
-			GameLog.Add( "Save failed. Your recent progress may not be stored — please try again or rejoin.", "#e87878" );
-			GameManager.Instance?.AddLocalChatMessage( "[Save] Save failed. Recent progress may be lost — please try again or rejoin." );
+			var data = BuildSaveData();
+			if ( data == null )
+				return;
+
+			var ok = await TerryScapeBackend.SaveAllAsync( data );
+
+			if ( ok )
+			{
+				Log.Info( $"[PlayerPersistence] Save successful (sections: {sections})." );
+			}
+			else
+			{
+				_dirty |= sections;
+				_timeSinceDirty = 0f;
+				if ( !_hasPendingDirty )
+				{
+					_timeSinceFirstDirty = 0f;
+					_hasPendingDirty = true;
+				}
+				Log.Warning( "[PlayerPersistence] Save failed. Sections re-marked dirty for retry." );
+				GameLog.Add( "Save failed — will retry. Your recent progress may be temporarily unsaved.", "#c9a84c" );
+			}
+		}
+		catch ( Exception ex )
+		{
+			Log.Warning( $"[PlayerPersistence] RunSaveAsync threw: {ex.Message}" );
+			_dirty |= sections;
+		}
+		finally
+		{
+			if ( _resaveQueued )
+			{
+				var queued = _resaveQueuedSections;
+				_resaveQueued = false;
+				_resaveQueuedSections = SaveSection.None;
+				_dirty |= queued;
+				_timeSinceDirty = 0f;
+				if ( !_hasPendingDirty )
+				{
+					_timeSinceFirstDirty = 0f;
+					_hasPendingDirty = true;
+				}
+			}
+
+			_saveInFlight = null;
 		}
 	}
 
@@ -227,12 +339,11 @@ public sealed class PlayerPersistence : Component
 		}
 		else
 		{
-			data.Bank = new System.Collections.Generic.Dictionary<string, int>();
-			data.BankUnique = new System.Collections.Generic.List<PlayerSaveData.UniqueItemEntry>();
+			data.Bank = new Dictionary<string, int>();
+			data.BankUnique = new List<PlayerSaveData.UniqueItemEntry>();
 		}
 
-		var unlocked = SpellbookState.ToSaveData();
-		data.UnlockedSpells = unlocked;
+		data.UnlockedSpells = SpellbookState.ToSaveData();
 
 		var mana = FindComponentInPlayer<ManaSystem>();
 		data.CurrentMana = mana != null ? mana.CurrentMana : -1;
@@ -245,7 +356,7 @@ public sealed class PlayerPersistence : Component
 		return data;
 	}
 
-	static int ComputeTotalLevel( System.Collections.Generic.Dictionary<string, PlayerSaveData.SkillEntry> skills )
+	static int ComputeTotalLevel( Dictionary<string, PlayerSaveData.SkillEntry> skills )
 	{
 		if ( skills == null )
 			return 0;

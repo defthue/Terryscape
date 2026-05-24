@@ -8,83 +8,83 @@
 
 namespace Sandbox;
 
-/// <summary>Banked unique items with full socket and enchantment data</summary>
-/// <remarks>Collection: bank_unique | Scope: per-steamid | Access: public</remarks>
-public static class BankUniqueSchema
-{
-	public const string CollectionName = "bank_unique";
-	public const string Scope = "per-steamid";
-	public const string AccessMode = "public";
-}
-
 /// <summary>Banked stackable items by item id</summary>
-/// <remarks>Collection: bank | Scope: per-steamid | Access: public</remarks>
+/// <remarks>Collection: bank | Scope: per-steamid | Access: endpoint</remarks>
 public static class BankSchema
 {
 	public const string CollectionName = "bank";
 	public const string Scope = "per-steamid";
-	public const string AccessMode = "public";
+	public const string AccessMode = "endpoint";
+}
+
+/// <summary>Banked unique items with full socket and enchantment data</summary>
+/// <remarks>Collection: bank_unique | Scope: per-steamid | Access: endpoint</remarks>
+public static class BankUniqueSchema
+{
+	public const string CollectionName = "bank_unique";
+	public const string Scope = "per-steamid";
+	public const string AccessMode = "endpoint";
 }
 
 /// <summary>Currently equipped items per slot with socket data</summary>
-/// <remarks>Collection: equipment | Scope: per-steamid | Access: public</remarks>
+/// <remarks>Collection: equipment | Scope: per-steamid | Access: endpoint</remarks>
 public static class EquipmentSchema
 {
 	public const string CollectionName = "equipment";
 	public const string Scope = "per-steamid";
-	public const string AccessMode = "public";
+	public const string AccessMode = "endpoint";
 }
 
 /// <summary>Carried items in inventory slots</summary>
-/// <remarks>Collection: inventory | Scope: per-steamid | Access: public</remarks>
+/// <remarks>Collection: inventory | Scope: per-steamid | Access: endpoint</remarks>
 public static class InventorySchema
 {
 	public const string CollectionName = "inventory";
 	public const string Scope = "per-steamid";
-	public const string AccessMode = "public";
+	public const string AccessMode = "endpoint";
 }
 
 /// <summary>Per-monster kill counts</summary>
-/// <remarks>Collection: kills | Scope: per-steamid | Access: public</remarks>
+/// <remarks>Collection: kills | Scope: per-steamid | Access: endpoint</remarks>
 public static class KillsSchema
 {
 	public const string CollectionName = "kills";
 	public const string Scope = "per-steamid";
-	public const string AccessMode = "public";
+	public const string AccessMode = "endpoint";
 }
 
 /// <summary>Global aggregator record holding every player's leaderboard summary, keyed by steamId</summary>
-/// <remarks>Collection: leaderboard_global | Scope: global | Access: public</remarks>
+/// <remarks>Collection: leaderboard_global | Scope: global | Access: endpoint</remarks>
 public static class LeaderboardGlobalSchema
 {
 	public const string CollectionName = "leaderboard_global";
 	public const string Scope = "global";
-	public const string AccessMode = "public";
+	public const string AccessMode = "endpoint";
 }
 
 /// <summary>Core player profile, stats, and meta fields</summary>
-/// <remarks>Collection: players | Scope: per-steamid | Access: public</remarks>
+/// <remarks>Collection: players | Scope: per-steamid | Access: endpoint</remarks>
 public static class PlayersSchema
 {
 	public const string CollectionName = "players";
 	public const string Scope = "per-steamid";
-	public const string AccessMode = "public";
+	public const string AccessMode = "endpoint";
 }
 
 /// <summary>Unlocks, quests, recipes, stones, spells, and chest claim timestamps</summary>
-/// <remarks>Collection: progression | Scope: per-steamid | Access: public</remarks>
+/// <remarks>Collection: progression | Scope: per-steamid | Access: endpoint</remarks>
 public static class ProgressionSchema
 {
 	public const string CollectionName = "progression";
 	public const string Scope = "per-steamid";
-	public const string AccessMode = "public";
+	public const string AccessMode = "endpoint";
 }
 
 /// <summary>Skill levels and XP per skill</summary>
-/// <remarks>Collection: skills | Scope: per-steamid | Access: public</remarks>
+/// <remarks>Collection: skills | Scope: per-steamid | Access: endpoint</remarks>
 public static class SkillsSchema
 {
 	public const string CollectionName = "skills";
 	public const string Scope = "per-steamid";
-	public const string AccessMode = "public";
+	public const string AccessMode = "endpoint";
 }

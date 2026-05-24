@@ -5,6 +5,10 @@
   "cdnUrl": "",
   "apiVersion": "v3",
   "dataFolder": "Network Storage",
-  "dataSource": "api_then_json",
-  "proxyEnabled": true
+  "dataSource": "api_only",
+  "sourceExportMode": "source_only",
+  "enableAuthSessions": false,
+  "enableEncryptedRequests": false,
+  "publishTarget": "live",
+  "proxyEnabled": false
 }

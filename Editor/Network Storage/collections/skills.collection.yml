@@ -1,0 +1,18 @@
+sourceVersion: 1
+kind: collection
+id: skills
+name: "skills"
+description: "Skill levels and XP per skill"
+collectionType: "per-steamid"
+accessMode: "endpoint"
+maxRecords: 1
+allowRecordDelete: false
+requireSaveVersion: false
+webhookOnRateLimit: false
+rateLimitAction: "reject"
+rateLimits:
+  mode: "none"
+schema:
+  entries:
+    default: {}
+    type: "object"

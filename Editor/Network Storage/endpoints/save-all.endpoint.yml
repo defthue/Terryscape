@@ -1,0 +1,248 @@
+sourceVersion: 1
+kind: endpoint
+id: save-all
+name: "Save All"
+description: "Writes every collection in one atomic call and updates the global leaderboard entry. Used for autosave and logout."
+method: "POST"
+enabled: true
+input:
+  properties:
+    bankStackables:
+      type: "object"
+    bankUnique:
+      type: "array"
+    chestClaims:
+      type: "object"
+    currency:
+      type: "number"
+    currentMana:
+      type: "number"
+    discoveredQuests:
+      type: "array"
+    equipped:
+      type: "object"
+    equippedAmmoId:
+      type: "string"
+    equippedAmmoQty:
+      type: "number"
+    equippedAmmoSlotIndex:
+      type: "number"
+    equippedSlotIndices:
+      type: "object"
+    inventoryExpansions:
+      type: "number"
+    kills:
+      type: "object"
+    nodesMined:
+      type: "number"
+    playerName:
+      type: "string"
+    quests:
+      type: "array"
+    recipes:
+      type: "array"
+    savedAt:
+      type: "string"
+    skills:
+      type: "object"
+    slots:
+      type: "array"
+    stones:
+      type: "array"
+    totalGold:
+      type: "number"
+    totalKills:
+      type: "number"
+    totalLevel:
+      type: "number"
+    unlockedSpells:
+      type: "array"
+  required: []
+  type: "object"
+steps:
+  -
+    collection: "players"
+    id: "save_players"
+    key: "{{steamId}}_default"
+    ops:
+      -
+        op: "set"
+        path: "savedAt"
+        value: "{{input.savedAt}}"
+      -
+        op: "set"
+        path: "playerName"
+        value: "{{input.playerName}}"
+      -
+        op: "set"
+        path: "currency"
+        value: "{{input.currency}}"
+      -
+        op: "set"
+        path: "currentMana"
+        value: "{{input.currentMana}}"
+      -
+        op: "set"
+        path: "totalLevel"
+        value: "{{input.totalLevel}}"
+      -
+        op: "set"
+        path: "totalGold"
+        value: "{{input.totalGold}}"
+      -
+        op: "set"
+        path: "totalKills"
+        value: "{{input.totalKills}}"
+      -
+        op: "set"
+        path: "nodesMined"
+        value: "{{input.nodesMined}}"
+      -
+        op: "set"
+        path: "inventoryExpansions"
+        value: "{{input.inventoryExpansions}}"
+      -
+        op: "set"
+        path: "equippedAmmoId"
+        value: "{{input.equippedAmmoId}}"
+      -
+        op: "set"
+        path: "equippedAmmoQty"
+        value: "{{input.equippedAmmoQty}}"
+      -
+        op: "set"
+        path: "equippedAmmoSlotIndex"
+        value: "{{input.equippedAmmoSlotIndex}}"
+    type: "write"
+  -
+    collection: "skills"
+    id: "save_skills"
+    key: "{{steamId}}_default"
+    ops:
+      -
+        op: "set"
+        path: "entries"
+        value: "{{input.skills}}"
+    type: "write"
+  -
+    collection: "inventory"
+    id: "save_inventory"
+    key: "{{steamId}}_default"
+    ops:
+      -
+        op: "set"
+        path: "slots"
+        value: "{{input.slots}}"
+    type: "write"
+  -
+    collection: "equipment"
+    id: "save_equipment"
+    key: "{{steamId}}_default"
+    ops:
+      -
+        op: "set"
+        path: "equipped"
+        value: "{{input.equipped}}"
+      -
+        op: "set"
+        path: "equippedSlotIndices"
+        value: "{{input.equippedSlotIndices}}"
+    type: "write"
+  -
+    collection: "bank"
+    id: "save_bank"
+    key: "{{steamId}}_default"
+    ops:
+      -
+        op: "set"
+        path: "stackables"
+        value: "{{input.bankStackables}}"
+    type: "write"
+  -
+    collection: "bank_unique"
+    id: "save_bank_unique"
+    key: "{{steamId}}_default"
+    ops:
+      -
+        op: "set"
+        path: "items"
+        value: "{{input.bankUnique}}"
+    type: "write"
+  -
+    collection: "progression"
+    id: "save_progression"
+    key: "{{steamId}}_default"
+    ops:
+      -
+        op: "set"
+        path: "recipes"
+        value: "{{input.recipes}}"
+      -
+        op: "set"
+        path: "stones"
+        value: "{{input.stones}}"
+      -
+        op: "set"
+        path: "quests"
+        value: "{{input.quests}}"
+      -
+        op: "set"
+        path: "discoveredQuests"
+        value: "{{input.discoveredQuests}}"
+      -
+        op: "set"
+        path: "unlockedSpells"
+        value: "{{input.unlockedSpells}}"
+      -
+        op: "set"
+        path: "chestClaims"
+        value: "{{input.chestClaims}}"
+    type: "write"
+  -
+    collection: "kills"
+    id: "save_kills"
+    key: "{{steamId}}_default"
+    ops:
+      -
+        op: "set"
+        path: "counts"
+        value: "{{input.kills}}"
+    type: "write"
+  -
+    collection: "leaderboard_global"
+    id: "save_leaderboard"
+    key: "default"
+    ops:
+      -
+        op: "set"
+        path: "entriesByPlayer.{{steamId}}.steamId"
+        value: "{{steamId}}"
+      -
+        op: "set"
+        path: "entriesByPlayer.{{steamId}}.playerName"
+        value: "{{input.playerName}}"
+      -
+        op: "set"
+        path: "entriesByPlayer.{{steamId}}.totalLevel"
+        value: "{{input.totalLevel}}"
+      -
+        op: "set"
+        path: "entriesByPlayer.{{steamId}}.totalGold"
+        value: "{{input.totalGold}}"
+      -
+        op: "set"
+        path: "entriesByPlayer.{{steamId}}.totalKills"
+        value: "{{input.totalKills}}"
+      -
+        op: "set"
+        path: "entriesByPlayer.{{steamId}}.nodesMined"
+        value: "{{input.nodesMined}}"
+      -
+        op: "set"
+        path: "entriesByPlayer.{{steamId}}.updatedAt"
+        value: "{{input.savedAt}}"
+    type: "write"
+response:
+  body:
+    ok: true
+  status: 200

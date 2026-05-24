@@ -19,13 +19,20 @@ public static class NSConfig
 	public const string PublicKey = "sbox_ns_51855ba40d8642b185543f8c5c031cc2";
 	public const string BaseUrl = "https://api.sboxcool.com";
 	public const string ApiVersion = "v3";
+	public const string PublishTarget = "live";
 
 	/// <summary>
 	/// Whether the game host proxies Network Storage API calls for non-host clients.
 	/// Enable for editor/local testing. Disable in production when every player has their own Steam account.
 	/// Controlled via Editor → Network Storage → Settings.
 	/// </summary>
-	public const bool ProxyEnabled = true;
+	public const bool ProxyEnabled = false;
+
+	/// <summary>Whether this project is configured to use fast auth sessions.</summary>
+	public const bool EnableAuthSessions = false;
+
+	/// <summary>Whether this project is configured to send encrypted Network Storage requests.</summary>
+	public const bool EnableEncryptedRequests = false;
 
 	/// <summary>Configure the NetworkStorage runtime client. Delegates to NetworkStorage.EnsureConfigured().</summary>
 	public static void EnsureConfigured() => NetworkStorage.EnsureConfigured();

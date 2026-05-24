@@ -1,0 +1,19 @@
+sourceVersion: 1
+kind: endpoint
+id: leaderboard
+name: "Leaderboard"
+description: "Returns the global leaderboard record containing every player\u0027s summary entry"
+method: "GET"
+enabled: true
+input: {}
+steps:
+  -
+    collection: "leaderboard_global"
+    id: "board"
+    key: "default"
+    type: "read"
+response:
+  body:
+    entriesByPlayer: "{{board.entriesByPlayer}}"
+    ok: true
+  status: 200

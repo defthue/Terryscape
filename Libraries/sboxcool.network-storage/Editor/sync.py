@@ -1,7 +1,7 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
-sync.py — Push local Network Storage data (collections, endpoints, workflows)
-to the sbox.cool management API, and generate collection JSON from C# data files.
+sync.py — Push local Network Storage source data (collections, endpoints, workflows)
+to the sbox.cool management API, and generate collection YAML source from C# data files.
 
 This script lives inside the network-storage library and is invoked by the
 editor Sync Tool. It requires --project-root to locate the game project.
@@ -9,6 +9,7 @@ editor Sync Tool. It requires --project-root to locate the game project.
 Usage (from the editor, project root is passed automatically):
     python <lib>/Editor/sync.py --project-root <dir>                  # push everything
     python <lib>/Editor/sync.py --project-root <dir> --generate       # generate from C#
+    python <lib>/Editor/sync.py --project-root <dir> --sources        # push YAML source definitions
     python <lib>/Editor/sync.py --project-root <dir> --validate       # check credentials
 """
 
@@ -20,6 +21,7 @@ if _sys.stdout.encoding != 'utf-8':
 del _sys
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -28,6 +30,9 @@ import traceback
 from pathlib import Path
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError
+
+from sync_api_errors import SyncApiError, print_api_error
+from sync_sources import load_source_definitions, source_id_from_filename
 
 # ── Paths (set in main() from --project-root) ────────────────────
 
@@ -99,6 +104,8 @@ def load_config():
         "secretKey": secret_cfg["secretKey"],
         "baseUrl": public_cfg.get("baseUrl", "https://api.sboxcool.com"),
         "apiVersion": public_cfg.get("apiVersion", "v3"),
+        "enableAuthSessions": bool(public_cfg.get("enableAuthSessions", False)),
+        "enableEncryptedRequests": bool(public_cfg.get("enableEncryptedRequests", False)),
     }
 
 
@@ -124,11 +131,52 @@ def api_request(config, method, path, body=None):
 
     try:
         with urlopen(req) as resp:
-            return json.loads(resp.read().decode())
+            result = json.loads(resp.read().decode())
+            log_response_diagnostics(result, path)
+            return result
     except HTTPError as e:
         error_body = e.read().decode() if e.fp else ""
-        print(f"  HTTP {e.code}: {error_body}")
-        raise
+        print_api_error(e.code, error_body)
+        raise SyncApiError(f"API request failed: HTTP {e.code}") from None
+
+
+def log_response_diagnostics(result, path):
+    """Log any warnings or diagnostics from API response."""
+    if not isinstance(result, dict):
+        return
+
+    # Log top-level diagnostics
+    if "diagnostics" in result:
+        for diag in result.get("diagnostics", []):
+            severity = diag.get("severity", "info")
+            code = diag.get("code", "UNKNOWN")
+            message = diag.get("message", "")
+            resource_id = diag.get("resourceId", "")
+            prefix = f"[{resource_id}] " if resource_id else ""
+            if severity == "error":
+                print(f"  ERROR: {prefix}{code}: {message}", file=sys.stderr)
+            elif severity == "warning":
+                print(f"  WARN: {prefix}{code}: {message}")
+            else:
+                print(f"  INFO: {prefix}{code}: {message}")
+
+    # Log per-resource results with diagnostics
+    for item in result.get("results", []):
+        resource_id = item.get("resourceId", item.get("slug", item.get("id", "?")))
+        for diag in item.get("diagnostics", []):
+            severity = diag.get("severity", "info")
+            code = diag.get("code", "UNKNOWN")
+            message = diag.get("message", "")
+            if severity == "error":
+                print(f"  ERROR [{resource_id}]: {code}: {message}", file=sys.stderr)
+            elif severity == "warning":
+                print(f"  WARN [{resource_id}]: {code}: {message}")
+
+        # Log if item failed
+        if not item.get("ok", True):
+            error = item.get("error", "UNKNOWN_ERROR")
+            if not item.get("diagnostics"):
+                print(f"  FAIL [{resource_id}]: {error}", file=sys.stderr)
 
 # ── Load local files ─────────────────────────────────────────────
 
@@ -145,33 +193,162 @@ def is_truthy_flag(value):
 def is_deprecated_endpoint(item):
     if not isinstance(item, dict):
         return False
-    return any(is_truthy_flag(item.get(key)) for key in ("_deprecated", "deprecated", "depreciated", "depricated"))
+    if any(is_truthy_flag(item.get(key)) for key in ("_deprecated", "deprecated", "depreciated", "depricated")):
+        return True
+    source_text = item.get("sourceText") if isinstance(item.get("sourceText"), str) else ""
+    return re.search(r"(?im)^\s*(?:_?deprecated|depreciated|depricated)\s*:\s*(true|1|yes|on)\b", source_text) is not None
 
 
-def load_json_dir(directory, skip_deprecated_endpoints=False):
-    """Load all .json files from a directory, returning a list of parsed objects."""
+def load_source_dir(directory, kind):
+    """Load YAML source files as raw source payloads for backend compilation."""
     if not directory.exists():
         return []
+
+    typed = list(directory.glob(f"*.{kind}.yaml")) + list(directory.glob(f"*.{kind}.yml"))
+    plain = [p for p in list(directory.glob("*.yaml")) + list(directory.glob("*.yml")) if f".{kind}." not in p.name]
     items = []
-    for f in sorted(directory.glob("*.json")):
-        with open(f, encoding='utf-8') as fh:
-            item = json.load(fh)
-        if skip_deprecated_endpoints and is_deprecated_endpoint(item):
-            continue
-        items.append(item)
+    for f in sorted({*typed, *plain}):
+        items.append({
+            "kind": kind,
+            "id": source_id_from_filename(f, kind),
+            "authoringMode": "source",
+            "sourceFormat": "yaml",
+            "sourcePath": f.relative_to(NS_DIR).as_posix(),
+            "sourceText": f.read_text(encoding="utf-8"),
+        })
+
     return items
 
 
+def source_text_from_definition(kind, resource_id, data):
+    top_keys = {
+        "collection": {"id", "name", "description", "notes"},
+        "endpoint": {"id", "slug", "name", "description", "notes"},
+        "workflow": {"id", "name", "description", "notes"},
+    }.get(kind, {"id", "name", "description", "notes"})
+    header = [
+        "sourceVersion: 1",
+        f"kind: {kind}",
+        f"id: {resource_id}",
+    ]
+    for key in ("name", "description", "notes"):
+        value = data.get(key)
+        if value not in (None, ""):
+            header.append(f"{key}: {json.dumps(str(value), ensure_ascii=False)}")
+    body = {key: value for key, value in data.items() if key not in top_keys and not key.startswith("_")}
+    lines = list(header)
+    append_yaml_mapping(lines, body, 0)
+    lines.append("")
+    return "\n".join(lines)
+
+
+def generated_source_hash(cs_files):
+    digest = hashlib.sha256()
+    for cs_file in sorted(cs_files, key=lambda p: p.relative_to(PROJECT_ROOT).as_posix().lower()):
+        digest.update(cs_file.relative_to(PROJECT_ROOT).as_posix().encode("utf-8"))
+        digest.update(b"\n")
+        digest.update(cs_file.read_bytes())
+        digest.update(b"\n")
+    return digest.hexdigest()
+
+
+def generated_source_header(mapping, cs_files):
+    return "\n".join([
+        "# Generated by Network Storage from a configured C# data source.",
+        f"# generatedSource: {mapping['csFile']}",
+        f"# generatedSourceHash: {generated_source_hash(cs_files)}",
+    ]) + "\n"
+
+
+def append_yaml_mapping(lines, mapping, indent_level):
+    if not mapping:
+        lines.append(f"{indent(indent_level)}{{}}")
+        return
+    for key, value in mapping.items():
+        append_yaml_property(lines, key, value, indent_level)
+
+
+def append_yaml_property(lines, key, value, indent_level):
+    prefix = f"{indent(indent_level)}{format_yaml_key(key)}:"
+    if isinstance(value, dict):
+        if not value:
+            lines.append(f"{prefix} {{}}")
+            return
+        lines.append(prefix)
+        append_yaml_mapping(lines, value, indent_level + 1)
+        return
+    if isinstance(value, list):
+        if not value:
+            lines.append(f"{prefix} []")
+            return
+        lines.append(prefix)
+        append_yaml_list(lines, value, indent_level + 1)
+        return
+    lines.append(f"{prefix} {format_yaml_scalar(value)}")
+
+
+def append_yaml_list(lines, items, indent_level):
+    for item in items:
+        append_yaml_list_item(lines, item, indent_level)
+
+
+def append_yaml_list_item(lines, value, indent_level):
+    prefix = f"{indent(indent_level)}-"
+    if isinstance(value, dict):
+        if not value:
+            lines.append(f"{prefix} {{}}")
+            return
+        lines.append(prefix)
+        append_yaml_mapping(lines, value, indent_level + 1)
+        return
+    if isinstance(value, list):
+        if not value:
+            lines.append(f"{prefix} []")
+            return
+        lines.append(prefix)
+        append_yaml_list(lines, value, indent_level + 1)
+        return
+    lines.append(f"{prefix} {format_yaml_scalar(value)}")
+
+
+def format_yaml_key(key):
+    if isinstance(key, str) and re.fullmatch(r"[A-Za-z0-9_.-]+", key):
+        return key
+    return json.dumps(str(key), ensure_ascii=False)
+
+
+def format_yaml_scalar(value):
+    if value is None:
+        return "null"
+    if value is True:
+        return "true"
+    if value is False:
+        return "false"
+    if isinstance(value, float) and not isinstance(value, bool):
+        if value.is_integer():
+            return repr(int(value))
+        return repr(value)
+    if isinstance(value, int) and not isinstance(value, bool):
+        return repr(value)
+    return json.dumps(str(value), ensure_ascii=False)
+
+
+def indent(indent_level):
+    return "  " * indent_level
+
+
 def load_collections():
-    return load_json_dir(COLLECTIONS_DIR)
+    return load_source_dir(COLLECTIONS_DIR, "collection")
 
 
 def load_endpoints(include_deprecated=False):
-    return load_json_dir(ENDPOINTS_DIR, skip_deprecated_endpoints=not include_deprecated)
+    sources = load_source_dir(ENDPOINTS_DIR, "endpoint")
+    return [item for item in sources if include_deprecated or not is_deprecated_endpoint(item)]
 
 
 def load_workflows():
-    return load_json_dir(WORKFLOWS_DIR)
+    return load_source_dir(WORKFLOWS_DIR, "workflow")
+
 
 # ── Push ─────────────────────────────────────────────────────────
 
@@ -188,28 +365,11 @@ def push_collections(config, dry_run=False):
     if dry_run:
         return
 
-    # Fetch existing remote collections to preserve IDs
-    try:
-        remote = api_request(config, "GET", "collections")
-        remote_by_name = {}
-        if isinstance(remote, list):
-            remote_by_name = {c["name"]: c for c in remote if "name" in c}
-        elif isinstance(remote, dict) and "collections" in remote:
-            remote_by_name = {c["name"]: c for c in remote["collections"] if "name" in c}
-    except Exception:
-        remote_by_name = {}
-
-    # Preserve server IDs
-    for c in collections:
-        name = c.get("name", "")
-        if name in remote_by_name and "id" in remote_by_name[name]:
-            c["id"] = remote_by_name[name]["id"]
-
     result = api_request(config, "PUT", "collections", collections)
     print(f"  Pushed collections: {json.dumps(result, indent=2)[:200]}")
 
 
-def push_endpoints(config, dry_run=False):
+def push_endpoints(config, dry_run=False, replace_all=False):
     endpoints = load_endpoints()
     all_endpoints = load_endpoints(include_deprecated=True)
     skipped_deprecated = len(all_endpoints) - len(endpoints)
@@ -224,27 +384,14 @@ def push_endpoints(config, dry_run=False):
         print(f"    - {e.get('slug', '?')}")
     if skipped_deprecated:
         print(f"  Skipping {skipped_deprecated} deprecated endpoint(s)")
+    if replace_all:
+        print("  [REPLACE ALL] Will delete all existing endpoints and replace with local")
 
     if dry_run:
         return
 
-    # Fetch existing remote endpoints to preserve IDs
-    try:
-        remote = api_request(config, "GET", "endpoints")
-        remote_by_slug = {}
-        if isinstance(remote, list):
-            remote_by_slug = {e["slug"]: e for e in remote if "slug" in e}
-        elif isinstance(remote, dict) and "endpoints" in remote:
-            remote_by_slug = {e["slug"]: e for e in remote["endpoints"] if "slug" in e}
-    except Exception:
-        remote_by_slug = {}
-
-    for e in endpoints:
-        slug = e.get("slug", "")
-        if slug in remote_by_slug and "id" in remote_by_slug[slug]:
-            e["id"] = remote_by_slug[slug]["id"]
-
-    result = api_request(config, "PUT", "endpoints", endpoints)
+    path = "endpoints?replaceAll=true" if replace_all else "endpoints"
+    result = api_request(config, "PUT", path, endpoints)
     print(f"  Pushed endpoints: {json.dumps(result, indent=2)[:200]}")
 
 
@@ -261,18 +408,100 @@ def push_workflows(config, dry_run=False):
     if dry_run:
         return
 
-    try:
-        remote = api_request(config, "GET", "workflows")
-        remote_by_id = {}
-        if isinstance(remote, list):
-            remote_by_id = {w["id"]: w for w in remote if "id" in w}
-        elif isinstance(remote, dict) and "workflows" in remote:
-            remote_by_id = {w["id"]: w for w in remote["workflows"] if "id" in w}
-    except Exception:
-        remote_by_id = {}
-
     result = api_request(config, "PUT", "workflows", workflows)
     print(f"  Pushed workflows: {json.dumps(result, indent=2)[:200]}")
+
+
+def upgrade_source_with_backend(config, source):
+    """Ask the backend compiler to canonicalize and safely upgrade a source file."""
+    payload = {
+        "kind": source.get("kind"),
+        "id": source.get("id"),
+        "sourceFormat": source.get("sourceFormat", "yaml"),
+        "sourcePath": source.get("sourcePath"),
+        "sourceText": source.get("sourceText"),
+    }
+    result = api_request(config, "POST", "source-upgrade", payload)
+    if not isinstance(result, dict) or not result.get("ok", False):
+        raise SyncApiError(f"Backend source upgrade failed for {source.get('kind')}:{source.get('id')}")
+
+    upgraded_text = result.get("upgradedSourceText")
+    safe_auto_write = result.get("safeAutoWrite") is True
+    if safe_auto_write and upgraded_text and upgraded_text != source.get("sourceText") and source.get("sourcePath"):
+        target = NS_DIR / source["sourcePath"]
+        target.write_text(upgraded_text, encoding="utf-8")
+        source["sourceText"] = upgraded_text
+        print(f"  Updated source layout: {source['sourcePath']}")
+    elif upgraded_text and upgraded_text != source.get("sourceText"):
+        print(f"  WARN [{source.get('id')}]: backend suggested a source upgrade but marked it unsafe to auto-write; leaving file unchanged")
+
+    canonical = result.get("canonicalDefinition")
+    if not isinstance(canonical, dict):
+        raise SyncApiError(f"Backend source upgrade did not return a canonicalDefinition for {source.get('kind')}:{source.get('id')}")
+
+    canonical = dict(canonical)
+    canonical.setdefault("authoringMode", "source")
+    canonical.setdefault("sourceFormat", source.get("sourceFormat", "yaml"))
+    canonical.setdefault("sourcePath", source.get("sourcePath"))
+    canonical.setdefault("sourceText", source.get("sourceText"))
+    return canonical
+
+
+def push_sources(config, dry_run=False):
+    sources = load_source_definitions(NS_DIR)
+    if not sources:
+        print("  No YAML source definitions found, skipping")
+        return
+
+    print(f"  Found {len(sources)} YAML source definition(s):")
+    for s in sources:
+        print(f"    - {s['kind']}:{s['id']} ({s['sourcePath']})")
+
+    if dry_run:
+        return
+
+    pushable_sources = []
+    for source in sources:
+        if source.get("kind") == "library":
+            print(f"  Skipping library source push: {source.get('sourcePath')} (used locally for imports)")
+            continue
+        pushable_sources.append({
+            "kind": source.get("kind"),
+            "id": source.get("id"),
+            "authoringMode": "source",
+            "sourceFormat": source.get("sourceFormat", "yaml"),
+            "sourcePath": source.get("sourcePath"),
+            "sourceText": source.get("sourceText"),
+        })
+
+    # The management API is kind-scoped. Keep source sync using the same routes as
+    # the editor UI so it works on deployed backends that intentionally do not have
+    # a generic /sources endpoint.
+    route_by_kind = {
+        "collection": "collections",
+        "endpoint": "endpoints",
+        "workflow": "workflows",
+        "test": "tests",
+    }
+    grouped = {}
+    for source in pushable_sources:
+        route = route_by_kind.get(source.get("kind"))
+        if not route:
+            print(f"  Skipping unsupported source kind: {source.get('kind')} ({source.get('sourcePath')})")
+            continue
+        grouped.setdefault(route, []).append(source)
+
+    results = {}
+    for route, payload in grouped.items():
+        result = api_request(config, "PUT", route, payload)
+        results[route] = {
+            "count": len(payload),
+            "updatedCount": result.get("updatedCount") if isinstance(result, dict) else None,
+            "createdCount": result.get("createdCount") if isinstance(result, dict) else None,
+        }
+        print(f"  Pushed {route}: {json.dumps(results[route], indent=2)}")
+
+    print(f"  Pushed source groups: {json.dumps(results, indent=2)[:500]}")
 
 
 def validate(config):
@@ -281,7 +510,7 @@ def validate(config):
         result = api_request(config, "GET", "validate")
         print(f"  Credentials valid: {json.dumps(result)}")
         return True
-    except HTTPError:
+    except SyncApiError:
         print("  Credentials INVALID")
         return False
 
@@ -538,7 +767,7 @@ def parse_cs_tuple_arrays(content):
 
 
 def generate_collection(mapping):
-    """Generate a collection JSON file from C# source files."""
+    """Generate a collection YAML source file from C# source files."""
     cs_path = PROJECT_ROOT / mapping['csFile'].replace('\\', '/')
     collection_name = mapping['collection']
 
@@ -564,12 +793,14 @@ def generate_collection(mapping):
             print_error(f"Generate failed for '{collection_name}': no data tables found in {mapping['csFile']}")
             return False
 
-        # Load existing collection JSON to preserve metadata
-        collection_path = COLLECTIONS_DIR / f"{collection_name}.json"
+        # Load existing collection source to preserve metadata.
+        collection_path = COLLECTIONS_DIR / f"{collection_name}.collection.yml"
         existing = {}
         if collection_path.exists():
-            with open(collection_path, encoding='utf-8') as f:
-                existing = json.load(f)
+            for item in load_source_dir(COLLECTIONS_DIR, "collection"):
+                if item.get("name") == collection_name or item.get("id") == collection_name:
+                    existing = item
+                    break
 
         output = {
             "name": existing.get("name", collection_name),
@@ -585,9 +816,10 @@ def generate_collection(mapping):
 
         COLLECTIONS_DIR.mkdir(parents=True, exist_ok=True)
         with open(collection_path, 'w', encoding='utf-8') as f:
-            json.dump(output, f, indent=2, ensure_ascii=False)
+            f.write(generated_source_header(mapping, cs_files))
+            f.write(source_text_from_definition("collection", collection_name, output))
 
-        print(f"  Generated {collection_name}.json — {len(all_tables)} table(s):")
+        print(f"  Generated {collection_name}.collection.yml — {len(all_tables)} table(s):")
         for t in all_tables:
             print(f"    - {t['id']}: {len(t['rows'])} rows, {len(t['columns'])} columns")
         return True
@@ -597,7 +829,7 @@ def generate_collection(mapping):
 
 
 def generate_collections(collection_filter=None):
-    """Generate collection JSON from C# sources using configured sync mappings."""
+    """Generate collection YAML from C# sources using configured sync mappings."""
     public_cfg_path = CONFIG_DIR / "public" / "projectConfig.json"
     if not public_cfg_path.exists():
         print_error(f"projectConfig.json not found at {public_cfg_path}")
@@ -641,9 +873,11 @@ def main():
     parser.add_argument("--collections", action="store_true", help="Push collections only")
     parser.add_argument("--endpoints", action="store_true", help="Push endpoints only")
     parser.add_argument("--workflows", action="store_true", help="Push workflows only")
+    parser.add_argument("--sources", action="store_true", help="Push YAML source definitions only")
     parser.add_argument("--validate", action="store_true", help="Validate credentials only")
     parser.add_argument("--dry-run", action="store_true", help="Show what would be pushed without pushing")
-    parser.add_argument("--generate", action="store_true", help="Generate collection JSON from C# data files")
+    parser.add_argument("--replace-all", action="store_true", help="Replace all remote endpoints (deletes existing, use with --endpoints)")
+    parser.add_argument("--generate", action="store_true", help="Generate collection YAML source from C# data files")
     parser.add_argument("--collection", type=str, help="Filter to a specific collection name (with --generate)")
     args = parser.parse_args()
 
@@ -663,13 +897,15 @@ def main():
     config = load_config()
     print(f"Project ID:   {config['projectId']}")
     print(f"API:          {config['baseUrl']}/{config['apiVersion']}")
+    print(f"Auth Sessions: {'Enabled' if config.get('enableAuthSessions') else 'Disabled'}")
+    print(f"Encrypted Requests: {'Enabled' if config.get('enableEncryptedRequests') else 'Disabled'}")
     print()
 
     if args.validate:
         validate(config)
         return
 
-    push_all = not (args.collections or args.endpoints or args.workflows)
+    push_all = not (args.collections or args.endpoints or args.workflows or args.sources)
 
     if args.dry_run:
         print("[DRY RUN — no changes will be pushed]\n")
@@ -681,12 +917,17 @@ def main():
 
     if push_all or args.endpoints:
         print("── Endpoints ──")
-        push_endpoints(config, dry_run=args.dry_run)
+        push_endpoints(config, dry_run=args.dry_run, replace_all=getattr(args, 'replace_all', False))
         print()
 
     if push_all or args.workflows:
         print("── Workflows ──")
         push_workflows(config, dry_run=args.dry_run)
+        print()
+
+    if args.sources:
+        print("── Source Definitions ──")
+        push_sources(config, dry_run=args.dry_run)
         print()
 
     print("Done!")
@@ -695,6 +936,9 @@ def main():
 if __name__ == "__main__":
     try:
         main()
+    except SyncApiError as exc:
+        print_error(str(exc))
+        sys.exit(1)
     except Exception as exc:
         print_exception("Unhandled sync.py failure", exc)
         sys.exit(1)

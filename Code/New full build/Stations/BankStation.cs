@@ -60,7 +60,7 @@ public sealed class BankStation : Component
 	{
 		ActiveBank = null;
 		Mouse.Visibility = MouseVisibility.Hidden;
-		PlayerPersistence.Local?.RequestSaveNow();
+		PlayerPersistence.Local?.SaveNow( SaveSection.Bank | SaveSection.Inventory | SaveSection.Stats );
 	}
 
 	public bool IsPlayerInRange()

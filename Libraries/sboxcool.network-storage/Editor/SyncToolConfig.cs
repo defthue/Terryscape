@@ -15,11 +15,12 @@ using Editor;
 ///   config/secret/secret_key.json     — secret key ONLY (gitignored, editor-only, NEVER published)
 ///
 /// The public config is also written to the project root as network-storage.credentials.json
-/// so the runtime client can auto-configure via s&box's sandboxed FileSystem.
+/// so the runtime client can auto-configure via s&amp;box's sandboxed FileSystem.
 /// </summary>
-public static class SyncToolConfig
+public static partial class SyncToolConfig
 {
-	public enum DataSourceMode { ApiThenJson, ApiOnly, JsonOnly }
+	public enum DataSourceMode { ApiOnly }
+	public enum SourceExportMode { SourceOnly }
 
 	// ── Credentials ──
 	public static string SecretKey { get; private set; } = "";
@@ -30,7 +31,11 @@ public static class SyncToolConfig
 	public static string ApiVersion { get; private set; } = "v3";
 
 	// ── Preferences ──
-	public static DataSourceMode DataSource { get; private set; } = DataSourceMode.ApiThenJson;
+	public static DataSourceMode DataSource { get; private set; } = DataSourceMode.ApiOnly;
+	public static SourceExportMode SourceExport { get; private set; } = SourceExportMode.SourceOnly;
+	public static bool EnableAuthSessions { get; private set; }
+	public static bool EnableEncryptedRequests { get; private set; }
+	public static string PublishTarget { get; private set; } = "live";
 
 	/// <summary>
 	/// When true, the game host proxies Network Storage API calls on behalf of non-host clients.
@@ -38,10 +43,10 @@ public static class SyncToolConfig
 	/// </summary>
 	public static bool ProxyEnabled { get; set; }
 
-	// ── Sync Mappings (C# data files → collection JSON) ──
+	// ── Sync Mappings (C# data files → collection YAML source) ──
 
 	/// <summary>
-	/// Configured mappings from C# data files to collection JSON files.
+	/// Configured mappings from C# data files to collection YAML source files.
 	/// Used by sync.py to generate collection data from code.
 	/// </summary>
 	public static List<SyncMapping> SyncMappings { get; private set; } = new();
@@ -136,9 +141,6 @@ public static class SyncToolConfig
 	/// <summary>Path to the tests directory.</summary>
 	public static string TestsPath => $"{SyncToolsPath}/tests";
 
-	/// <summary>Legacy paths for auto-migration.</summary>
-	public static string LegacyCollectionSchemaPath => $"{SyncToolsPath}/collection_schema.json";
-
 	// Legacy .env locations for migration
 	private static string LegacyEnvInConfig => $"{ConfigPath}/.env";
 	private static string LegacyEnvInRoot => $"{SyncToolsPath}/.env";
@@ -152,6 +154,13 @@ public static class SyncToolConfig
 		PropertyNameCaseInsensitive = true,
 		ReadCommentHandling = JsonCommentHandling.Skip
 	};
+
+	private static string NormalizePublishTarget( string target )
+	{
+		return string.Equals( target, "next", StringComparison.OrdinalIgnoreCase )
+			? "next"
+			: "live";
+	}
 
 	// ── Filesystem helpers (System.IO with absolute paths) ──
 
@@ -185,9 +194,13 @@ public static class SyncToolConfig
 		BaseUrl = "https://api.sboxcool.com";
 		CdnUrl = "";
 		ApiVersion = "v3";
-		DataSource = DataSourceMode.ApiThenJson;
+		DataSource = DataSourceMode.ApiOnly;
+		SourceExport = SourceExportMode.SourceOnly;
+		EnableAuthSessions = false;
+		EnableEncryptedRequests = false;
+		PublishTarget = "live";
 		DataFolder = "Network Storage";
-		ProxyEnabled = true;
+		ProxyEnabled = false;
 
 		// ── Try new split config first ──
 		if ( File.Exists( Abs( ProjectConfigFile ) ) )
@@ -229,17 +242,30 @@ public static class SyncToolConfig
 		DataFolder = json.TryGetProperty( "dataFolder", out var df ) ? df.GetString() ?? "Network Storage" : "Network Storage";
 		if ( json.TryGetProperty( "dataSource", out var ds ) )
 		{
-			DataSource = ds.GetString()?.ToLowerInvariant() switch
-			{
-				"api_only" => DataSourceMode.ApiOnly,
-				"json_only" => DataSourceMode.JsonOnly,
-				_ => DataSourceMode.ApiThenJson
-			};
+			var configured = ds.GetString();
+			if ( !string.IsNullOrWhiteSpace( configured ) &&
+				!string.Equals( configured, "api_only", StringComparison.OrdinalIgnoreCase ) )
+				Log.Warning( $"[SyncTool] dataSource '{configured}' is no longer supported; using api_only." );
 		}
+		DataSource = DataSourceMode.ApiOnly;
+		if ( json.TryGetProperty( "sourceExportMode", out var sem ) )
+		{
+			var configured = sem.GetString();
+			if ( !string.IsNullOrWhiteSpace( configured ) &&
+				!string.Equals( configured, "source_only", StringComparison.OrdinalIgnoreCase ) )
+				Log.Warning( $"[SyncTool] sourceExportMode '{configured}' is no longer supported; using source_only." );
+		}
+		SourceExport = SourceExportMode.SourceOnly;
 		// Only override the default when the property is explicitly present in the file.
-		// If absent, leave ProxyEnabled at its default (true) set in Load().
+		// If absent, leave ProxyEnabled at its default (false) set in Load().
 		if ( json.TryGetProperty( "proxyEnabled", out var pe ) )
 			ProxyEnabled = pe.GetBoolean();
+		if ( json.TryGetProperty( "enableAuthSessions", out var eas ) )
+			EnableAuthSessions = eas.ValueKind == JsonValueKind.True;
+		if ( json.TryGetProperty( "enableEncryptedRequests", out var eer ) )
+			EnableEncryptedRequests = eer.ValueKind == JsonValueKind.True;
+		if ( json.TryGetProperty( "publishTarget", out var pt ) )
+			PublishTarget = NormalizePublishTarget( pt.GetString() );
 
 		// Sync mappings
 		SyncMappings.Clear();
@@ -285,12 +311,9 @@ public static class SyncToolConfig
 				case "SBOXCOOL_API_VERSION": ApiVersion = val.Trim( '/' ); break;
 				case "SBOXCOOL_DATA_FOLDER": DataFolder = val; break;
 				case "SBOXCOOL_DATA_SOURCE":
-					DataSource = val.ToLowerInvariant() switch
-					{
-						"api_only" => DataSourceMode.ApiOnly,
-						"json_only" => DataSourceMode.JsonOnly,
-						_ => DataSourceMode.ApiThenJson
-					};
+					if ( !string.Equals( val, "api_only", StringComparison.OrdinalIgnoreCase ) )
+						Log.Warning( $"[SyncTool] legacy SBOXCOOL_DATA_SOURCE '{val}' is no longer supported; using api_only." );
+					DataSource = DataSourceMode.ApiOnly;
 					break;
 			}
 		}
@@ -315,8 +338,8 @@ public static class SyncToolConfig
 		ProjectId = projectId ?? "";
 		BaseUrl = ( baseUrl ?? "https://api.sboxcool.com" ).TrimEnd( '/' );
 		CdnUrl = ( cdnUrl ?? "" ).TrimEnd( '/' );
-		if ( dataSource.HasValue )
-			DataSource = dataSource.Value;
+		DataSource = DataSourceMode.ApiOnly;
+		SourceExport = SourceExportMode.SourceOnly;
 
 		// ── Write public config (safe to commit) ──
 		var publicConfig = new Dictionary<string, object>
@@ -327,12 +350,11 @@ public static class SyncToolConfig
 			["cdnUrl"] = CdnUrl,
 			["apiVersion"] = ApiVersion,
 			["dataFolder"] = DataFolder,
-			["dataSource"] = DataSource switch
-			{
-				DataSourceMode.ApiOnly => "api_only",
-				DataSourceMode.JsonOnly => "json_only",
-				_ => "api_then_json"
-			},
+			["dataSource"] = "api_only",
+			["sourceExportMode"] = "source_only",
+			["enableAuthSessions"] = EnableAuthSessions,
+			["enableEncryptedRequests"] = EnableEncryptedRequests,
+			["publishTarget"] = PublishTarget,
 			["proxyEnabled"] = ProxyEnabled
 		};
 
@@ -388,6 +410,8 @@ public static class SyncToolConfig
 			merged["cdnUrl"] = CdnUrl ?? "";
 			merged["apiVersion"] = ApiVersion;
 			merged["proxyEnabled"] = ProxyEnabled;
+			merged["enableAuthSessions"] = EnableAuthSessions;
+			merged["enableEncryptedRequests"] = EnableEncryptedRequests;
 
 			File.WriteAllText( credsPath, JsonSerializer.Serialize( merged, _jsonOptions ) );
 			Log.Info( "[SyncTool] Runtime credentials written to Assets/network-storage.credentials.json" );
@@ -409,9 +433,19 @@ public static class SyncToolConfig
 	/// </summary>
 	public static void SetDataSource( DataSourceMode mode )
 	{
-		DataSource = mode;
+		DataSource = DataSourceMode.ApiOnly;
 		if ( File.Exists( Abs( ProjectConfigFile ) ) )
-			Save( SecretKey, PublicApiKey, ProjectId, BaseUrl, mode );
+			Save( SecretKey, PublicApiKey, ProjectId, BaseUrl, DataSource );
+	}
+
+	/// <summary>
+	/// Persist the selected publish target ("live" or "next") so next launch uses it.
+	/// </summary>
+	public static void SetPublishTarget( string target )
+	{
+		PublishTarget = NormalizePublishTarget( target );
+		if ( File.Exists( Abs( ProjectConfigFile ) ) )
+			Save( SecretKey, PublicApiKey, ProjectId, BaseUrl, DataSource, DataFolder, CdnUrl );
 	}
 
 	/// <summary>
@@ -433,10 +467,10 @@ public static class SyncToolConfig
 		=> Abs( mapping.CsFile );
 
 	/// <summary>
-	/// Get the absolute path to a sync mapping's collection JSON file.
+	/// Get the absolute path to a sync mapping's collection YAML source file.
 	/// </summary>
 	public static string GetMappingCollectionPath( SyncMapping mapping )
-		=> Abs( $"{CollectionsPath}/{mapping.Collection}.json" );
+		=> Abs( $"{CollectionsPath}/{mapping.Collection}.collection.yml" );
 
 	/// <summary>Path to sync.py script inside the network-storage library.</summary>
 	public static string SyncPyPath => "Libraries/sboxcool.network-storage/Editor/sync.py";
@@ -463,30 +497,21 @@ public static class SyncToolConfig
 	{
 		var list = new List<(string, Dictionary<string, object>)>();
 
-		var files = FindFiles( CollectionsPath, "*.json" );
-		if ( files.Length > 0 )
+		foreach ( var source in LoadSourceCanonicalResources( "collection" ) )
 		{
-			foreach ( var file in files )
-			{
-				var fullPath = Abs( $"{CollectionsPath}/{file}" );
-				var text = File.ReadAllText( fullPath );
-				var dict = JsonSerializer.Deserialize<Dictionary<string, object>>( text, _readOptions );
-				var name = dict?.GetValueOrDefault( "name" )?.ToString()
-					?? Path.GetFileNameWithoutExtension( file );
+			var dict = JsonSerializer.Deserialize<Dictionary<string, object>>( source.GetRawText(), _readOptions );
+			var name = source.TryGetProperty( "name", out var nameProperty )
+				? nameProperty.GetString()
+				: null;
+			if ( string.IsNullOrWhiteSpace( name ) )
+				name = dict?.GetValueOrDefault( "name" )?.ToString();
+			if ( string.IsNullOrWhiteSpace( name ) && source.TryGetProperty( "id", out var idProperty ) )
+				name = idProperty.GetString();
+			if ( !string.IsNullOrWhiteSpace( name ) && dict != null )
 				list.Add( (name, dict) );
-			}
 		}
-		else if ( File.Exists( Abs( LegacyCollectionSchemaPath ) ) )
-		{
-			var text = File.ReadAllText( Abs( LegacyCollectionSchemaPath ) );
-			var schema = JsonSerializer.Deserialize<JsonElement>( text, _readOptions );
-			var dict = new Dictionary<string, object>
-			{
-				["name"] = "player_data",
-				["schema"] = schema
-			};
-			list.Add( ("player_data", dict) );
-		}
+		if ( list.Count > 0 )
+			return list;
 
 		return list;
 	}
@@ -526,26 +551,19 @@ public static class SyncToolConfig
 	public static List<JsonElement> LoadEndpoints( bool includeDeprecated = false )
 	{
 		var list = new List<JsonElement>();
-		var files = FindFiles( EndpointsPath, "*.json" );
 
-		foreach ( var file in files )
+		var sourceEndpoints = LoadSourceCanonicalResources( "endpoint" );
+		if ( sourceEndpoints.Count > 0 )
 		{
-			var fullPath = Abs( $"{EndpointsPath}/{file}" );
-			var text = File.ReadAllText( fullPath );
-			var ep = JsonSerializer.Deserialize<JsonElement>( text, _readOptions );
-
-			if ( !ep.TryGetProperty( "slug", out _ ) )
+			foreach ( var ep in sourceEndpoints )
 			{
-				var slug = Path.GetFileNameWithoutExtension( file );
-				var dict = JsonSerializer.Deserialize<Dictionary<string, object>>( text, _readOptions );
-				dict["slug"] = slug;
-				ep = JsonSerializer.Deserialize<JsonElement>( JsonSerializer.Serialize( dict ) );
+				if ( !includeDeprecated && IsEndpointDeprecated( ep ) )
+					continue;
+
+				list.Add( ep );
 			}
 
-			if ( !includeDeprecated && IsEndpointDeprecated( ep ) )
-				continue;
-
-			list.Add( ep );
+			return list;
 		}
 
 		return list;
@@ -554,54 +572,23 @@ public static class SyncToolConfig
 	/// <summary>Load all workflow definitions from the workflows/ directory.</summary>
 	public static List<JsonElement> LoadWorkflows()
 	{
-		var list = new List<(string File, JsonElement Workflow)>();
-		var files = FindFiles( WorkflowsPath, "*.json" );
+		var sourceWorkflows = LoadSourceCanonicalResources( "workflow" );
+		if ( sourceWorkflows.Count > 0 )
+			return sourceWorkflows;
 
-		foreach ( var file in files )
-		{
-			var fullPath = Abs( $"{WorkflowsPath}/{file}" );
-			var text = File.ReadAllText( fullPath );
-			var wf = JsonSerializer.Deserialize<JsonElement>( text, _readOptions );
-
-			if ( !wf.TryGetProperty( "id", out _ ) )
-			{
-				var id = Path.GetFileNameWithoutExtension( file );
-				var dict = JsonSerializer.Deserialize<Dictionary<string, object>>( text, _readOptions );
-				dict["id"] = id;
-				wf = JsonSerializer.Deserialize<JsonElement>( JsonSerializer.Serialize( dict ) );
-			}
-
-			list.Add( (file, wf) );
-		}
-
-		return list
-			.GroupBy( x => x.Workflow.TryGetProperty( "id", out var id ) ? id.GetString() ?? Path.GetFileNameWithoutExtension( x.File ) : Path.GetFileNameWithoutExtension( x.File ),
-				StringComparer.OrdinalIgnoreCase )
-			.Select( group =>
-				group.OrderByDescending( x => string.Equals( Path.GetFileNameWithoutExtension( x.File ),
-					group.Key, StringComparison.OrdinalIgnoreCase ) )
-				.ThenBy( x => x.File, StringComparer.OrdinalIgnoreCase )
-				.First().Workflow )
-			.ToList();
+		return new List<JsonElement>();
 	}
 
 	// ──────────────────────────────────────────────────────
 	//  Data file writers (for Pull)
 	// ──────────────────────────────────────────────────────
 
-	private static readonly JsonSerializerOptions _writeOptions = new()
-	{
-		WriteIndented = true,
-		PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-	};
-
-	/// <summary>Save endpoint definitions as individual JSON files.</summary>
+	/// <summary>Save endpoint definitions as individual YAML source files.</summary>
 	public static void SaveEndpoints( List<Dictionary<string, object>> endpoints )
 	{
 		EnsureSyncToolsDir();
 		EnsureDir( EndpointsPath );
 
-		// Clear existing endpoint files
 		foreach ( var file in FindFiles( EndpointsPath, "*.json" ) )
 			File.Delete( Abs( $"{EndpointsPath}/{file}" ) );
 
@@ -612,93 +599,74 @@ public static class SyncToolConfig
 				continue;
 
 			var slug = ep.TryGetValue( "slug", out var s ) ? s?.ToString() ?? "unknown" : "unknown";
-			File.WriteAllText( Abs( $"{EndpointsPath}/{slug}.json" ), JsonSerializer.Serialize( ep, _writeOptions ) );
+			SyncToolPullWriter.WriteSource( "endpoint", slug, ep );
 		}
 
 		Log.Info( $"[SyncTool] Saved {endpoints.Count} endpoint files to endpoints/" );
 	}
 
-	/// <summary>Save workflow definitions as individual JSON files.</summary>
+	/// <summary>Save workflow definitions as individual YAML source files.</summary>
 	public static void SaveWorkflows( List<Dictionary<string, object>> workflows )
 	{
 		EnsureSyncToolsDir();
 		EnsureDir( WorkflowsPath );
 
-		// Clear existing workflow files
 		foreach ( var file in FindFiles( WorkflowsPath, "*.json" ) )
 			File.Delete( Abs( $"{WorkflowsPath}/{file}" ) );
 
 		foreach ( var wf in workflows )
 		{
 			var id = wf.TryGetValue( "id", out var s ) ? s?.ToString() ?? "unknown" : "unknown";
-			File.WriteAllText( Abs( $"{WorkflowsPath}/{id}.json" ), JsonSerializer.Serialize( wf, _writeOptions ) );
+			SyncToolPullWriter.WriteSource( "workflow", id, wf );
 		}
 
 		Log.Info( $"[SyncTool] Saved {workflows.Count} workflow files to workflows/" );
 	}
 
-	/// <summary>Save a single workflow to workflows/{id}.json.</summary>
+	/// <summary>Save a single workflow to workflows/{id}.workflow.yml.</summary>
 	public static void SaveWorkflow( string id, Dictionary<string, object> data )
 	{
 		EnsureSyncToolsDir();
 		EnsureDir( WorkflowsPath );
-		var canonicalFile = $"{id}.json";
-		File.WriteAllText( Abs( $"{WorkflowsPath}/{canonicalFile}" ), JsonSerializer.Serialize( data, _writeOptions ) );
-		DeleteDuplicateWorkflowFiles( id, canonicalFile );
-		Log.Info( $"[SyncTool] Saved workflows/{id}.json" );
+		SyncToolPullWriter.WriteSource( "workflow", id, data );
+		Log.Info( $"[SyncTool] Saved workflows/{id}.workflow.yml" );
 	}
 
 	/// <summary>Load all test definitions from the tests/ directory.</summary>
 	public static List<JsonElement> LoadTests()
 	{
 		var list = new List<JsonElement>();
-		var files = FindFiles( TestsPath, "*.json" );
-
-		foreach ( var file in files )
+		foreach ( var source in LoadSourceCanonicalResources( "test" ) )
 		{
-			var fullPath = Abs( $"{TestsPath}/{file}" );
-			var text = File.ReadAllText( fullPath );
-			var test = JsonSerializer.Deserialize<JsonElement>( text, _readOptions );
-
-			if ( !test.TryGetProperty( "id", out _ ) )
-			{
-				var id = Path.GetFileNameWithoutExtension( file );
-				var dict = JsonSerializer.Deserialize<Dictionary<string, object>>( text, _readOptions );
-				dict["id"] = id;
-				test = JsonSerializer.Deserialize<JsonElement>( JsonSerializer.Serialize( dict ) );
-			}
-
-			list.Add( test );
+			if ( source.ValueKind == JsonValueKind.Object )
+				list.Add( source );
 		}
 
 		return list;
 	}
 
-	/// <summary>Save test definitions as individual JSON files.</summary>
+	/// <summary>Save test definitions as individual YAML source files.</summary>
 	public static void SaveTests( List<Dictionary<string, object>> tests )
 	{
 		EnsureSyncToolsDir();
 		EnsureDir( TestsPath );
 
-		foreach ( var file in FindFiles( TestsPath, "*.json" ) )
-			File.Delete( Abs( $"{TestsPath}/{file}" ) );
-
 		foreach ( var test in tests )
 		{
 			var id = test.TryGetValue( "id", out var s ) ? s?.ToString() ?? "unknown" : "unknown";
-			File.WriteAllText( Abs( $"{TestsPath}/{id}.json" ), JsonSerializer.Serialize( test, _writeOptions ) );
+			SyncToolPullWriter.WriteSource( "test", id, test );
 		}
 
 		Log.Info( $"[SyncTool] Saved {tests.Count} test files to tests/" );
 	}
 
-	/// <summary>Save a collection to collections/{name}.json.</summary>
+	/// <summary>Save a collection to collections/{name}.collection.yml.</summary>
 	public static void SaveCollection( string name, Dictionary<string, object> data )
 	{
 		EnsureSyncToolsDir();
 		EnsureDir( CollectionsPath );
-		File.WriteAllText( Abs( $"{CollectionsPath}/{name}.json" ), JsonSerializer.Serialize( data, _writeOptions ) );
-		Log.Info( $"[SyncTool] Saved collections/{name}.json" );
+		SyncToolPullWriter.WriteSource( "collection", name, data );
+		Log.Info( $"[SyncTool] Saved collections/{name}.collection.yml" );
 	}
 
 	/// <summary>Save multiple collections.</summary>
@@ -711,18 +679,16 @@ public static class SyncToolConfig
 	/// <summary>Check if local data files exist.</summary>
 	public static bool HasLocalData()
 	{
-		return File.Exists( Abs( LegacyCollectionSchemaPath ) )
-			|| FindFiles( CollectionsPath, "*.json" ).Length > 0
-			|| FindFiles( EndpointsPath, "*.json" ).Length > 0
-			|| FindFiles( WorkflowsPath, "*.json" ).Length > 0
-			|| FindFiles( TestsPath, "*.json" ).Length > 0;
+		return HasSourceFiles();
 	}
 
 	/// <summary>Find the local workflow file whose embedded id matches the given workflow id.</summary>
 	public static string FindWorkflowFileById( string id )
 	{
-		var files = FindFiles( WorkflowsPath, "*.json" );
-		var canonical = files.FirstOrDefault( f => string.Equals( Path.GetFileNameWithoutExtension( f ), id, StringComparison.OrdinalIgnoreCase ) );
+		var files = FindFiles( WorkflowsPath, "*.workflow.yml" )
+			.Concat( FindFiles( WorkflowsPath, "*.workflow.yaml" ) )
+			.ToArray();
+		var canonical = files.FirstOrDefault( f => string.Equals( ResourceIdFromFilePath( f, "workflow" ), id, StringComparison.OrdinalIgnoreCase ) );
 		if ( canonical != null )
 			return Abs( $"{WorkflowsPath}/{canonical}" );
 
@@ -749,7 +715,8 @@ public static class SyncToolConfig
 
 	private static void DeleteDuplicateWorkflowFiles( string id, string keepFile )
 	{
-		foreach ( var file in FindFiles( WorkflowsPath, "*.json" ) )
+		foreach ( var file in FindFiles( WorkflowsPath, "*.workflow.yml" )
+			.Concat( FindFiles( WorkflowsPath, "*.workflow.yaml" ) ) )
 		{
 			if ( string.Equals( file, keepFile, StringComparison.OrdinalIgnoreCase ) )
 				continue;
@@ -764,8 +731,7 @@ public static class SyncToolConfig
 		var fullPath = Abs( $"{WorkflowsPath}/{file}" );
 		try
 		{
-			var text = File.ReadAllText( fullPath );
-			var wf = JsonSerializer.Deserialize<JsonElement>( text, _readOptions );
+			var wf = TryLoadSourceCanonicalResource( "workflow", fullPath, out var sourceWorkflow ) ? sourceWorkflow : default;
 			if ( wf.TryGetProperty( "id", out var wfId ) )
 				return string.Equals( wfId.GetString(), id, StringComparison.OrdinalIgnoreCase );
 		}
@@ -773,7 +739,7 @@ public static class SyncToolConfig
 		{
 		}
 
-		return string.Equals( Path.GetFileNameWithoutExtension( file ), id, StringComparison.OrdinalIgnoreCase );
+		return string.Equals( ResourceIdFromFilePath( file, "workflow" ), id, StringComparison.OrdinalIgnoreCase );
 	}
 
 	// ──────────────────────────────────────────────────────
@@ -798,8 +764,12 @@ public static class SyncToolConfig
 			["cdnUrl"] = "",
 			["apiVersion"] = "v3",
 			["dataFolder"] = "Network Storage",
-			["dataSource"] = "api_then_json",
-			["proxyEnabled"] = true
+			["dataSource"] = "api_only",
+			["sourceExportMode"] = "source_only",
+			["enableAuthSessions"] = false,
+			["enableEncryptedRequests"] = false,
+			["publishTarget"] = "live",
+			["proxyEnabled"] = false
 		};
 		File.WriteAllText( Abs( ProjectConfigFile ), JsonSerializer.Serialize( publicConfig, _jsonOptions ) );
 
@@ -823,7 +793,8 @@ public static class SyncToolConfig
     ""level"": { ""type"": ""number"", ""default"": 1 }
   }
 }";
-		File.WriteAllText( Abs( $"{CollectionsPath}/players.json" ), sampleCollection );
+		SyncToolPullWriter.WriteSource( "collection", "players",
+			JsonSerializer.Deserialize<Dictionary<string, object>>( sampleCollection, _readOptions ) );
 
 		// ── Sample endpoint ──
 		var sampleEndpoint = @"{
@@ -852,7 +823,8 @@ public static class SyncToolConfig
     }
   ]
 }";
-		File.WriteAllText( Abs( $"{EndpointsPath}/init-player.json" ), sampleEndpoint );
+		SyncToolPullWriter.WriteSource( "endpoint", "init-player",
+			JsonSerializer.Deserialize<Dictionary<string, object>>( sampleEndpoint, _readOptions ) );
 
 		Log.Info( "[NetworkStorage] Scaffolding complete. Open Editor → Network Storage → Setup to enter your API keys." );
 	}

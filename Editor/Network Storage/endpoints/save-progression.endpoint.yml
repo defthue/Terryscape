@@ -1,0 +1,58 @@
+sourceVersion: 1
+kind: endpoint
+id: save-progression
+name: "Save Progression"
+description: "Writes recipes, stones, quests, spells, and chest claim data"
+method: "POST"
+enabled: true
+input:
+  properties:
+    chestClaims:
+      type: "object"
+    discoveredQuests:
+      type: "array"
+    quests:
+      type: "array"
+    recipes:
+      type: "array"
+    stones:
+      type: "array"
+    unlockedSpells:
+      type: "array"
+  required: []
+  type: "object"
+steps:
+  -
+    collection: "progression"
+    id: "save"
+    key: "{{steamId}}_default"
+    ops:
+      -
+        op: "set"
+        path: "recipes"
+        value: "{{input.recipes}}"
+      -
+        op: "set"
+        path: "stones"
+        value: "{{input.stones}}"
+      -
+        op: "set"
+        path: "quests"
+        value: "{{input.quests}}"
+      -
+        op: "set"
+        path: "discoveredQuests"
+        value: "{{input.discoveredQuests}}"
+      -
+        op: "set"
+        path: "unlockedSpells"
+        value: "{{input.unlockedSpells}}"
+      -
+        op: "set"
+        path: "chestClaims"
+        value: "{{input.chestClaims}}"
+    type: "write"
+response:
+  body:
+    ok: true
+  status: 200

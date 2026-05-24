@@ -1,0 +1,29 @@
+sourceVersion: 1
+kind: endpoint
+id: save-skills
+name: "Save Skills"
+description: "Writes the skills collection (level/xp per skill)"
+method: "POST"
+enabled: true
+input:
+  properties:
+    entries:
+      type: "object"
+  required:
+    - "entries"
+  type: "object"
+steps:
+  -
+    collection: "skills"
+    id: "save"
+    key: "{{steamId}}_default"
+    ops:
+      -
+        op: "set"
+        path: "entries"
+        value: "{{input.entries}}"
+    type: "write"
+response:
+  body:
+    ok: true
+  status: 200

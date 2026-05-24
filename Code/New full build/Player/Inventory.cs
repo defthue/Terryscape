@@ -217,7 +217,10 @@ public sealed class Inventory : Component
 		if ( id == ItemId.None || amount <= 0 )
 			return 0;
 
-		return TryPlaceItem( id, amount );
+		int placed = TryPlaceItem( id, amount );
+		if ( placed > 0 )
+			PlayerPersistence.Local?.MarkDirty( SaveSection.Inventory | SaveSection.Stats );
+		return placed;
 	}
 
 	public (int placed, int banked) AddItemOrBank( ItemId id, int amount = 1 )
@@ -247,6 +250,9 @@ public sealed class Inventory : Component
 			}
 		}
 
+		if ( placed > 0 )
+			PlayerPersistence.Local?.MarkDirty( SaveSection.Inventory | SaveSection.Stats );
+
 		return (placed, banked);
 	}
 
@@ -259,6 +265,7 @@ public sealed class Inventory : Component
 		if ( slotIndex >= 0 )
 		{
 			_slots[slotIndex].Unique = instance;
+			PlayerPersistence.Local?.MarkDirty( SaveSection.Inventory | SaveSection.Stats );
 			return true;
 		}
 
@@ -351,6 +358,8 @@ public sealed class Inventory : Component
 					removed++;
 				}
 			}
+			if ( removed > 0 )
+				PlayerPersistence.Local?.MarkDirty( SaveSection.Inventory | SaveSection.Stats );
 			return removed >= amount;
 		}
 
@@ -373,6 +382,7 @@ public sealed class Inventory : Component
 			}
 		}
 
+		PlayerPersistence.Local?.MarkDirty( SaveSection.Inventory | SaveSection.Stats );
 		return true;
 	}
 
@@ -386,6 +396,7 @@ public sealed class Inventory : Component
 		if ( slot.IsUnique )
 		{
 			ClearSlotAndUpdateEquipped( slotIndex );
+			PlayerPersistence.Local?.MarkDirty( SaveSection.Inventory | SaveSection.Stats );
 			return true;
 		}
 
@@ -395,10 +406,12 @@ public sealed class Inventory : Component
 		if ( slot.Count <= amount )
 		{
 			ClearSlotAndUpdateEquipped( slotIndex );
+			PlayerPersistence.Local?.MarkDirty( SaveSection.Inventory | SaveSection.Stats );
 			return true;
 		}
 
 		slot.Count -= amount;
+		PlayerPersistence.Local?.MarkDirty( SaveSection.Inventory | SaveSection.Stats );
 		return true;
 	}
 
@@ -451,6 +464,7 @@ public sealed class Inventory : Component
 				if ( a.Count <= 0 )
 					ClearSlotAndUpdateEquipped( indexA );
 
+				PlayerPersistence.Local?.MarkDirty( SaveSection.Inventory );
 				return true;
 			}
 		}
@@ -465,6 +479,7 @@ public sealed class Inventory : Component
 
 		UpdateEquippedIndexOnSwap( indexA, indexB );
 
+		PlayerPersistence.Local?.MarkDirty( SaveSection.Inventory );
 		return true;
 	}
 
@@ -492,7 +507,7 @@ public sealed class Inventory : Component
 	{
 		_expansions++;
 		EnsureSlotCapacity();
-		PlayerPersistence.Local?.RequestSaveNow();
+		PlayerPersistence.Local?.MarkDirty( SaveSection.Stats );
 		return true;
 	}
 
@@ -520,6 +535,7 @@ public sealed class Inventory : Component
 			return;
 
 		ClearSlotAndUpdateEquipped( slotIndex );
+		PlayerPersistence.Local?.MarkDirty( SaveSection.Inventory | SaveSection.Stats );
 	}
 
 	int GetSlotIndexForUniqueByListIndex( int listIndex )
@@ -639,6 +655,7 @@ public sealed class Inventory : Component
 
 		GameLog.Add( $"Equipped {slot.Count}x {def.Name}.", "#c9a84c" );
 		SoundLibrary.PlayEquip();
+		PlayerPersistence.Local?.MarkDirty( SaveSection.Stats );
 		return true;
 	}
 
@@ -658,6 +675,7 @@ public sealed class Inventory : Component
 		if ( !_suppressUnequipSound )
 			SoundLibrary.PlayEquip();
 
+		PlayerPersistence.Local?.MarkDirty( SaveSection.Stats );
 		return true;
 	}
 
@@ -678,6 +696,7 @@ public sealed class Inventory : Component
 			ClearSlotAndUpdateEquipped( _equippedAmmoSlotIndex );
 		}
 
+		PlayerPersistence.Local?.MarkDirty( SaveSection.Inventory | SaveSection.Stats );
 		return true;
 	}
 
@@ -748,6 +767,7 @@ public sealed class Inventory : Component
 
 		GameLog.Add( $"Equipped {instance.GetDisplayName()}.", "#c9a84c" );
 		SoundLibrary.PlayEquip();
+		PlayerPersistence.Local?.MarkDirty( SaveSection.Inventory );
 		return true;
 	}
 
@@ -773,6 +793,7 @@ public sealed class Inventory : Component
 		if ( !_suppressUnequipSound )
 			SoundLibrary.PlayEquip();
 
+		PlayerPersistence.Local?.MarkDirty( SaveSection.Inventory );
 		return true;
 	}
 
@@ -898,7 +919,7 @@ public sealed class Inventory : Component
 		if ( _unlockedRecipes.Add( recipeId ) )
 		{
 			Log.Info( $"[Inventory] Recipe unlocked: {recipeId}" );
-			PlayerPersistence.Local?.RequestSaveNow();
+			PlayerPersistence.Local?.MarkDirty( SaveSection.Progress );
 		}
 	}
 
@@ -1089,7 +1110,8 @@ public sealed class Inventory : Component
 
 	public void DiscoverStone( string stoneId )
 	{
-		_discoveredStones.Add( stoneId );
+		if ( _discoveredStones.Add( stoneId ) )
+			PlayerPersistence.Local?.MarkDirty( SaveSection.Progress );
 	}
 
 	public HashSet<string> GetDiscoveredStones()
@@ -1107,7 +1129,7 @@ public sealed class Inventory : Component
 		if ( _completedQuests.Add( questId ) )
 		{
 			Log.Info( $"[Inventory] Quest completed: {questId}" );
-			PlayerPersistence.Local?.RequestSaveNow();
+			PlayerPersistence.Local?.SaveNow( SaveSection.Progress | SaveSection.Stats );
 		}
 	}
 
@@ -1124,7 +1146,7 @@ public sealed class Inventory : Component
 		if ( _discoveredQuests.Add( questId ) )
 		{
 			Log.Info( $"[Inventory] Quest discovered: {questId}" );
-			PlayerPersistence.Local?.RequestSaveNow();
+			PlayerPersistence.Local?.SaveNow( SaveSection.Progress );
 		}
 	}
 
@@ -1152,6 +1174,8 @@ public sealed class Inventory : Component
 			_killCounts[monsterType]++;
 		else
 			_killCounts[monsterType] = 1;
+
+		PlayerPersistence.Local?.MarkDirty( SaveSection.Kills | SaveSection.Stats );
 	}
 
 	public Dictionary<string, int> GetAllKillCounts()
@@ -1175,6 +1199,7 @@ public sealed class Inventory : Component
 	public void AddNodeMined()
 	{
 		_nodesMined++;
+		PlayerPersistence.Local?.MarkDirty( SaveSection.Stats );
 	}
 
 	public bool IsChestOnCooldown( string chestId, float cooldownHours )
@@ -1206,6 +1231,7 @@ public sealed class Inventory : Component
 			return;
 
 		_chestClaims[chestId] = System.DateTime.UtcNow.ToString( "o" );
+		PlayerPersistence.Local?.MarkDirty( SaveSection.Progress | SaveSection.Inventory | SaveSection.Stats );
 	}
 
 	public Dictionary<string, string> GetChestClaims()
