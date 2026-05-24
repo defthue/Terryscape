@@ -275,15 +275,9 @@ public sealed class SpellCaster : Component
 		if ( existing != null )
 			existing.Destroy();
 
-		var channel = GameObject.Components.Create<LightningBoltChannel>();
-		channel.BoltColor = LightningColor;
-		channel.HaloColor = LightningHaloColor;
-		channel.ConeRange = spell.MaxRange;
-		channel.ForwardOffset = LightningForwardOffset;
-		channel.HeightOffset = LightningHeightOffset;
-		channel.LateralOffset = LightningLateralOffset;
-
-		channel.Begin( GameObject, AimSource != null ? AimSource : GameObject, spell );
+		var channel = CreateLightningChannelLocal( spell.Id, false );
+		if ( channel == null )
+			return;
 
 		_activeChannel = channel;
 		_channelAction = action;
@@ -294,9 +288,30 @@ public sealed class SpellCaster : Component
 			BodyRenderer.Set( "b_attack", true );
 		}
 		BroadcastCastAnim();
+		BroadcastLightningStart( (int)spell.Id );
 		ArcherAimCamera.NotifyAimActivity();
 
 		GameLog.Add( $"You channel {spell.Name}!", "#c8d0ff" );
+	}
+
+	LightningBoltChannel CreateLightningChannelLocal( SpellId spellId, bool visualOnly )
+	{
+		var spell = SpellDatabase.Get( spellId );
+		if ( spell == null )
+			return null;
+
+		var channel = GameObject.Components.Create<LightningBoltChannel>();
+		channel.BoltColor = LightningColor;
+		channel.HaloColor = LightningHaloColor;
+		channel.ConeRange = spell.MaxRange;
+		channel.ForwardOffset = LightningForwardOffset;
+		channel.HeightOffset = LightningHeightOffset;
+		channel.LateralOffset = LightningLateralOffset;
+		channel.VisualOnly = visualOnly;
+
+		channel.Begin( GameObject, AimSource != null ? AimSource : GameObject, spell );
+
+		return channel;
 	}
 
 	void StopChannel()
@@ -308,6 +323,35 @@ public sealed class SpellCaster : Component
 		}
 		_activeChannel = null;
 		_channelAction = null;
+
+		BroadcastLightningStop();
+	}
+
+	[Rpc.Broadcast]
+	void BroadcastLightningStart( int spellIdRaw )
+	{
+		if ( !IsProxy )
+			return;
+
+		var existing = GameObject.Components.Get<LightningBoltChannel>();
+		if ( existing != null )
+			existing.Destroy();
+
+		CreateLightningChannelLocal( (SpellId)spellIdRaw, true );
+	}
+
+	[Rpc.Broadcast]
+	void BroadcastLightningStop()
+	{
+		if ( !IsProxy )
+			return;
+
+		var existing = GameObject.Components.Get<LightningBoltChannel>();
+		if ( existing != null )
+		{
+			existing.End();
+			existing.Destroy();
+		}
 	}
 
 	[Rpc.Broadcast]
@@ -422,13 +466,8 @@ public sealed class SpellCaster : Component
 		switch ( spell.Id )
 		{
 			case SpellId.Stoneskin:
-				var existing = GameObject.Components.Get<StoneskinBuff>();
-				if ( existing != null )
-					existing.Destroy();
-
-				var buff = GameObject.Components.Create<StoneskinBuff>();
-				buff.Begin( spell.BuffDuration );
-
+				ApplyStoneskinLocal( spell.BuffDuration, false );
+				BroadcastStoneskinBegin( spell.BuffDuration );
 				GameLog.Add( $"You cast Stoneskin! Heavy armor for {(int)spell.BuffDuration}s. ({manaLeft} mana left)", "#a0a0a8" );
 				break;
 
@@ -436,6 +475,30 @@ public sealed class SpellCaster : Component
 				GameLog.Add( $"You cast {spell.Name}! ({manaLeft} mana left)", "#7a5aaa" );
 				break;
 		}
+	}
+
+	void ApplyStoneskinLocal( float duration, bool visualOnly )
+	{
+		var existing = GameObject.Components.Get<StoneskinBuff>();
+		if ( existing != null && existing.IsValid() )
+		{
+			existing.VisualOnly = visualOnly;
+			existing.Begin( duration );
+			return;
+		}
+
+		var buff = GameObject.Components.Create<StoneskinBuff>();
+		buff.VisualOnly = visualOnly;
+		buff.Begin( duration );
+	}
+
+	[Rpc.Broadcast]
+	void BroadcastStoneskinBegin( float duration )
+	{
+		if ( !IsProxy )
+			return;
+
+		ApplyStoneskinLocal( duration, true );
 	}
 
 	void ApplySelfAoE( SpellDefinition spell )
@@ -1065,12 +1128,14 @@ public sealed class SpellCaster : Component
 		switch ( spell.Id )
 		{
 			case SpellId.Inferno:
-				FireTornado.Spawn( Scene, ground, GameObject, spell.AoeRadius, spell.AoeHeight, spell.AoeDuration, spell.AoeDamagePerTick, spell.AoeTickInterval );
+				FireTornado.Spawn( Scene, ground, GameObject, spell.AoeRadius, spell.AoeHeight, spell.AoeDuration, spell.AoeDamagePerTick, spell.AoeTickInterval, false );
+				BroadcastFireTornado( ground, spell.AoeRadius, spell.AoeHeight, spell.AoeDuration );
 				break;
 
 			case SpellId.Singularity:
 				int damage = ComputeSpellDamage( spell );
-				Singularity.Spawn( Scene, ground, GameObject, spell.PullRadius, spell.CollapseRadius, spell.PullDuration, damage );
+				Singularity.Spawn( Scene, ground, GameObject, spell.PullRadius, spell.CollapseRadius, spell.PullDuration, damage, false );
+				BroadcastSingularity( ground, spell.PullRadius, spell.CollapseRadius, spell.PullDuration );
 				break;
 		}
 
@@ -1078,6 +1143,24 @@ public sealed class SpellCaster : Component
 		int manaLeft = manaCheck != null ? manaCheck.CurrentMana : 0;
 
 		GameLog.Add( $"You cast {spell.Name}! ({manaLeft} mana left)", "#7a5aaa" );
+	}
+
+	[Rpc.Broadcast]
+	void BroadcastFireTornado( Vector3 position, float radius, float height, float duration )
+	{
+		if ( !IsProxy )
+			return;
+
+		FireTornado.Spawn( Scene, position, GameObject, radius, height, duration, 0f, 1f, true );
+	}
+
+	[Rpc.Broadcast]
+	void BroadcastSingularity( Vector3 position, float pullRadius, float collapseRadius, float pullDuration )
+	{
+		if ( !IsProxy )
+			return;
+
+		Singularity.Spawn( Scene, position, GameObject, pullRadius, collapseRadius, pullDuration, 0, true );
 	}
 
 	int ComputeSpellDamage( SpellDefinition spell )

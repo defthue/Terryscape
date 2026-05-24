@@ -1,26 +1,16 @@
 using System.Collections.Generic;
 
-/// <summary>
-/// Hardcoded sell prices for every item the player can carry. Returns the gold
-/// value a shop pays the player when they sell this item to it.
-///
-/// Living entirely in this file (not split between ItemDefinition and overrides)
-/// keeps things dead simple: one switch statement, edit a number in one place,
-/// done. Per-shop differentiation can be layered on top later if needed.
-/// </summary>
 public static class ShopPricing
 {
 	public static int GetSellPrice( ItemId id )
 	{
 		switch ( id )
 		{
-			// Trash resources
 			case ItemId.Sticks: return 1;
 			case ItemId.Rock: return 1;
 			case ItemId.Coal: return 1;
 			case ItemId.ArcaneDust: return 2;
 
-			// Logs
 			case ItemId.AshwoodLog: return 2;
 			case ItemId.ElmheartLog: return 4;
 			case ItemId.IronbarkLog: return 6;
@@ -28,7 +18,6 @@ public static class ShopPricing
 			case ItemId.DuskoakLog: return 10;
 			case ItemId.WorldrootLog: return 12;
 
-			// Ores
 			case ItemId.CoppiteOre: return 2;
 			case ItemId.AshsteelOre: return 4;
 			case ItemId.ColdveinOre: return 7;
@@ -36,7 +25,6 @@ public static class ShopPricing
 			case ItemId.LunariteOre: return 14;
 			case ItemId.AbyssiumOre: return 18;
 
-			// Bars
 			case ItemId.CoppiteBar: return 5;
 			case ItemId.AshsteelBar: return 10;
 			case ItemId.ColdveinBar: return 18;
@@ -44,12 +32,8 @@ public static class ShopPricing
 			case ItemId.LunariteBar: return 40;
 			case ItemId.AbyssiumBar: return 55;
 
-			// Gems
-			case ItemId.RoughGem: return 5;
-			case ItemId.FineGem: return 15;
-			case ItemId.PristineGem: return 30;
+			case ItemId.Gem: return 15;
 
-			// Alchemy herbs (top tree)
 			case ItemId.SageLeaf: return 2;
 			case ItemId.Thornroot: return 4;
 			case ItemId.Spiralvine: return 7;
@@ -57,7 +41,6 @@ public static class ShopPricing
 			case ItemId.VoidcapMushroom: return 16;
 			case ItemId.Starbloom: return 22;
 
-			// Other foragables
 			case ItemId.WildBerries: return 2;
 			case ItemId.BlueMoss: return 4;
 			case ItemId.Goldpetal: return 7;
@@ -67,12 +50,10 @@ public static class ShopPricing
 			case ItemId.RoughFiber: return 2;
 			case ItemId.CaveLichen: return 4;
 
-			// Primitive tools — basically worthless
 			case ItemId.PrimitiveHatchet: return 1;
 			case ItemId.PrimitivePickaxe: return 1;
 			case ItemId.PrimitiveSword: return 2;
 
-			// Hatchets
 			case ItemId.CoppiteHatchet: return 4;
 			case ItemId.AshsteelHatchet: return 10;
 			case ItemId.ColdveinHatchet: return 18;
@@ -80,7 +61,6 @@ public static class ShopPricing
 			case ItemId.LunariteHatchet: return 40;
 			case ItemId.AbyssiumHatchet: return 55;
 
-			// Pickaxes
 			case ItemId.CoppitePickaxe: return 4;
 			case ItemId.AshsteelPickaxe: return 10;
 			case ItemId.ColdveinPickaxe: return 18;
@@ -88,7 +68,6 @@ public static class ShopPricing
 			case ItemId.LunaritePickaxe: return 40;
 			case ItemId.AbyssiumPickaxe: return 55;
 
-			// Swords
 			case ItemId.CoppiteSword: return 8;
 			case ItemId.AshsteelSword: return 18;
 			case ItemId.ColdveinSword: return 32;
@@ -96,7 +75,6 @@ public static class ShopPricing
 			case ItemId.LunariteSword: return 72;
 			case ItemId.AbyssiumSword: return 100;
 
-			// Bows
 			case ItemId.AshwoodBow: return 7;
 			case ItemId.ElmheartBow: return 16;
 			case ItemId.IronbarkBow: return 28;
@@ -104,7 +82,6 @@ public static class ShopPricing
 			case ItemId.DuskoakBow: return 64;
 			case ItemId.WorldrootBow: return 88;
 
-			// Staves
 			case ItemId.AshwoodStaff: return 7;
 			case ItemId.ElmheartStaff: return 16;
 			case ItemId.IronbarkStaff: return 28;
@@ -112,7 +89,6 @@ public static class ShopPricing
 			case ItemId.DuskoakStaff: return 64;
 			case ItemId.WorldrootStaff: return 88;
 
-			// Arrows
 			case ItemId.CoppiteArrow: return 1;
 			case ItemId.AshsteelArrow: return 2;
 			case ItemId.ColdveinArrow: return 3;
@@ -120,7 +96,6 @@ public static class ShopPricing
 			case ItemId.LunariteArrow: return 7;
 			case ItemId.AbyssiumArrow: return 10;
 
-			// Shields
 			case ItemId.CoppiteShield: return 5;
 			case ItemId.AshsteelShield: return 12;
 			case ItemId.ColdveinShield: return 22;
@@ -128,7 +103,6 @@ public static class ShopPricing
 			case ItemId.LunariteShield: return 50;
 			case ItemId.AbyssiumShield: return 70;
 
-			// Heavy armor
 			case ItemId.CoppiteHeavyHelm: return 4;
 			case ItemId.CoppiteHeavyChestplate: return 7;
 			case ItemId.CoppiteHeavyLegs: return 5;
@@ -148,7 +122,6 @@ public static class ShopPricing
 			case ItemId.AbyssiumHeavyChestplate: return 88;
 			case ItemId.AbyssiumHeavyLegs: return 64;
 
-			// Medium armor
 			case ItemId.CoppiteMediumHelm: return 3;
 			case ItemId.CoppiteMediumChestplate: return 6;
 			case ItemId.CoppiteMediumLegs: return 4;
@@ -168,7 +141,6 @@ public static class ShopPricing
 			case ItemId.AbyssiumMediumChestplate: return 76;
 			case ItemId.AbyssiumMediumLegs: return 54;
 
-			// Light armor
 			case ItemId.CoppiteLightHelm: return 2;
 			case ItemId.CoppiteLightChestplate: return 5;
 			case ItemId.CoppiteLightLegs: return 3;
@@ -188,15 +160,11 @@ public static class ShopPricing
 			case ItemId.AbyssiumLightChestplate: return 64;
 			case ItemId.AbyssiumLightLegs: return 44;
 
-			// Jewelry
-			case ItemId.RoughRing: return 8;
-			case ItemId.FineRing: return 25;
-			case ItemId.PristineRing: return 50;
-			case ItemId.RoughAmulet: return 8;
-			case ItemId.FineAmulet: return 25;
-			case ItemId.PristineAmulet: return 50;
+			case ItemId.Ring: return 25;
+			case ItemId.Amulet: return 25;
 
-			// Healing potions
+			case ItemId.Rune: return 8;
+
 			case ItemId.LesserHealingPotion: return 3;
 			case ItemId.HealingPotion: return 7;
 			case ItemId.GreaterHealingPotion: return 16;
@@ -206,19 +174,16 @@ public static class ShopPricing
 			case ItemId.MagicPotion: return 11;
 			case ItemId.ElixirOfPower: return 30;
 
-			// Mana potions
 			case ItemId.LesserManaPotion: return 3;
 			case ItemId.ManaPotion: return 7;
 			case ItemId.GreaterManaPotion: return 16;
 
-			// Misc
 			case ItemId.GlassVial: return 1;
 			case ItemId.CrystalVial: return 8;
 			case ItemId.MonsterBone: return 1;
 			case ItemId.MonsterHide: return 2;
 			case ItemId.Nugget: return 3;
 
-			// Gold can't be sold for gold.
 			case ItemId.GoldCoin: return 0;
 
 			default: return 0;

@@ -6,8 +6,9 @@ public sealed class PlayerMovementTuner : Component
 	[Property] public float RunSpeedMultiplier { get; set; } = 1.15f;
 
 	PlayerController _pc;
+	float _baseWalkSpeed;
 	float _baseRunSpeed;
-	bool _forcedWalkActive;
+	bool _initialized;
 
 	protected override void OnStart()
 	{
@@ -15,36 +16,35 @@ public sealed class PlayerMovementTuner : Component
 		if ( _pc == null )
 			return;
 
-		_pc.WalkSpeed *= WalkSpeedMultiplier;
-		_pc.RunSpeed *= RunSpeedMultiplier;
-		_baseRunSpeed = _pc.RunSpeed;
+		_baseWalkSpeed = _pc.WalkSpeed * WalkSpeedMultiplier;
+		_baseRunSpeed = _pc.RunSpeed * RunSpeedMultiplier;
+		_initialized = true;
 	}
 
 	protected override void OnUpdate()
 	{
-		if ( _pc == null )
+		if ( !_initialized || _pc == null )
 			return;
 
-		bool shouldForceWalk = ShouldForceWalk();
+		float speedMult = GetSpeedMultiplier();
+		bool forceWalk = ShouldForceWalk();
 
-		if ( shouldForceWalk )
-		{
-			if ( !_forcedWalkActive )
-			{
-				_baseRunSpeed = _pc.RunSpeed;
-				_forcedWalkActive = true;
-			}
-			_pc.RunSpeed = _pc.WalkSpeed;
-		}
-		else if ( _forcedWalkActive )
-		{
-			_pc.RunSpeed = _baseRunSpeed;
-			_forcedWalkActive = false;
-		}
-		else
-		{
-			_baseRunSpeed = _pc.RunSpeed;
-		}
+		float walk = _baseWalkSpeed * speedMult;
+		float run = forceWalk ? walk : _baseRunSpeed * speedMult;
+
+		_pc.WalkSpeed = walk;
+		_pc.RunSpeed = run;
+	}
+
+	float GetSpeedMultiplier()
+	{
+		float mult = 1f;
+
+		var stoneskin = Components.Get<StoneskinBuff>();
+		if ( stoneskin != null )
+			mult *= stoneskin.EffectiveSpeedMultiplier;
+
+		return mult;
 	}
 
 	bool ShouldForceWalk()

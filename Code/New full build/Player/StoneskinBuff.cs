@@ -4,8 +4,8 @@ using System.Collections.Generic;
 
 public sealed class StoneskinBuff : Component
 {
-	[Sync] public float TimeRemaining { get; set; }
-	[Sync] public float TotalDuration { get; set; }
+	public float TimeRemaining { get; private set; }
+	public float TotalDuration { get; private set; }
 
 	[Property] public float SpeedMultiplier { get; set; } = 0.5f;
 	[Property] public float DamageMultiplier { get; set; } = 0.5f;
@@ -20,14 +20,16 @@ public sealed class StoneskinBuff : Component
 	[Property] public Color IndicatorColor { get; set; } = new Color( 0.7f, 0.7f, 0.75f, 0.85f );
 	[Property] public string SpritePath { get; set; } = "particle_glow.sprite";
 
-	float _originalWalkSpeed;
-	float _originalRunSpeed;
+	public bool VisualOnly { get; set; }
+
+	public bool IsExpired => TimeRemaining <= 0f;
+	public float EffectiveSpeedMultiplier => TimeRemaining > 0f ? SpeedMultiplier : 1f;
+
 	Color _originalBodyTint;
-	bool _speedRestored;
 	bool _tintRestored;
+	bool _tintCaptured;
 
 	SkinnedModelRenderer _bodyRenderer;
-	PlayerController _controller;
 
 	GameObject _indicatorRoot;
 	List<IndicatorParticle> _indicatorParticles = new();
@@ -59,28 +61,22 @@ public sealed class StoneskinBuff : Component
 		TotalDuration = duration;
 		TimeRemaining = duration;
 
-		_controller = Components.Get<PlayerController>();
-		if ( _controller != null )
-		{
-			_originalWalkSpeed = _controller.WalkSpeed;
-			_originalRunSpeed = _controller.RunSpeed;
-			_controller.WalkSpeed = _originalWalkSpeed * SpeedMultiplier;
-			_controller.RunSpeed = _originalRunSpeed * SpeedMultiplier;
-		}
-
 		var caster = Components.Get<SpellCaster>();
 		_bodyRenderer = caster != null ? caster.BodyRenderer : Components.GetInChildren<SkinnedModelRenderer>();
 
-		if ( _bodyRenderer != null )
+		if ( _bodyRenderer != null && !_tintCaptured )
 		{
 			_originalBodyTint = _bodyRenderer.Tint;
-			_bodyRenderer.Tint = StoneTint;
+			_tintCaptured = true;
 		}
 
-		_speedRestored = false;
+		if ( _bodyRenderer != null )
+			_bodyRenderer.Tint = StoneTint;
+
 		_tintRestored = false;
 
-		BuildIndicator();
+		if ( _indicatorRoot == null || !_indicatorRoot.IsValid() )
+			BuildIndicator();
 	}
 
 	void BuildIndicator()
@@ -147,9 +143,6 @@ public sealed class StoneskinBuff : Component
 
 	protected override void OnUpdate()
 	{
-		if ( IsProxy )
-			return;
-
 		if ( TimeRemaining <= 0f )
 			return;
 
@@ -172,44 +165,39 @@ public sealed class StoneskinBuff : Component
 
 	void End()
 	{
-		if ( !_speedRestored && _controller != null )
-		{
-			_controller.WalkSpeed = _originalWalkSpeed;
-			_controller.RunSpeed = _originalRunSpeed;
-			_speedRestored = true;
-		}
+		RestoreTint();
+		DestroyIndicator();
 
-		if ( !_tintRestored && _bodyRenderer != null )
-		{
+		if ( !VisualOnly )
+			GameLog.Add( "Stoneskin fades away.", "#a0a0a8" );
+
+		GameObject.Components.Get<StoneskinBuff>()?.Destroy();
+	}
+
+	void RestoreTint()
+	{
+		if ( _tintRestored )
+			return;
+
+		if ( _bodyRenderer != null && _tintCaptured )
 			_bodyRenderer.Tint = _originalBodyTint;
-			_tintRestored = true;
-		}
 
+		_tintRestored = true;
+	}
+
+	void DestroyIndicator()
+	{
 		if ( _indicatorRoot != null && _indicatorRoot.IsValid() )
 		{
 			_indicatorRoot.Destroy();
 			_indicatorRoot = null;
 		}
-
-		GameLog.Add( "Stoneskin fades away.", "#a0a0a8" );
-
-		GameObject.Components.Get<StoneskinBuff>()?.Destroy();
+		_indicatorParticles.Clear();
 	}
 
 	protected override void OnDestroy()
 	{
-		if ( !_speedRestored && _controller != null )
-		{
-			_controller.WalkSpeed = _originalWalkSpeed;
-			_controller.RunSpeed = _originalRunSpeed;
-		}
-
-		if ( !_tintRestored && _bodyRenderer != null )
-		{
-			_bodyRenderer.Tint = _originalBodyTint;
-		}
-
-		if ( _indicatorRoot != null && _indicatorRoot.IsValid() )
-			_indicatorRoot.Destroy();
+		RestoreTint();
+		DestroyIndicator();
 	}
 }

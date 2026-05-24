@@ -40,6 +40,7 @@ public sealed class Singularity : Component
 	[Property] public string SpritePath { get; set; } = "particle_glow.sprite";
 
 	public GameObject Source { get; set; }
+	public bool VisualOnly { get; set; }
 
 	float _elapsed;
 	float _inwardAccum;
@@ -84,7 +85,7 @@ public sealed class Singularity : Component
 		public float SpawnTime;
 	}
 
-	public static Singularity Spawn( Scene scene, Vector3 position, GameObject source, float pullRadius, float collapseRadius, float pullDuration, int collapseDamage )
+	public static Singularity Spawn( Scene scene, Vector3 position, GameObject source, float pullRadius, float collapseRadius, float pullDuration, int collapseDamage, bool visualOnly = false )
 	{
 		if ( scene == null )
 			return null;
@@ -99,6 +100,7 @@ public sealed class Singularity : Component
 		sing.PullDuration = pullDuration;
 		sing.CollapseDamage = collapseDamage;
 		sing.Source = source;
+		sing.VisualOnly = visualOnly;
 
 		return sing;
 	}
@@ -113,7 +115,8 @@ public sealed class Singularity : Component
 		BuildBeams();
 		BuildGroundRing();
 
-		SoundLibrary.PlaySingularity( WorldPosition );
+		if ( !VisualOnly )
+			SoundLibrary.PlaySingularity( WorldPosition );
 	}
 
 	void BuildCore()
@@ -236,8 +239,12 @@ public sealed class Singularity : Component
 		UpdateGroundRing( t );
 		SpawnInwardParticles();
 		UpdateInwardParticles();
-		PullMonsters( t );
-		SuppressMonsterAttacks();
+
+		if ( !VisualOnly )
+		{
+			PullMonsters( t );
+			SuppressMonsterAttacks();
+		}
 	}
 
 	void UpdateCore( float t )
@@ -420,7 +427,9 @@ public sealed class Singularity : Component
 		_destroying = true;
 		_destroyTimer = 0f;
 
-		ApplyCollapseDamage();
+		if ( !VisualOnly )
+			ApplyCollapseDamage();
+
 		HideCorePhase();
 		SpawnShockwave();
 	}

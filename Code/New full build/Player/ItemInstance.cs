@@ -1,3 +1,5 @@
+using Sandbox;
+
 public enum EnchantmentType
 {
 	None,
@@ -7,14 +9,6 @@ public enum EnchantmentType
 	Toughness,
 	Vitality,
 	Focus
-}
-
-public enum RuneTier
-{
-	None,
-	Rough,
-	Fine,
-	Pristine
 }
 
 public class ItemInstance
@@ -60,20 +54,6 @@ public class ItemInstance
 		{
 			var def = ItemDatabase.Get( ItemId );
 			return def != null && def.Type == ItemType.Rune;
-		}
-	}
-
-	public RuneTier RuneTier
-	{
-		get
-		{
-			switch ( ItemId )
-			{
-				case ItemId.RoughRune: return RuneTier.Rough;
-				case ItemId.FineRune: return RuneTier.Fine;
-				case ItemId.PristineRune: return RuneTier.Pristine;
-				default: return RuneTier.None;
-			}
 		}
 	}
 

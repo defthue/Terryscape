@@ -24,6 +24,8 @@ public sealed class LightningBoltChannel : Component
 	[Property] public float HeightOffset { get; set; } = 40f;
 	[Property] public float LateralOffset { get; set; } = 0f;
 
+	public bool VisualOnly { get; set; }
+
 	public bool IsActive { get; private set; }
 	public float TimeRemaining { get; private set; }
 	public float TimeElapsed { get; private set; }
@@ -49,8 +51,6 @@ public sealed class LightningBoltChannel : Component
 		_damageTickTimer = 0f;
 		_manaAccum = 0f;
 		_boltsSpawned = false;
-
-		Log.Info( $"[LightningBolt] Begin — _spell={(_spell != null ? _spell.Name : "NULL")}, ManaCost={(_spell != null ? _spell.ManaCost : -1)}" );
 	}
 
 	void SpawnBolts()
@@ -118,37 +118,44 @@ public sealed class LightningBoltChannel : Component
 		{
 			SpawnBolts();
 			_boltsSpawned = true;
-			_soundHandle = SoundLibrary.PlayLightningBoltLoop( GetOrigin() );
+			if ( !VisualOnly )
+				_soundHandle = SoundLibrary.PlayLightningBoltLoop( GetOrigin() );
 		}
 
-		var mana = _caster.Components.Get<ManaSystem>();
-		if ( mana == null )
+		if ( !VisualOnly )
 		{
-			End();
-			return;
-		}
-
-		_manaAccum += ( _spell != null ? _spell.ManaCost : 2f ) * Time.Delta;
-		while ( _manaAccum >= 1f )
-		{
-			if ( !mana.ConsumeMana( 1 ) )
+			var mana = _caster.Components.Get<ManaSystem>();
+			if ( mana == null )
 			{
 				End();
 				return;
 			}
-			_manaAccum -= 1f;
-		}
 
-		mana.MarkCombat();
+			_manaAccum += ( _spell != null ? _spell.ManaCost : 2f ) * Time.Delta;
+			while ( _manaAccum >= 1f )
+			{
+				if ( !mana.ConsumeMana( 1 ) )
+				{
+					End();
+					return;
+				}
+				_manaAccum -= 1f;
+			}
+
+			mana.MarkCombat();
+		}
 
 		UpdateTargets();
 		UpdateBolts();
 
-		_damageTickTimer += Time.Delta;
-		if ( _damageTickTimer >= DamageTickInterval && TimeElapsed >= CastTime + WindupDuration )
+		if ( !VisualOnly )
 		{
-			_damageTickTimer = 0f;
-			ApplyDamageTick();
+			_damageTickTimer += Time.Delta;
+			if ( _damageTickTimer >= DamageTickInterval && TimeElapsed >= CastTime + WindupDuration )
+			{
+				_damageTickTimer = 0f;
+				ApplyDamageTick();
+			}
 		}
 	}
 
@@ -352,6 +359,9 @@ public sealed class LightningBoltChannel : Component
 
 	Vector3 GetForward()
 	{
+		if ( VisualOnly )
+			return GetRawForward();
+
 		var camera = Scene.Camera;
 		if ( camera != null )
 		{
@@ -367,16 +377,11 @@ public sealed class LightningBoltChannel : Component
 
 			Vector3 aimPoint = aimTrace.Hit ? aimTrace.HitPosition : camEnd;
 			Vector3 origin = GetOrigin();
-			Vector3 toAim = aimPoint - origin;
-			if ( toAim.LengthSquared > 0.01f )
-				return toAim.Normal;
+			Vector3 dir = aimPoint - origin;
+			if ( dir.LengthSquared > 0.01f )
+				return dir.Normal;
 		}
 
 		return GetRawForward();
-	}
-
-	protected override void OnDestroy()
-	{
-		ClearBolts();
 	}
 }

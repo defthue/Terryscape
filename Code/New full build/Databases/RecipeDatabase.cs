@@ -279,29 +279,13 @@ public static class RecipeDatabase
 			ItemId.AbyssiumLightHelm, ItemId.AbyssiumLightChestplate, ItemId.AbyssiumLightLegs,
 			190, 320, 240 );
 
-		Add( Define( "rough_ring", "Rough Ring", StationType.Anvil,
-			new[] { new RecipeIngredient( ItemId.RoughGem, 1 ), new RecipeIngredient( ItemId.AshsteelBar, 3 ), new RecipeIngredient( ItemId.Nugget, 1 ) },
-			ItemId.RoughRing, 1, SkillType.Smithing, 1, SkillType.Smithing, 20 ) );
+		Add( Define( "ring", "Ring", StationType.Anvil,
+			new[] { new RecipeIngredient( ItemId.Gem, 1 ), new RecipeIngredient( ItemId.AshsteelBar, 3 ), new RecipeIngredient( ItemId.Nugget, 1 ) },
+			ItemId.Ring, 1, SkillType.Smithing, 1, SkillType.Smithing, 50 ) );
 
-		Add( Define( "rough_amulet", "Rough Amulet", StationType.Anvil,
-			new[] { new RecipeIngredient( ItemId.RoughGem, 1 ), new RecipeIngredient( ItemId.AshsteelBar, 5 ), new RecipeIngredient( ItemId.Nugget, 2 ) },
-			ItemId.RoughAmulet, 1, SkillType.Smithing, 1, SkillType.Smithing, 25 ) );
-
-		Add( Define( "fine_ring", "Fine Ring", StationType.Anvil,
-			new[] { new RecipeIngredient( ItemId.FineGem, 1 ), new RecipeIngredient( ItemId.SolariumBar, 3 ), new RecipeIngredient( ItemId.Nugget, 1 ) },
-			ItemId.FineRing, 1, SkillType.Smithing, 25, SkillType.Smithing, 70 ) );
-
-		Add( Define( "fine_amulet", "Fine Amulet", StationType.Anvil,
-			new[] { new RecipeIngredient( ItemId.FineGem, 1 ), new RecipeIngredient( ItemId.SolariumBar, 5 ), new RecipeIngredient( ItemId.Nugget, 2 ) },
-			ItemId.FineAmulet, 1, SkillType.Smithing, 25, SkillType.Smithing, 85 ) );
-
-		Add( Define( "pristine_ring", "Pristine Ring", StationType.Anvil,
-			new[] { new RecipeIngredient( ItemId.PristineGem, 1 ), new RecipeIngredient( ItemId.AbyssiumBar, 3 ), new RecipeIngredient( ItemId.Nugget, 1 ) },
-			ItemId.PristineRing, 1, SkillType.Smithing, 50, SkillType.Smithing, 180 ) );
-
-		Add( Define( "pristine_amulet", "Pristine Amulet", StationType.Anvil,
-			new[] { new RecipeIngredient( ItemId.PristineGem, 1 ), new RecipeIngredient( ItemId.AbyssiumBar, 5 ), new RecipeIngredient( ItemId.Nugget, 2 ) },
-			ItemId.PristineAmulet, 1, SkillType.Smithing, 50, SkillType.Smithing, 220 ) );
+		Add( Define( "amulet", "Amulet", StationType.Anvil,
+			new[] { new RecipeIngredient( ItemId.Gem, 1 ), new RecipeIngredient( ItemId.AshsteelBar, 5 ), new RecipeIngredient( ItemId.Nugget, 2 ) },
+			ItemId.Amulet, 1, SkillType.Smithing, 1, SkillType.Smithing, 70 ) );
 
 		Add( Define( "ashwood_bow", "Ashwood Bow", StationType.Workbench,
 			new[] { new RecipeIngredient( ItemId.AshwoodLog, 24 ), new RecipeIngredient( ItemId.RoughFiber, 12 ) },

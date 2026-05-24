@@ -1,73 +1,41 @@
 using Sandbox;
 using System;
-using System.Collections.Generic;
 
 public sealed class EnchantingStation : Component
 {
 	[Property] public string StationName { get; set; } = "Enchanting Altar";
 	[Property] public float InteractDistance { get; set; } = 200f;
 
-	[Property] public int RoughCraftLevel { get; set; } = 1;
-	[Property] public int FineCraftLevel { get; set; } = 25;
-	[Property] public int PristineCraftLevel { get; set; } = 50;
+	[Property] public int CraftStoneCost { get; set; } = 5;
+	[Property] public int CraftDustCost { get; set; } = 5;
+	[Property] public int CraftXp { get; set; } = 10;
 
-	[Property] public int RoughCraftStone { get; set; } = 5;
-	[Property] public int RoughCraftDust { get; set; } = 3;
-	[Property] public int FineCraftStone { get; set; } = 10;
-	[Property] public int FineCraftDust { get; set; } = 10;
-	[Property] public int PristineCraftStone { get; set; } = 20;
-	[Property] public int PristineCraftDust { get; set; } = 25;
+	[Property] public int EnchantRandomDustCost { get; set; } = 10;
+	[Property] public int EnchantTargetedDustCost { get; set; } = 30;
+	[Property] public int EnchantXp { get; set; } = 15;
 
-	[Property] public int RoughCraftXp { get; set; } = 5;
-	[Property] public int FineCraftXp { get; set; } = 20;
-	[Property] public int PristineCraftXp { get; set; } = 80;
-
-	[Property] public int RoughEnchantDust { get; set; } = 3;
-	[Property] public int FineEnchantDust { get; set; } = 8;
-	[Property] public int PristineEnchantDust { get; set; } = 20;
-
-	[Property] public int RoughEnchantXp { get; set; } = 10;
-	[Property] public int FineEnchantXp { get; set; } = 30;
-	[Property] public int PristineEnchantXp { get; set; } = 80;
-
-	[Property] public float RoughMinPercent { get; set; } = 1f;
-	[Property] public float RoughMaxPercent { get; set; } = 2f;
-	[Property] public float FineMinPercent { get; set; } = 2f;
-	[Property] public float FineMaxPercent { get; set; } = 4f;
-	[Property] public float PristineMinPercent { get; set; } = 4f;
-	[Property] public float PristineMaxPercent { get; set; } = 6f;
-
-	[Property] public float RoughTierCap { get; set; } = 4f;
-	[Property] public float FineTierCap { get; set; } = 8f;
-	[Property] public float PristineTierCap { get; set; } = 12f;
-
-	[Property] public int RoughCombineDust { get; set; } = 5;
-	[Property] public int FineCombineDust { get; set; } = 12;
-	[Property] public int PristineCombineDust { get; set; } = 30;
-
-	[Property] public int RoughCombineXp { get; set; } = 15;
-	[Property] public int FineCombineXp { get; set; } = 40;
-	[Property] public int PristineCombineXp { get; set; } = 100;
-
-	[Property] public float CombineMinBonus { get; set; } = 0.5f;
-	[Property] public float CombineMaxBonus { get; set; } = 1.5f;
-
-	[Property] public int TierUpRoughDust { get; set; } = 15;
-	[Property] public int TierUpFineDust { get; set; } = 30;
-	[Property] public int TierUpFineLevel { get; set; } = 25;
-	[Property] public int TierUpPristineLevel { get; set; } = 50;
-	[Property] public int TierUpRoughXp { get; set; } = 50;
-	[Property] public int TierUpFineXp { get; set; } = 150;
-
-	[Property] public int RoughExtractDust { get; set; } = 20;
-	[Property] public int FineExtractDust { get; set; } = 50;
-	[Property] public int PristineExtractDust { get; set; } = 150;
+	[Property] public int CombineDustCost { get; set; } = 15;
+	[Property] public int CombineXp { get; set; } = 50;
+	[Property] public int CombineUnlockLevel { get; set; } = 20;
+	[Property] public int CombineCapLevelTier2 { get; set; } = 30;
+	[Property] public int CombineCapLevelTier3 { get; set; } = 40;
+	[Property] public float CombineCapTier1 { get; set; } = 6f;
+	[Property] public float CombineCapTier2 { get; set; } = 9f;
+	[Property] public float CombineCapTier3 { get; set; } = 12f;
+	[Property] public float CombineLowerContribution { get; set; } = 0.3f;
 
 	[Property] public int SocketXp { get; set; } = 5;
+	[Property] public int SecondSocketUnlockLevel { get; set; } = 40;
+
+	[Property] public int ExtractDustCost { get; set; } = 75;
+
+	[Property] public int SkillCap { get; set; } = 50;
+
+	public const string RuneRecipeId = "rune";
 
 	public static EnchantingStation ActiveStation { get; private set; }
 
-	static readonly EnchantmentType[] RollableTypes = new[]
+	public static readonly EnchantmentType[] EnchantTypes = new[]
 	{
 		EnchantmentType.Sharpness,
 		EnchantmentType.Piercing,
@@ -82,10 +50,8 @@ public sealed class EnchantingStation : Component
 		if ( ActiveStation == this )
 		{
 			if ( !IsPlayerInRange() )
-			{
 				Close();
-				return;
-			}
+			return;
 		}
 
 		if ( ActiveStation != null )
@@ -93,22 +59,17 @@ public sealed class EnchantingStation : Component
 
 		if ( NpcInteract.ActiveNpc != null )
 			return;
-
 		if ( CraftingStation.ActiveStation != null )
 			return;
-
 		if ( ShopStation.ActiveShop != null || ShopStation.ShowingChoice )
 			return;
-
 		if ( TeleportStone.ActiveStone != null )
 			return;
-
 		if ( BankStation.ActiveBank != null )
 			return;
 
 		if ( !IsPlayerInRange() )
 			return;
-
 		if ( !Input.Pressed( "use" ) )
 			return;
 
@@ -132,237 +93,158 @@ public sealed class EnchantingStation : Component
 		var player = PlayerHelper.GetLocalPlayer();
 		if ( player == null )
 			return false;
-
 		return Vector3.DistanceBetween( WorldPosition, player.WorldPosition ) <= InteractDistance;
 	}
 
-	public int GetCraftLevel( RuneTier tier )
+	public float GetMinRollPercent( int level )
 	{
-		switch ( tier )
-		{
-			case RuneTier.Rough: return RoughCraftLevel;
-			case RuneTier.Fine: return FineCraftLevel;
-			case RuneTier.Pristine: return PristineCraftLevel;
-			default: return 1;
-		}
+		int clamped = Math.Clamp( level, 1, SkillCap );
+		return 1.0f + ( clamped - 1 ) * 0.04f;
 	}
 
-	public int GetCraftStone( RuneTier tier )
+	public float GetMaxRollPercent( int level )
 	{
-		switch ( tier )
-		{
-			case RuneTier.Rough: return RoughCraftStone;
-			case RuneTier.Fine: return FineCraftStone;
-			case RuneTier.Pristine: return PristineCraftStone;
-			default: return 0;
-		}
+		int clamped = Math.Clamp( level, 1, SkillCap );
+		return 2.0f + ( clamped - 1 ) * 0.10f;
 	}
 
-	public int GetCraftDust( RuneTier tier )
+	public float GetCombineCap( int level )
 	{
-		switch ( tier )
-		{
-			case RuneTier.Rough: return RoughCraftDust;
-			case RuneTier.Fine: return FineCraftDust;
-			case RuneTier.Pristine: return PristineCraftDust;
-			default: return 0;
-		}
+		if ( level < CombineUnlockLevel ) return 0f;
+		if ( level < CombineCapLevelTier2 ) return CombineCapTier1;
+		if ( level < CombineCapLevelTier3 ) return CombineCapTier2;
+		return CombineCapTier3;
 	}
 
-	public int GetEnchantDust( RuneTier tier )
+	public int GetNextCombineCapLevel( int level )
 	{
-		switch ( tier )
-		{
-			case RuneTier.Rough: return RoughEnchantDust;
-			case RuneTier.Fine: return FineEnchantDust;
-			case RuneTier.Pristine: return PristineEnchantDust;
-			default: return 0;
-		}
+		if ( level < CombineUnlockLevel ) return CombineUnlockLevel;
+		if ( level < CombineCapLevelTier2 ) return CombineCapLevelTier2;
+		if ( level < CombineCapLevelTier3 ) return CombineCapLevelTier3;
+		return -1;
 	}
 
-	public int GetCombineDust( RuneTier tier )
+	public float GetNextCombineCapValue( int level )
 	{
-		switch ( tier )
-		{
-			case RuneTier.Rough: return RoughCombineDust;
-			case RuneTier.Fine: return FineCombineDust;
-			case RuneTier.Pristine: return PristineCombineDust;
-			default: return 0;
-		}
+		if ( level < CombineUnlockLevel ) return CombineCapTier1;
+		if ( level < CombineCapLevelTier2 ) return CombineCapTier2;
+		if ( level < CombineCapLevelTier3 ) return CombineCapTier3;
+		return CombineCapTier3;
 	}
 
-	public int GetExtractDust( RuneTier tier )
+	public int GetMaxSocketsForLevel( int level )
 	{
-		switch ( tier )
-		{
-			case RuneTier.Rough: return RoughExtractDust;
-			case RuneTier.Fine: return FineExtractDust;
-			case RuneTier.Pristine: return PristineExtractDust;
-			default: return 0;
-		}
+		return level >= SecondSocketUnlockLevel ? 2 : 1;
 	}
 
-	public float GetTierCap( RuneTier tier )
+	public bool TryCraftRune()
 	{
-		switch ( tier )
-		{
-			case RuneTier.Rough: return RoughTierCap;
-			case RuneTier.Fine: return FineTierCap;
-			case RuneTier.Pristine: return PristineTierCap;
-			default: return 0f;
-		}
-	}
+		var ctx = GetContext();
+		if ( ctx == null ) return false;
 
-	public ItemId GetBlankRuneItemId( RuneTier tier )
-	{
-		switch ( tier )
+		if ( !ctx.Inventory.IsRecipeUnlocked( RuneRecipeId ) )
 		{
-			case RuneTier.Rough: return ItemId.RoughRune;
-			case RuneTier.Fine: return ItemId.FineRune;
-			case RuneTier.Pristine: return ItemId.PristineRune;
-			default: return ItemId.None;
-		}
-	}
-
-	public static RuneTier GetRuneTierFromItemId( ItemId id )
-	{
-		switch ( id )
-		{
-			case ItemId.RoughRune: return RuneTier.Rough;
-			case ItemId.FineRune: return RuneTier.Fine;
-			case ItemId.PristineRune: return RuneTier.Pristine;
-			default: return RuneTier.None;
-		}
-	}
-
-	float GetMinPercent( RuneTier tier )
-	{
-		switch ( tier )
-		{
-			case RuneTier.Rough: return RoughMinPercent;
-			case RuneTier.Fine: return FineMinPercent;
-			case RuneTier.Pristine: return PristineMinPercent;
-			default: return 0f;
-		}
-	}
-
-	float GetMaxPercent( RuneTier tier )
-	{
-		switch ( tier )
-		{
-			case RuneTier.Rough: return RoughMaxPercent;
-			case RuneTier.Fine: return FineMaxPercent;
-			case RuneTier.Pristine: return PristineMaxPercent;
-			default: return 0f;
-		}
-	}
-
-	public bool TryCraftBlankRune( RuneTier tier )
-	{
-		var inventory = GetPlayerInventory();
-		var skills = GetPlayerSkills();
-		if ( inventory == null || skills == null )
-			return false;
-
-		int levelReq = GetCraftLevel( tier );
-		if ( !skills.MeetsRequirement( SkillType.Enchanting, levelReq ) )
-		{
-			GameLog.Add( $"You need Enchanting level {levelReq} to craft this rune.", "#c86464" );
+			GameLog.Add( "You haven't learned how to craft runes yet.", "#c86464" );
 			return false;
 		}
-
-		int stoneCost = GetCraftStone( tier );
-		int dustCost = GetCraftDust( tier );
-
-		if ( !inventory.HasItem( ItemId.Rock, stoneCost ) )
+		if ( !ctx.Inventory.HasItem( ItemId.Rock, CraftStoneCost ) )
 		{
-			GameLog.Add( $"You need {stoneCost} Stone to craft this rune.", "#c86464" );
+			GameLog.Add( $"You need {CraftStoneCost} Stone to craft a rune.", "#c86464" );
 			return false;
 		}
-		if ( !inventory.HasItem( ItemId.ArcaneDust, dustCost ) )
+		if ( !ctx.Inventory.HasItem( ItemId.ArcaneDust, CraftDustCost ) )
 		{
-			GameLog.Add( $"You need {dustCost} Arcane Dust to craft this rune.", "#c86464" );
+			GameLog.Add( $"You need {CraftDustCost} Arcane Dust to craft a rune.", "#c86464" );
 			return false;
 		}
-
-		var blankId = GetBlankRuneItemId( tier );
-		if ( !inventory.CanFitStackable( blankId, 1 ) )
+		if ( !ctx.Inventory.CanFitStackable( ItemId.Rune, 1 ) )
 		{
 			GameLog.Add( "Not enough inventory space.", "#c86464" );
 			return false;
 		}
 
-		inventory.RemoveItem( ItemId.Rock, stoneCost );
-		inventory.RemoveItem( ItemId.ArcaneDust, dustCost );
-		inventory.AddItem( blankId, 1 );
+		ctx.Inventory.RemoveItem( ItemId.Rock, CraftStoneCost );
+		ctx.Inventory.RemoveItem( ItemId.ArcaneDust, CraftDustCost );
+		ctx.Inventory.AddItem( ItemId.Rune, 1 );
+		ctx.Skills.AddXp( SkillType.Enchanting, CraftXp );
 
-		int xp = tier == RuneTier.Rough ? RoughCraftXp : tier == RuneTier.Fine ? FineCraftXp : PristineCraftXp;
-		skills.AddXp( SkillType.Enchanting, xp );
-
-		GameLog.Add( $"Crafted a {tier} Rune.", "#a080d0" );
+		GameLog.Add( "Crafted a Rune.", "#a080d0" );
 		return true;
 	}
 
-	public bool TryEnchantBlankRune( int slotIndex )
+	public bool TryEnchantRandom( int runeSlotIndex )
 	{
-		var inventory = GetPlayerInventory();
-		var skills = GetPlayerSkills();
-		if ( inventory == null || skills == null )
-			return false;
+		return DoEnchant( runeSlotIndex, EnchantmentType.None, false );
+	}
 
-		var slot = inventory.GetSlot( slotIndex );
-		if ( slot == null || !slot.IsStack )
+	public bool TryEnchantTargeted( int runeSlotIndex, EnchantmentType type )
+	{
+		if ( type == EnchantmentType.None )
 		{
-			GameLog.Add( "Selected slot is empty.", "#c86464" );
+			GameLog.Add( "Pick an enchantment to target.", "#c86464" );
+			return false;
+		}
+		return DoEnchant( runeSlotIndex, type, true );
+	}
+
+	bool DoEnchant( int runeSlotIndex, EnchantmentType targetedType, bool isTargeted )
+	{
+		var ctx = GetContext();
+		if ( ctx == null ) return false;
+
+		var slot = ctx.Inventory.GetSlot( runeSlotIndex );
+		if ( slot == null || !slot.IsStack || slot.ItemId != ItemId.Rune )
+		{
+			GameLog.Add( "Select a blank rune.", "#c86464" );
 			return false;
 		}
 
-		var tier = GetRuneTierFromItemId( slot.ItemId );
-		if ( tier == RuneTier.None )
-		{
-			GameLog.Add( "That isn't a blank rune.", "#c86464" );
-			return false;
-		}
-
-		int dustCost = GetEnchantDust( tier );
-		if ( !inventory.HasItem( ItemId.ArcaneDust, dustCost ) )
+		int dustCost = isTargeted ? EnchantTargetedDustCost : EnchantRandomDustCost;
+		if ( !ctx.Inventory.HasItem( ItemId.ArcaneDust, dustCost ) )
 		{
 			GameLog.Add( $"You need {dustCost} Arcane Dust to enchant this rune.", "#c86464" );
 			return false;
 		}
 
-		float minPct = GetMinPercent( tier );
-		float maxPct = GetMaxPercent( tier );
+		int level = ctx.Skills.GetLevel( SkillType.Enchanting );
+		float minPct = GetMinRollPercent( level );
+		float maxPct = GetMaxRollPercent( level );
 
-		var randomType = RollableTypes[Random.Shared.Next( RollableTypes.Length )];
-		float randomPercent = (float)Math.Round( minPct + Random.Shared.NextSingle() * ( maxPct - minPct ), 1 );
+		EnchantmentType chosen = isTargeted ? targetedType : EnchantTypes[Random.Shared.Next( EnchantTypes.Length )];
+		float rolled = (float)Math.Round( minPct + Random.Shared.NextSingle() * ( maxPct - minPct ), 1 );
 
-		inventory.RemoveItem( ItemId.ArcaneDust, dustCost );
-		inventory.RemoveFromSlot( slotIndex, 1 );
+		ctx.Inventory.RemoveItem( ItemId.ArcaneDust, dustCost );
+		ctx.Inventory.RemoveFromSlot( runeSlotIndex, 1 );
 
-		var enchantedRune = new ItemInstance( GetBlankRuneItemId( tier ), randomType, randomPercent );
-		bool placed = inventory.AddUniqueItemOrBank( enchantedRune );
+		var enchanted = new ItemInstance( ItemId.Rune, chosen, rolled );
+		if ( !ctx.Inventory.AddUniqueItemOrBank( enchanted ) )
+			GameLog.Add( "Inventory full — enchanted rune sent to your bank.", "#c9a84c" );
 
-		if ( !placed )
-			GameLog.Add( $"Inventory full — enchanted {tier} Rune sent to your bank.", "#c9a84c" );
-
-		int xp = tier == RuneTier.Rough ? RoughEnchantXp : tier == RuneTier.Fine ? FineEnchantXp : PristineEnchantXp;
-		skills.AddXp( SkillType.Enchanting, xp );
-
-		GameLog.Add( $"Enchanted {tier} Rune: +{randomPercent:F1}% {randomType}!", "#a080d0" );
+		ctx.Skills.AddXp( SkillType.Enchanting, EnchantXp );
+		GameLog.Add( $"Enchanted Rune: +{rolled:F1}% {chosen}!", "#a080d0" );
 		return true;
 	}
 
-	public bool TryCombineSame( int slotA, int slotB )
+	public bool TryCombine( int slotA, int slotB )
 	{
-		var inventory = GetPlayerInventory();
-		var skills = GetPlayerSkills();
-		if ( inventory == null || skills == null )
-			return false;
+		var ctx = GetContext();
+		if ( ctx == null ) return false;
 
-		var aSlot = inventory.GetSlot( slotA );
-		var bSlot = inventory.GetSlot( slotB );
-		if ( aSlot == null || bSlot == null || !aSlot.IsUnique || !bSlot.IsUnique || slotA == slotB )
+		int level = ctx.Skills.GetLevel( SkillType.Enchanting );
+		if ( level < CombineUnlockLevel )
+		{
+			GameLog.Add( $"Combine unlocks at Enchanting level {CombineUnlockLevel}.", "#c86464" );
+			return false;
+		}
+		if ( slotA == slotB )
+		{
+			GameLog.Add( "Select two different runes.", "#c86464" );
+			return false;
+		}
+
+		var aSlot = ctx.Inventory.GetSlot( slotA );
+		var bSlot = ctx.Inventory.GetSlot( slotB );
+		if ( aSlot == null || bSlot == null || !aSlot.IsUnique || !bSlot.IsUnique )
 		{
 			GameLog.Add( "Select two enchanted runes.", "#c86464" );
 			return false;
@@ -375,156 +257,66 @@ public sealed class EnchantingStation : Component
 			GameLog.Add( "Both must be enchanted runes.", "#c86464" );
 			return false;
 		}
-
-		if ( a.RuneTier != b.RuneTier )
-		{
-			GameLog.Add( "Runes must be the same tier.", "#c86464" );
-			return false;
-		}
 		if ( a.Enchantment != b.Enchantment )
 		{
 			GameLog.Add( "Runes must have the same enchantment.", "#c86464" );
 			return false;
 		}
 
-		float cap = GetTierCap( a.RuneTier );
-		if ( a.EnchantmentPercent >= cap - 0.0001f || b.EnchantmentPercent >= cap - 0.0001f )
+		float cap = GetCombineCap( level );
+		if ( a.EnchantmentPercent >= cap - 0.0001f && b.EnchantmentPercent >= cap - 0.0001f )
 		{
-			GameLog.Add( "Rune is already at max — combining would have no effect.", "#c86464" );
+			GameLog.Add( "Both runes are already at cap.", "#c86464" );
+			return false;
+		}
+		if ( !ctx.Inventory.HasItem( ItemId.ArcaneDust, CombineDustCost ) )
+		{
+			GameLog.Add( $"You need {CombineDustCost} Arcane Dust to combine.", "#c86464" );
 			return false;
 		}
 
-		int dustCost = GetCombineDust( a.RuneTier );
-		if ( !inventory.HasItem( ItemId.ArcaneDust, dustCost ) )
-		{
-			GameLog.Add( $"You need {dustCost} Arcane Dust to combine.", "#c86464" );
-			return false;
-		}
+		float hi = MathF.Max( a.EnchantmentPercent, b.EnchantmentPercent );
+		float lo = MathF.Min( a.EnchantmentPercent, b.EnchantmentPercent );
+		float result = (float)Math.Round( MathF.Min( hi + lo * CombineLowerContribution, cap ), 1 );
 
-		float bonus = CombineMinBonus + Random.Shared.NextSingle() * ( CombineMaxBonus - CombineMinBonus );
-		float result = MathF.Max( a.EnchantmentPercent, b.EnchantmentPercent ) + bonus;
-		if ( result > cap ) result = cap;
-		result = (float)Math.Round( result, 1 );
+		ctx.Inventory.RemoveItem( ItemId.ArcaneDust, CombineDustCost );
 
-		inventory.RemoveItem( ItemId.ArcaneDust, dustCost );
+		int hiSlot = slotA > slotB ? slotA : slotB;
+		int loSlot = slotA > slotB ? slotB : slotA;
+		ctx.Inventory.RemoveFromSlot( hiSlot, 1 );
+		ctx.Inventory.RemoveFromSlot( loSlot, 1 );
 
-		int removeFirst = slotA > slotB ? slotA : slotB;
-		int removeSecond = slotA > slotB ? slotB : slotA;
-		inventory.RemoveFromSlot( removeFirst, 1 );
-		inventory.RemoveFromSlot( removeSecond, 1 );
+		var combined = new ItemInstance( ItemId.Rune, a.Enchantment, result );
+		if ( !ctx.Inventory.AddUniqueItemOrBank( combined ) )
+			GameLog.Add( "Inventory full — combined rune sent to your bank.", "#c9a84c" );
 
-		var combined = new ItemInstance( GetBlankRuneItemId( a.RuneTier ), a.Enchantment, result );
-		bool placed = inventory.AddUniqueItemOrBank( combined );
-
-		if ( !placed )
-			GameLog.Add( $"Inventory full — combined rune sent to your bank.", "#c9a84c" );
-
-		int xp = a.RuneTier == RuneTier.Rough ? RoughCombineXp : a.RuneTier == RuneTier.Fine ? FineCombineXp : PristineCombineXp;
-		skills.AddXp( SkillType.Enchanting, xp );
-
-		GameLog.Add( $"Combined into +{result:F1}% {a.Enchantment} {a.RuneTier} Rune.", "#a080d0" );
+		ctx.Skills.AddXp( SkillType.Enchanting, CombineXp );
+		GameLog.Add( $"Combined into +{result:F1}% {a.Enchantment} Rune.", "#a080d0" );
 		return true;
 	}
 
-	public bool TryTierUp( int slotA, int slotB, int slotC )
+	public bool TrySocket( int jewelrySlotIndex, int socketIndex, int runeSlotIndex )
 	{
-		var inventory = GetPlayerInventory();
-		var skills = GetPlayerSkills();
-		if ( inventory == null || skills == null )
-			return false;
+		var ctx = GetContext();
+		if ( ctx == null ) return false;
 
-		var sA = inventory.GetSlot( slotA );
-		var sB = inventory.GetSlot( slotB );
-		var sC = inventory.GetSlot( slotC );
-		if ( sA == null || sB == null || sC == null || slotA == slotB || slotA == slotC || slotB == slotC )
+		int level = ctx.Skills.GetLevel( SkillType.Enchanting );
+		if ( socketIndex >= GetMaxSocketsForLevel( level ) )
 		{
-			GameLog.Add( "Select three distinct runes.", "#c86464" );
-			return false;
-		}
-		if ( !sA.IsUnique || !sB.IsUnique || !sC.IsUnique )
-		{
-			GameLog.Add( "Tier-up requires three enchanted runes.", "#c86464" );
+			GameLog.Add( $"Second socket unlocks at Enchanting level {SecondSocketUnlockLevel}.", "#c86464" );
 			return false;
 		}
 
-		var a = sA.Unique;
-		var b = sB.Unique;
-		var c = sC.Unique;
-		if ( !a.IsRune || !b.IsRune || !c.IsRune || !a.IsEnchanted || !b.IsEnchanted || !c.IsEnchanted )
-		{
-			GameLog.Add( "Tier-up requires three enchanted runes.", "#c86464" );
-			return false;
-		}
-
-		var sourceTier = a.RuneTier;
-		if ( b.RuneTier != sourceTier || c.RuneTier != sourceTier )
-		{
-			GameLog.Add( "All three runes must be the same tier.", "#c86464" );
-			return false;
-		}
-		if ( sourceTier == RuneTier.Pristine )
-		{
-			GameLog.Add( "Pristine runes are the highest tier.", "#c86464" );
-			return false;
-		}
-
-		var resultTier = sourceTier == RuneTier.Rough ? RuneTier.Fine : RuneTier.Pristine;
-		int levelReq = resultTier == RuneTier.Fine ? TierUpFineLevel : TierUpPristineLevel;
-		int dustCost = resultTier == RuneTier.Fine ? TierUpRoughDust : TierUpFineDust;
-		int xp = resultTier == RuneTier.Fine ? TierUpRoughXp : TierUpFineXp;
-
-		if ( !skills.MeetsRequirement( SkillType.Enchanting, levelReq ) )
-		{
-			GameLog.Add( $"You need Enchanting level {levelReq} to tier up.", "#c86464" );
-			return false;
-		}
-		if ( !inventory.HasItem( ItemId.ArcaneDust, dustCost ) )
-		{
-			GameLog.Add( $"You need {dustCost} Arcane Dust to tier up.", "#c86464" );
-			return false;
-		}
-
-		var resultId = GetBlankRuneItemId( resultTier );
-		if ( !inventory.CanFitStackable( resultId, 1 ) )
-		{
-			GameLog.Add( "Not enough inventory space.", "#c86464" );
-			return false;
-		}
-
-		inventory.RemoveItem( ItemId.ArcaneDust, dustCost );
-
-		var sortedIndices = new int[] { slotA, slotB, slotC };
-		Array.Sort( sortedIndices );
-		for ( int i = sortedIndices.Length - 1; i >= 0; i-- )
-			inventory.RemoveFromSlot( sortedIndices[i], 1 );
-
-		inventory.AddItem( resultId, 1 );
-		skills.AddXp( SkillType.Enchanting, xp );
-
-		GameLog.Add( $"Tiered up three {sourceTier} Runes into a {resultTier} Rune.", "#a080d0" );
-		return true;
-	}
-
-	public bool TrySocketRune( int itemSlotIndex, int socketIndex, int runeSlotIndex )
-	{
-		var inventory = GetPlayerInventory();
-		var skills = GetPlayerSkills();
-		if ( inventory == null || skills == null )
-			return false;
-
-		var itemSlot = inventory.GetSlot( itemSlotIndex );
-		var runeSlot = inventory.GetSlot( runeSlotIndex );
-		if ( itemSlot == null || runeSlot == null )
-			return false;
-		if ( !itemSlot.IsUnique || !runeSlot.IsUnique )
+		var jSlot = ctx.Inventory.GetSlot( jewelrySlotIndex );
+		var rSlot = ctx.Inventory.GetSlot( runeSlotIndex );
+		if ( jSlot == null || rSlot == null || !jSlot.IsUnique || !rSlot.IsUnique )
 		{
 			GameLog.Add( "Select a ring or amulet and an enchanted rune.", "#c86464" );
 			return false;
 		}
 
-		var jewelry = itemSlot.Unique;
-		var rune = runeSlot.Unique;
-
+		var jewelry = jSlot.Unique;
+		var rune = rSlot.Unique;
 		if ( !jewelry.IsSocketable )
 		{
 			GameLog.Add( "Only rings and amulets can be socketed.", "#c86464" );
@@ -552,25 +344,23 @@ public sealed class EnchantingStation : Component
 		}
 
 		jewelry.SetSocket( socketIndex, new ItemInstance( rune.ItemId, rune.Enchantment, rune.EnchantmentPercent ) );
-		inventory.RemoveFromSlot( runeSlotIndex, 1 );
-
-		skills.AddXp( SkillType.Enchanting, SocketXp );
+		ctx.Inventory.RemoveFromSlot( runeSlotIndex, 1 );
+		ctx.Skills.AddXp( SkillType.Enchanting, SocketXp );
 
 		GameLog.Add( $"Socketed +{rune.EnchantmentPercent:F1}% {rune.Enchantment} into {jewelry.GetDisplayName()}.", "#a080d0" );
 		return true;
 	}
 
-	public bool TryExtractRune( int itemSlotIndex, int socketIndex )
+	public bool TryExtract( int jewelrySlotIndex, int socketIndex )
 	{
-		var inventory = GetPlayerInventory();
-		if ( inventory == null )
+		var ctx = GetContext();
+		if ( ctx == null ) return false;
+
+		var jSlot = ctx.Inventory.GetSlot( jewelrySlotIndex );
+		if ( jSlot == null || !jSlot.IsUnique )
 			return false;
 
-		var itemSlot = inventory.GetSlot( itemSlotIndex );
-		if ( itemSlot == null || !itemSlot.IsUnique )
-			return false;
-
-		var jewelry = itemSlot.Unique;
+		var jewelry = jSlot.Unique;
 		if ( !jewelry.IsSocketable )
 			return false;
 
@@ -580,38 +370,38 @@ public sealed class EnchantingStation : Component
 			GameLog.Add( "That socket is empty.", "#c86464" );
 			return false;
 		}
-
-		int dustCost = GetExtractDust( rune.RuneTier );
-		if ( !inventory.HasItem( ItemId.ArcaneDust, dustCost ) )
+		if ( !ctx.Inventory.HasItem( ItemId.ArcaneDust, ExtractDustCost ) )
 		{
-			GameLog.Add( $"You need {dustCost} Arcane Dust to extract this rune.", "#c86464" );
+			GameLog.Add( $"You need {ExtractDustCost} Arcane Dust to extract this rune.", "#c86464" );
 			return false;
 		}
 
-		inventory.RemoveItem( ItemId.ArcaneDust, dustCost );
+		ctx.Inventory.RemoveItem( ItemId.ArcaneDust, ExtractDustCost );
 		jewelry.SetSocket( socketIndex, null );
 
 		var extracted = new ItemInstance( rune.ItemId, rune.Enchantment, rune.EnchantmentPercent );
-		bool placed = inventory.AddUniqueItemOrBank( extracted );
-
-		if ( !placed )
+		if ( !ctx.Inventory.AddUniqueItemOrBank( extracted ) )
 			GameLog.Add( "Inventory full — extracted rune sent to your bank.", "#c9a84c" );
 
 		GameLog.Add( $"Extracted +{rune.EnchantmentPercent:F1}% {rune.Enchantment} rune.", "#a080d0" );
 		return true;
 	}
 
-	Inventory GetPlayerInventory()
+	class Context
 	{
-		return PlayerHelper.GetLocalInventory();
+		public Inventory Inventory;
+		public Skills Skills;
 	}
 
-	Skills GetPlayerSkills()
+	Context GetContext()
 	{
 		var player = PlayerHelper.GetLocalPlayer();
-		if ( player == null )
-			return null;
+		if ( player == null ) return null;
 
-		return player.Components.Get<Skills>();
+		var inv = player.Components.Get<Inventory>();
+		var skills = player.Components.Get<Skills>();
+		if ( inv == null || skills == null ) return null;
+
+		return new Context { Inventory = inv, Skills = skills };
 	}
 }

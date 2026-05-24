@@ -30,6 +30,7 @@ public sealed class FireTornado : Component
 	[Property] public string SpritePath { get; set; } = "particle_glow.sprite";
 
 	public GameObject Source { get; set; }
+	public bool VisualOnly { get; set; }
 
 	float _elapsed;
 	float _tickTimer;
@@ -57,7 +58,7 @@ public sealed class FireTornado : Component
 		public Color BaseColor;
 	}
 
-	public static FireTornado Spawn( Scene scene, Vector3 position, GameObject source, float radius, float height, float duration, float damage, float tickInterval )
+	public static FireTornado Spawn( Scene scene, Vector3 position, GameObject source, float radius, float height, float duration, float damage, float tickInterval, bool visualOnly = false )
 	{
 		if ( scene == null )
 			return null;
@@ -73,6 +74,7 @@ public sealed class FireTornado : Component
 		tornado.DamagePerTick = damage;
 		tornado.TickInterval = tickInterval;
 		tornado.Source = source;
+		tornado.VisualOnly = visualOnly;
 
 		return tornado;
 	}
@@ -98,7 +100,7 @@ public sealed class FireTornado : Component
 		{
 			SpawnParticles();
 
-			if ( _tickTimer <= 0f )
+			if ( !VisualOnly && _tickTimer <= 0f )
 			{
 				_tickTimer = TickInterval;
 				ApplyDamageTick();
