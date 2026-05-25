@@ -111,7 +111,7 @@ public static class SpellDatabase
 			SlowMultiplier = 0.5f,
 			TraceRadius = 5f,
 			MaxLifetime = 5f,
-			RequiredLevel = 1,
+			RequiredLevel = 10,
 			Description = "Slow-cast shard of ice that slows enemies for 1 second on hit.",
 			FrozenBonusDamage = 1.5f
 		};
@@ -132,7 +132,7 @@ public static class SpellDatabase
 			SlowMultiplier = 1f,
 			TraceRadius = 5f,
 			MaxLifetime = 5f,
-			RequiredLevel = 1,
+			RequiredLevel = 5,
 			Description = "A lower-damage missile that locks onto the nearest target near your cursor and never misses.",
 		};
 
@@ -152,7 +152,7 @@ public static class SpellDatabase
 			SlowMultiplier = 1f,
 			TraceRadius = 0f,
 			MaxLifetime = 0f,
-			RequiredLevel = 1,
+			RequiredLevel = 15,
 			Description = "Conjure a shield that blocks enemies and projectiles.",
 			BarrierWidth = 4f,
 			BarrierHeight = 3f,
@@ -176,7 +176,7 @@ public static class SpellDatabase
 			SlowMultiplier = 1f,
 			TraceRadius = 6f,
 			MaxLifetime = 5f,
-			RequiredLevel = 1,
+			RequiredLevel = 20,
 			Description = "Lobs a glob of acid that arcs through the air and poisons whatever it hits.",
 			PoisonDamagePerTick = 2f,
 			PoisonTickInterval = 1f,
@@ -201,7 +201,7 @@ public static class SpellDatabase
 			SlowMultiplier = 1f,
 			TraceRadius = 0f,
 			MaxLifetime = 0f,
-			RequiredLevel = 1,
+			RequiredLevel = 30,
 			Description = "Releases a healing pulse that restores HP to you and any allies nearby.",
 		};
 
@@ -221,7 +221,7 @@ public static class SpellDatabase
 			SlowMultiplier = 1f,
 			TraceRadius = 8f,
 			MaxLifetime = 5f,
-			RequiredLevel = 1,
+			RequiredLevel = 40,
 			Description = "Heavy single-target burst.",
 		};
 
@@ -241,7 +241,7 @@ public static class SpellDatabase
 			SlowMultiplier = 1f,
 			TraceRadius = 0f,
 			MaxLifetime = 3f,
-			RequiredLevel = 1,
+			RequiredLevel = 25,
 			Description = "Coats your body in stone — heavy defense, but heavily slowed.",
 			BuffDuration = 4f
 		};
@@ -262,7 +262,7 @@ public static class SpellDatabase
 			SlowMultiplier = 1f,
 			TraceRadius = 0f,
 			MaxLifetime = 4f,
-			RequiredLevel = 1,
+			RequiredLevel = 35,
 			Description = "Hold to channel lightning from your staff — short range, continuous damage.",
 		};
 
@@ -282,7 +282,7 @@ public static class SpellDatabase
 			SlowMultiplier = 1f,
 			TraceRadius = 200f,
 			MaxLifetime = 5f,
-			RequiredLevel = 1,
+			RequiredLevel = 45,
 			Description = "Conjures a swirling pillar of fire at your cursor that burns enemies inside it.",
 			AoeRadius = 100f,
 			AoeHeight = 180f,
@@ -307,7 +307,7 @@ public static class SpellDatabase
 			SlowMultiplier = 1f,
 			TraceRadius = 300f,
 			MaxLifetime = 1f,
-			RequiredLevel = 1,
+			RequiredLevel = 50,
 			Description = "Tear open a small singularity that pulls enemies inward, then collapses for massive damage.",
 			PullRadius = 220f,
 			CollapseRadius = 110f,
