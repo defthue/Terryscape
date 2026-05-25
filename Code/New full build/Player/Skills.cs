@@ -97,6 +97,18 @@ public sealed class Skills : Component
 
 			GameManager.Instance?.AddLocalChatMessage( text );
 
+			SoundLibrary.PlayLevelUp();
+
+			if ( data.Level % 10 == 0 )
+			{
+				string playerName = "Player";
+				var pc = Components.Get<PlayerController>();
+				if ( pc != null )
+					playerName = pc.Network.Owner?.DisplayName ?? "Player";
+
+				GameManager.Instance?.BroadcastLevelMilestone( playerName, skillName, data.Level );
+			}
+
 			required = GetXpRequired( data.Level );
 		}
 

@@ -32,6 +32,8 @@ public sealed class SoundLibrary : Component
 	const string ARROW_IMPACT = "Sounds/ArrowImpact.sound";
 	const string MAGIC_MISSILE = "Sounds/MagicMissile.sound";
 	const string SINGULARITY = "Sounds/Singularity.sound";
+	const string LEVEL_UP = "Sounds/LevelUp.sound";
+	const string SEND_TO_BANK = "Sounds/SendToBank.sound";
 
 	static SoundLibrary _instance;
 	static SoundHandle _furnaceLoopHandle;
@@ -275,6 +277,16 @@ public sealed class SoundLibrary : Component
 	public static void PlayReceiveItem()
 	{
 		Sound.Play( RECEIVE_ITEM, GetLocalListenerPosition() );
+	}
+
+	public static void PlayLevelUp()
+	{
+		PlayLocked( LEVEL_UP );
+	}
+
+	public static void PlaySendToBank()
+	{
+		PlayLocked( SEND_TO_BANK );
 	}
 
 	public static void PlaySellBuy()

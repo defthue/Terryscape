@@ -265,6 +265,19 @@
         "OnComponentFixedUpdate": null,
         "OnComponentStart": null,
         "OnComponentUpdate": null
+      },
+      {
+        "__type": "Sandbox.Huds.InteractPromptHud",
+        "__guid": "c43681ea-0fb3-4ae2-a07b-44b270d12e2e",
+        "__enabled": true,
+        "Flags": 0,
+        "HeightOffset": 100,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null
       }
     ],
     "Children": [],

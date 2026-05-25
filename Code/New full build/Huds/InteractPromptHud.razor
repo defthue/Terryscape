@@ -1,0 +1,194 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using System;
+@using System.Linq;
+@inherits PanelComponent
+
+<root>
+	@if ( ShouldShow )
+	{
+		<div class="interact-prompt" style="left: @(ScreenX.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%; top: @(ScreenY.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%;">
+			<div class="interact-key">E</div>
+			<div class="interact-label">@TargetLabel</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	[Property] public float HeightOffset { get; set; } = 100f;
+
+	bool ShouldShow { get; set; }
+	float ScreenX { get; set; }
+	float ScreenY { get; set; }
+	string TargetLabel { get; set; } = "";
+
+	GameObject _cachedTarget;
+	string _cachedLabel = "";
+
+	bool AnyUIOpen()
+	{
+		if ( CraftingStation.ActiveStation != null ) return true;
+		if ( ShopStation.ActiveShop != null || ShopStation.ShowingChoice ) return true;
+		if ( BankStation.ActiveBank != null ) return true;
+		if ( TeleportStone.ActiveStone != null ) return true;
+		if ( EnchantingStation.ActiveStation != null ) return true;
+		if ( NpcInteract.ActiveNpc != null ) return true;
+		if ( JournalStation.IsOpen ) return true;
+		if ( LeaderboardStation.IsOpen ) return true;
+		if ( PlayerGatherResource.UIOpen ) return true;
+		return false;
+	}
+
+	void RefreshTarget()
+	{
+		ShouldShow = false;
+
+		if ( AnyUIOpen() )
+		{
+			_cachedTarget = null;
+			return;
+		}
+
+		var player = PlayerHelper.GetLocalPlayer();
+		if ( player == null )
+		{
+			_cachedTarget = null;
+			return;
+		}
+
+		var playerPos = player.WorldPosition;
+
+		GameObject best = null;
+		string bestLabel = "";
+		float bestDist = float.MaxValue;
+
+		foreach ( var s in Scene.GetAllComponents<CraftingStation>() )
+		{
+			if ( !s.IsValid() ) continue;
+			float d = Vector3.DistanceBetween( s.WorldPosition, playerPos );
+			if ( d > s.InteractDistance ) continue;
+			if ( d < bestDist )
+			{
+				bestDist = d;
+				best = s.GameObject;
+				bestLabel = string.IsNullOrEmpty( s.StationName ) ? "Interact" : s.StationName;
+			}
+		}
+
+		foreach ( var s in Scene.GetAllComponents<BankStation>() )
+		{
+			if ( !s.IsValid() ) continue;
+			float d = Vector3.DistanceBetween( s.WorldPosition, playerPos );
+			if ( d > s.InteractDistance ) continue;
+			if ( d < bestDist )
+			{
+				bestDist = d;
+				best = s.GameObject;
+				bestLabel = string.IsNullOrEmpty( s.StationName ) ? "Bank" : s.StationName;
+			}
+		}
+
+		foreach ( var s in Scene.GetAllComponents<EnchantingStation>() )
+		{
+			if ( !s.IsValid() ) continue;
+			float d = Vector3.DistanceBetween( s.WorldPosition, playerPos );
+			if ( d > s.InteractDistance ) continue;
+			if ( d < bestDist )
+			{
+				bestDist = d;
+				best = s.GameObject;
+				bestLabel = string.IsNullOrEmpty( s.StationName ) ? "Enchanting Altar" : s.StationName;
+			}
+		}
+
+		foreach ( var s in Scene.GetAllComponents<TeleportStone>() )
+		{
+			if ( !s.IsValid() ) continue;
+			float d = Vector3.DistanceBetween( s.WorldPosition, playerPos );
+			if ( d > s.InteractDistance ) continue;
+			if ( d < bestDist )
+			{
+				bestDist = d;
+				best = s.GameObject;
+				bestLabel = string.IsNullOrEmpty( s.StoneName ) ? "Teleport Stone" : s.StoneName;
+			}
+		}
+
+		foreach ( var s in Scene.GetAllComponents<ShopStation>() )
+		{
+			if ( !s.IsValid() ) continue;
+			if ( s.Components.Get<NpcInteract>() != null ) continue;
+			float d = Vector3.DistanceBetween( s.WorldPosition, playerPos );
+			if ( d > s.InteractDistance ) continue;
+			if ( d < bestDist )
+			{
+				bestDist = d;
+				best = s.GameObject;
+				bestLabel = s.DisplayName;
+			}
+		}
+
+		foreach ( var n in Scene.GetAllComponents<NpcInteract>() )
+		{
+			if ( !n.IsValid() ) continue;
+
+			var shopOnNpc = n.Components.Get<ShopStation>();
+			bool hasQuest = NpcInteract.NpcHasAvailableQuest( n.GameObject );
+
+			if ( shopOnNpc == null && !hasQuest )
+				continue;
+
+			float d = Vector3.DistanceBetween( n.WorldPosition, playerPos );
+			if ( d > n.InteractDistance ) continue;
+			if ( d < bestDist )
+			{
+				bestDist = d;
+				best = n.GameObject;
+
+				if ( hasQuest )
+					bestLabel = string.IsNullOrEmpty( n.NpcName ) ? "Talk" : n.NpcName;
+				else
+					bestLabel = shopOnNpc.DisplayName;
+			}
+		}
+
+		if ( best == null )
+		{
+			_cachedTarget = null;
+			return;
+		}
+
+		_cachedTarget = best;
+		_cachedLabel = bestLabel;
+		TargetLabel = bestLabel;
+
+		var worldPos = best.WorldPosition + Vector3.Up * HeightOffset;
+		if ( Scene.Camera == null )
+			return;
+
+		var toTarget = worldPos - Scene.Camera.WorldPosition;
+		if ( Vector3.Dot( Scene.Camera.WorldRotation.Forward, toTarget ) <= 0 )
+			return;
+
+		var normal = Scene.Camera.PointToScreenNormal( worldPos );
+		ScreenX = normal.x * 100f;
+		ScreenY = normal.y * 100f;
+		ShouldShow = true;
+	}
+
+	protected override void OnUpdate()
+	{
+		RefreshTarget();
+	}
+
+	protected override int BuildHash()
+	{
+		return (
+			ShouldShow,
+			(int)( ScreenX * 10f ),
+			(int)( ScreenY * 10f ),
+			TargetLabel
+		).GetHashCode();
+	}
+}

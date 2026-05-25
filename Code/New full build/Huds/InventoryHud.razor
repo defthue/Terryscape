@@ -25,9 +25,9 @@
 				{
 					@if ( entry.IsChat )
 					{
-						<div class="chat-entry">
-							<span class="chat-sender">@entry.Sender:</span>
-							<span style="color: #e8e8e8;"> @entry.Text</span>
+						<div class="chat-entry chat-msg">
+							<div class="chat-sender">@entry.Sender</div>
+							<div class="chat-text">@entry.Text</div>
 						</div>
 					}
 					else
@@ -55,14 +55,14 @@
 				{
 					@if ( !string.IsNullOrEmpty( msg.Sender ) )
 					{
-						<div class="chat-entry">
-							<span class="chat-sender">@msg.Sender:</span>
-							<span style="color: #e8e8e8;"> @msg.Text</span>
+						<div class="chat-entry chat-msg">
+							<div class="chat-sender">@msg.Sender</div>
+							<div class="chat-text">@msg.Text</div>
 						</div>
 					}
 					else
 					{
-						<div class="chat-entry" style="color: #f0c040;">@msg.Text</div>
+						<div class="chat-entry chat-system" style="color: #f0c040;">@msg.Text</div>
 					}
 				}
 			</div>
@@ -71,7 +71,7 @@
 		@if ( IsChatOpen )
 		{
 			<div class="chat-input-row">
-				<TextEntry class="chat-input-field" @ref="ChatInputRef" Value:bind="@ChatText" onsubmit="@OnChatSubmit"></TextEntry>
+				<TextEntry class="chat-input-field @(IsChatBlocked ? "chat-blocked" : "")" @ref="ChatInputRef" Value:bind="@ChatText" MaxLength="@(200)" onsubmit="@OnChatSubmit"></TextEntry>
 			</div>
 		}
 	</div>
@@ -406,10 +406,23 @@
 			return;
 
 		if ( !string.IsNullOrWhiteSpace( ChatText ) )
-			gm.SendChat( ChatText );
+		{
+			bool sent = gm.SendChat( ChatText );
+			if ( !sent )
+				return;
+		}
 
 		ChatText = "";
 		gm.CloseChat();
+	}
+
+	bool IsChatBlocked
+	{
+		get
+		{
+			var gm = GameManager.Instance;
+			return gm != null && gm.TimeSinceChatBlocked < 0.6f;
+		}
 	}
 
 	int CurrentHealth { get; set; }

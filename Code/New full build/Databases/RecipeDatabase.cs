@@ -360,8 +360,8 @@ public static class RecipeDatabase
 			ItemId.WorldrootStaff, 1, SkillType.Crafting, 50, SkillType.Crafting, 220 ) );
 
 		Add( Define( "lesser_healing_potion", "Lesser Healing Potion", StationType.AlchemyTable,
-			new[] { new RecipeIngredient( ItemId.SageLeaf, 1 ), new RecipeIngredient( ItemId.WildBerries, 1 ), new RecipeIngredient( ItemId.GlassVial, 1 ) },
-			ItemId.LesserHealingPotion, 1, SkillType.Crafting, 1, SkillType.Crafting, 10 ) );
+   			new[] { new RecipeIngredient( ItemId.SageLeaf, 1 ), new RecipeIngredient( ItemId.GlassVial, 1 ) },
+    		ItemId.LesserHealingPotion, 1, SkillType.Crafting, 1, SkillType.Crafting, 10 ) );
 
 		Add( Define( "healing_potion", "Healing Potion", StationType.AlchemyTable,
 			new[] { new RecipeIngredient( ItemId.Thornroot, 1 ), new RecipeIngredient( ItemId.BlueMoss, 1 ), new RecipeIngredient( ItemId.GlassVial, 1 ) },

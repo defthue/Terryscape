@@ -248,6 +248,8 @@
 		{
 			if ( !monster.IsValid() )
 				continue;
+			if ( monster.IsDead )
+				continue;
 
 			var pos = monster.WorldPosition;
 			float dx = pos.x - playerWorld.x;
@@ -259,6 +261,23 @@
 			var (mx, my) = MinimapMarkerPosition( pos, playerU, playerV );
 			AddMarker( MinimapMarkers, mx, my, "marker-monster", null, monsterZ );
 			monsterZ++;
+		}
+
+		int playerZ = 4000;
+		foreach ( var pc in Scene.GetAllComponents<PlayerController>() )
+		{
+			if ( !pc.IsValid() )
+				continue;
+			if ( !pc.IsProxy )
+				continue;
+
+			var pos = pc.WorldPosition;
+			var (mx, my) = MinimapMarkerPosition( pos, playerU, playerV );
+			var (fx, fy) = WorldToUV( pos );
+
+			AddMarker( MinimapMarkers, mx, my, "marker-player", null, playerZ );
+			AddMarker( FullmapMarkers, fx * 100f, fy * 100f, "marker-player", null, playerZ );
+			playerZ++;
 		}
 	}
 

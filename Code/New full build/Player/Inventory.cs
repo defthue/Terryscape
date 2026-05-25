@@ -247,6 +247,7 @@ public sealed class Inventory : Component
 					bank.Deposit( id, remaining );
 				}
 				banked = remaining;
+				SoundLibrary.PlaySendToBank();
 			}
 		}
 
@@ -273,6 +274,7 @@ public sealed class Inventory : Component
 		if ( bank != null )
 		{
 			bank.DepositUnique( instance );
+			SoundLibrary.PlaySendToBank();
 			return false;
 		}
 

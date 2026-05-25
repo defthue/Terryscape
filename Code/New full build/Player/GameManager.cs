@@ -10,6 +10,9 @@ public sealed class GameManager : Component, Component.INetworkListener
 	[Property] public bool AutoCreateLobby { get; set; } = true;
 	[Property] public int MaxPlayers { get; set; } = 64;
 
+	[Property] public int MaxChatMessageLength { get; set; } = 200;
+	[Property] public float ChatCooldownSeconds { get; set; } = 1.0f;
+
 	public static GameManager Instance { get; private set; }
 
 	public class ChatMessage
@@ -23,6 +26,9 @@ public sealed class GameManager : Component, Component.INetworkListener
 	public List<ChatMessage> ChatMessages { get; private set; } = new();
 	public bool ChatOpen { get; set; }
 	public string ChatInput { get; set; } = "";
+
+	public RealTimeSince TimeSinceLastSentChat { get; private set; } = 999f;
+	public RealTimeSince TimeSinceChatBlocked { get; private set; } = 999f;
 
 	const int MaxChatMessages = 100;
 
@@ -46,7 +52,6 @@ public sealed class GameManager : Component, Component.INetworkListener
 	{
 		Instance = this;
 
-		// Initialize Network Storage as early as possible so any player that joins immediately has it ready.
 		NetworkStorageConfig.EnsureInitialized();
 
 		if ( !AutoCreateLobby )
@@ -72,10 +77,22 @@ public sealed class GameManager : Component, Component.INetworkListener
 		}
 	}
 
-	public void SendChat( string text )
+	public bool SendChat( string text )
 	{
 		if ( string.IsNullOrWhiteSpace( text ) )
-			return;
+			return false;
+
+		if ( TimeSinceLastSentChat < ChatCooldownSeconds )
+		{
+			TimeSinceChatBlocked = 0f;
+			return false;
+		}
+
+		var trimmed = text.Trim();
+		if ( trimmed.Length > MaxChatMessageLength )
+			trimmed = trimmed.Substring( 0, MaxChatMessageLength );
+
+		TimeSinceLastSentChat = 0f;
 
 		var player = PlayerHelper.GetLocalPlayer();
 		string name = "Player";
@@ -91,7 +108,8 @@ public sealed class GameManager : Component, Component.INetworkListener
 			}
 		}
 
-		BroadcastChat( name, text, steamId );
+		BroadcastChat( name, trimmed, steamId );
+		return true;
 	}
 
 	[Rpc.Broadcast]
@@ -108,14 +126,33 @@ public sealed class GameManager : Component, Component.INetworkListener
 		if ( ChatMessages.Count > MaxChatMessages )
 			ChatMessages.RemoveAt( 0 );
 
-		// Trigger the speech bubble for the speaking player, if we can find them.
-		// steamId == 0 means it's a server message ("X has joined") — no bubble for those.
 		if ( speakerSteamId != 0 )
 		{
 			var bubble = FindBubbleForSteamId( speakerSteamId );
 			if ( bubble != null )
 				bubble.ShowMessage( text );
 		}
+	}
+
+	public void BroadcastLevelMilestone( string playerName, string skillName, int level )
+	{
+		DoBroadcastLevelMilestone( playerName, skillName, level );
+	}
+
+	[Rpc.Broadcast]
+	void DoBroadcastLevelMilestone( string playerName, string skillName, int level )
+	{
+		string text = $"{playerName} reached level {level} in {skillName}!";
+		ChatMessages.Add( new ChatMessage
+		{
+			Sender = "Server",
+			Text = text,
+			Created = 0,
+			Sequence = _nextChatSequence++
+		} );
+
+		if ( ChatMessages.Count > MaxChatMessages )
+			ChatMessages.RemoveAt( 0 );
 	}
 
 	PlayerSpeechBubble FindBubbleForSteamId( ulong steamId )
@@ -150,7 +187,6 @@ public sealed class GameManager : Component, Component.INetworkListener
 
 		Log.Info( $"Player spawned: {connection.DisplayName}" );
 
-		// Server messages have steamId 0 — no bubble.
 		BroadcastChat( "Server", $"{connection.DisplayName} has joined.", 0 );
 	}
 
