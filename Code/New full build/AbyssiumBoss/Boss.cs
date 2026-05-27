@@ -58,8 +58,16 @@ public sealed class Boss : Component
 		public float DistanceTraveled;
 		public float Lifetime;
 		public HashSet<GameObject> AlreadyHit = new();
-		public GameObject VisualObject;
 		public int Damage;
+	}
+
+	class ActiveBeamVisual
+	{
+		public GameObject VisualObject;
+		public Vector3 Position;
+		public Vector3 Direction;
+		public float DistanceTraveled;
+		public float Lifetime;
 	}
 
 	const int AnimFrameRate = 30;
@@ -246,6 +254,7 @@ public sealed class Boss : Component
 	HashSet<ulong> _contributorSteamIds = new();
 
 	List<ActiveBeam> _activeBeams = new();
+	List<ActiveBeamVisual> _activeBeamVisuals = new();
 
 	struct DebugHitboxDraw
 	{
@@ -693,13 +702,27 @@ public sealed class Boss : Component
 			Direction = dir,
 			DistanceTraveled = 0f,
 			Lifetime = BeamRange / MathF.Max( 1f, BeamSpeed ) + 0.1f,
-			Damage = damage,
-			VisualObject = CreateBeamVisual( origin, dir )
+			Damage = damage
 		};
 
 		_activeBeams.Add( beam );
 
-		SoundLibrary.PlayMagicMissile( origin );
+		BroadcastSpawnBeamVisual( origin, dir );
+	}
+
+	[Rpc.Broadcast]
+	void BroadcastSpawnBeamVisual( Vector3 origin, Vector3 direction )
+	{
+		_activeBeamVisuals.Add( new ActiveBeamVisual
+		{
+			VisualObject = CreateBeamVisual( origin, direction ),
+			Position = origin,
+			Direction = direction,
+			DistanceTraveled = 0f,
+			Lifetime = BeamRange / MathF.Max( 1f, BeamSpeed ) + 0.1f
+		} );
+
+		Sound.Play( "Sounds/MagicMissile.sound", origin );
 	}
 
 	Vector3 GetBeamSpawnPosition()
@@ -757,6 +780,11 @@ public sealed class Boss : Component
 
 	void UpdateActiveBeams()
 	{
+		UpdateBeamVisuals();
+
+		if ( !Networking.IsHost )
+			return;
+
 		if ( _activeBeams.Count == 0 )
 			return;
 
@@ -768,83 +796,96 @@ public sealed class Boss : Component
 			var prevPos = beam.Position;
 			var nextPos = beam.Position + beam.Direction * step;
 
-			if ( Networking.IsHost )
+			var wallTrace = Scene.Trace
+				.Ray( prevPos, nextPos )
+				.WithoutTags( "player", "boss", "monster", "pickup" )
+				.Run();
+
+			if ( wallTrace.Hit )
 			{
-				var wallTrace = Scene.Trace
-					.Ray( prevPos, nextPos )
-					.WithoutTags( "player", "boss", "monster", "pickup" )
-					.Run();
+				_activeBeams.RemoveAt( i );
+				continue;
+			}
 
-				if ( wallTrace.Hit )
-				{
-					DestroyBeam( beam );
-					_activeBeams.RemoveAt( i );
+			foreach ( var pc in Scene.GetAllComponents<PlayerController>() )
+			{
+				if ( pc == null || !pc.IsValid() )
 					continue;
-				}
 
-				foreach ( var pc in Scene.GetAllComponents<PlayerController>() )
-				{
-					if ( pc == null || !pc.IsValid() )
-						continue;
+				var playerObj = pc.GameObject;
+				if ( beam.AlreadyHit.Contains( playerObj ) )
+					continue;
 
-					var playerObj = pc.GameObject;
-					if ( beam.AlreadyHit.Contains( playerObj ) )
-						continue;
+				var health = playerObj.Components.Get<PlayerHealth>();
+				if ( health == null || health.IsDead )
+					continue;
 
-					var health = playerObj.Components.Get<PlayerHealth>();
-					if ( health == null || health.IsDead )
-						continue;
+				var playerCenter = playerObj.WorldPosition + Vector3.Up * BeamPlayerCenterHeight;
 
-					var playerCenter = playerObj.WorldPosition + Vector3.Up * BeamPlayerCenterHeight;
+				var segDir = nextPos - prevPos;
+				float segLen = segDir.Length;
+				if ( segLen < 0.0001f )
+					continue;
 
-					var segDir = nextPos - prevPos;
-					float segLen = segDir.Length;
-					if ( segLen < 0.0001f )
-						continue;
+				var segNormal = segDir / segLen;
+				var toPlayer = playerCenter - prevPos;
+				float along = Vector3.Dot( toPlayer, segNormal );
+				along = MathF.Max( 0f, MathF.Min( segLen, along ) );
 
-					var segNormal = segDir / segLen;
-					var toPlayer = playerCenter - prevPos;
-					float along = Vector3.Dot( toPlayer, segNormal );
-					along = MathF.Max( 0f, MathF.Min( segLen, along ) );
+				var closestPoint = prevPos + segNormal * along;
+				var diff = playerCenter - closestPoint;
 
-					var closestPoint = prevPos + segNormal * along;
-					var diff = playerCenter - closestPoint;
+				float horiz = MathF.Sqrt( diff.x * diff.x + diff.y * diff.y );
+				float vert = MathF.Abs( diff.z );
 
-					float horiz = MathF.Sqrt( diff.x * diff.x + diff.y * diff.y );
-					float vert = MathF.Abs( diff.z );
+				if ( horiz > BeamRadius )
+					continue;
+				if ( vert > BeamVerticalHitTolerance )
+					continue;
 
-					if ( horiz > BeamRadius )
-						continue;
-					if ( vert > BeamVerticalHitTolerance )
-						continue;
-
-					ApplyBeamDamageToPlayer( playerObj, beam.Damage );
-					beam.AlreadyHit.Add( playerObj );
-				}
+				ApplyBeamDamageToPlayer( playerObj, beam.Damage );
+				beam.AlreadyHit.Add( playerObj );
 			}
 
 			beam.Position = nextPos;
 			beam.DistanceTraveled += step;
 			beam.Lifetime -= Time.Delta;
 
-			if ( beam.VisualObject != null && beam.VisualObject.IsValid() )
-			{
-				beam.VisualObject.WorldPosition = beam.Position;
-				beam.VisualObject.WorldRotation = Rotation.LookAt( beam.Direction, Vector3.Up );
-			}
-
 			if ( beam.DistanceTraveled >= BeamRange || beam.Lifetime <= 0f )
 			{
-				DestroyBeam( beam );
 				_activeBeams.RemoveAt( i );
 			}
 		}
 	}
 
-	void DestroyBeam( ActiveBeam beam )
+	void UpdateBeamVisuals()
 	{
-		if ( beam.VisualObject != null && beam.VisualObject.IsValid() )
-			beam.VisualObject.Destroy();
+		if ( _activeBeamVisuals.Count == 0 )
+			return;
+
+		for ( int i = _activeBeamVisuals.Count - 1; i >= 0; i-- )
+		{
+			var visual = _activeBeamVisuals[i];
+
+			float step = BeamSpeed * Time.Delta;
+			visual.Position += visual.Direction * step;
+			visual.DistanceTraveled += step;
+			visual.Lifetime -= Time.Delta;
+
+			if ( visual.VisualObject != null && visual.VisualObject.IsValid() )
+			{
+				visual.VisualObject.WorldPosition = visual.Position;
+				visual.VisualObject.WorldRotation = Rotation.LookAt( visual.Direction, Vector3.Up );
+			}
+
+			if ( visual.DistanceTraveled >= BeamRange || visual.Lifetime <= 0f )
+			{
+				if ( visual.VisualObject != null && visual.VisualObject.IsValid() )
+					visual.VisualObject.Destroy();
+
+				_activeBeamVisuals.RemoveAt( i );
+			}
+		}
 	}
 
 	void ApplyBeamDamageToPlayer( GameObject playerObj, int rawDamage )
