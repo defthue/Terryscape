@@ -650,6 +650,8 @@ public sealed class Inventory : Component
 		if ( skills != null && !skills.CanEquip( def ) )
 		{
 			GameLog.Add( $"You need {def.SkillRequired} level {def.LevelRequired} to equip {def.Name}.", "#c86464" );
+			GameLog.RequestFocusAllTab();
+			SoundLibrary.PlayCantUse();
 			return false;
 		}
 
@@ -755,6 +757,8 @@ public sealed class Inventory : Component
 		if ( skills != null && !skills.CanEquip( def ) )
 		{
 			GameLog.Add( $"You need {def.SkillRequired} level {def.LevelRequired} to equip {def.Name}.", "#c86464" );
+			GameLog.RequestFocusAllTab();
+			SoundLibrary.PlayCantUse();
 			return false;
 		}
 

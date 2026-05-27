@@ -152,6 +152,10 @@
 		if ( id == ItemId.None )
 			return "";
 
+		if ( id == ItemId.Gem ) return "/ItemIcons/FineGem.vtex";
+		if ( id == ItemId.Ring ) return "/ItemIcons/FineRing.vtex";
+		if ( id == ItemId.Amulet ) return "/ItemIcons/FineAmulet.vtex";
+
 		return $"/ItemIcons/{id}.vtex";
 	}
 

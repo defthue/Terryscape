@@ -806,6 +806,22 @@ root {
 			display: flex;
 		}
 	}
+
+	&.maxed {
+		border-color: #f0c040;
+		box-shadow: 0 0 14px #f0c04088, inset 0 0 8px #f0c04022;
+		background: linear-gradient(180deg, #2a2010, #1a150e);
+
+		.skill-level {
+			color: #ffd960;
+			text-shadow: 0 0 6px #f0c04088;
+		}
+
+		&:hover {
+			border-color: #ffd960;
+			box-shadow: 0 0 18px #ffd960aa, inset 0 0 8px #f0c04033;
+		}
+	}
 }
 
 .skill-tooltip {

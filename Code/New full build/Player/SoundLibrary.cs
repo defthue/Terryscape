@@ -22,6 +22,13 @@ public sealed class SoundLibrary : Component
 	const string DARK_BLAST = "Sounds/DarkBlast.sound";
 	const string LIGHTNING_BOLT = "Sounds/LightningBolt.sound";
 	const string EQUIP = "Sounds/Equip.sound";
+	const string CANT_USE = "Sounds/CantUse.sound";
+	const string SWORD_BOSS = "Sounds/SwordBoss.sound";
+	const string BOSS_ROAR = "Sounds/BossRoar.sound";
+	const string BOSS_KICK = "Sounds/BossKick.sound";
+	const string BOSS_DEATH_GRASP = "Sounds/BossDeathGrasp.sound";
+	const string BOSS_DEATH_KNEES = "Sounds/BossDeathKnees.sound";
+	const string BOSS_DEATH_FALL = "Sounds/BossDeathFall.sound";
 	const string TELEPORT = "Sounds/TeleportSound.sound";
 	const string SMALL_MONSTER_ATTACK = "Sounds/SmallMonsterAttack.sound";
 	const string LARGE_MONSTER_ATTACK = "Sounds/LargeMonsterAttack.sound";
@@ -192,6 +199,60 @@ public sealed class SoundLibrary : Component
 		instance.BroadcastWorldSoundForAll( MONSTER_DEATH, position );
 	}
 
+	public static void PlaySwordBoss( Vector3 position )
+	{
+		var instance = GetInstance();
+		if ( instance == null )
+			return;
+
+		instance.BroadcastWorldSoundForAll( SWORD_BOSS, position );
+	}
+
+	public static void PlayBossRoar( Vector3 position )
+	{
+		var instance = GetInstance();
+		if ( instance == null )
+			return;
+
+		instance.BroadcastWorldSoundForAll( BOSS_ROAR, position );
+	}
+
+	public static void PlayBossKick( Vector3 position )
+	{
+		var instance = GetInstance();
+		if ( instance == null )
+			return;
+
+		instance.BroadcastWorldSoundForAll( BOSS_KICK, position );
+	}
+
+	public static void PlayBossDeathGrasp( Vector3 position )
+	{
+		var instance = GetInstance();
+		if ( instance == null )
+			return;
+
+		instance.BroadcastWorldSoundForAll( BOSS_DEATH_GRASP, position );
+	}
+
+	public static void PlayBossDeathKnees( Vector3 position )
+	{
+		var instance = GetInstance();
+		if ( instance == null )
+			return;
+
+		instance.BroadcastWorldSoundForAll( BOSS_DEATH_KNEES, position );
+	}
+
+	public static void PlayBossDeathFall( Vector3 position )
+	{
+		var instance = GetInstance();
+		if ( instance == null )
+			return;
+
+		instance.BroadcastWorldSoundForAll( BOSS_DEATH_FALL, position );
+	}
+
 	public static void PlaySmallMonsterAttack( Vector3 position )
 	{
 		var instance = GetInstance();
@@ -312,6 +373,11 @@ public sealed class SoundLibrary : Component
 	public static void PlayEquip()
 	{
 		Sound.Play( EQUIP, GetLocalListenerPosition() );
+	}
+
+	public static void PlayCantUse()
+	{
+		Sound.Play( CANT_USE, GetLocalListenerPosition() );
 	}
 
 	public static void StartFurnaceLoop()

@@ -237,7 +237,7 @@
 				<div class="skills-list">
 					@foreach ( var skill in SkillEntries )
 					{
-						<div class="skill-row">
+						<div class="skill-row @(skill.Level >= 50 ? "maxed" : "")">
 							<div class="skill-level">@skill.Level</div>
 							<div class="skill-icon-box">@skill.Icon</div>
 							<div class="skill-name">@skill.Name</div>
@@ -488,6 +488,10 @@
 	{
 		if ( id == ItemId.None )
 			return "";
+
+		if ( id == ItemId.Gem ) return "/ItemIcons/FineGem.vtex";
+		if ( id == ItemId.Ring ) return "/ItemIcons/FineRing.vtex";
+		if ( id == ItemId.Amulet ) return "/ItemIcons/FineAmulet.vtex";
 
 		return $"/ItemIcons/{id}.vtex";
 	}
@@ -1023,6 +1027,12 @@
 
 	protected override void OnUpdate()
 	{
+		if ( GameLog.FocusAllTabRequested )
+		{
+			LogTab = 0;
+			GameLog.ConsumeFocusAllTabRequest();
+		}
+
 		StateHasChanged();
 
 		if ( PickedUpSlotIndex >= 0 )

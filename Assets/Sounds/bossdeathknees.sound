@@ -1,11 +1,11 @@
 {
   "UI": false,
-  "Volume": "0.5",
+  "Volume": "1",
   "Pitch": "1",
   "Decibels": 70,
   "SelectionMode": "Random",
   "Sounds": [
-    "sounds/teleportsound.vsnd"
+    "sounds/bossdeathknees.vsnd"
   ],
   "Occlusion": true,
   "AirAbsorption": true,

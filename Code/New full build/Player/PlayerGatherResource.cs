@@ -513,6 +513,7 @@ public sealed class PlayerGatherResource : Component
 			{
 				_autoGatherNode = null;
 				GameLog.Add( "You need empty hands to forage.", "#c86464" );
+				GameLog.RequestFocusAllTab();
 				TriggerSwingAnimation( false );
 				SoundLibrary.PlayHitNothing();
 				return;
@@ -522,6 +523,7 @@ public sealed class PlayerGatherResource : Component
 			{
 				_autoGatherNode = null;
 				GameLog.Add( $"You need Enchanting level {node.RequiredLevel} to gather this.", "#c86464" );
+				GameLog.RequestFocusAllTab();
 				TriggerSwingAnimation( false );
 				SoundLibrary.PlayHitNothing();
 				return;
@@ -540,6 +542,7 @@ public sealed class PlayerGatherResource : Component
 		{
 			_autoGatherNode = null;
 			GameLog.Add( "You can't harvest resources with a weapon!", "#c86464" );
+			GameLog.RequestFocusAllTab();
 			TriggerSwingAnimation( false );
 			SoundLibrary.PlayHitNothing();
 			return;
@@ -551,6 +554,7 @@ public sealed class PlayerGatherResource : Component
 			{
 				_autoGatherNode = null;
 				GameLog.Add( "You need a hatchet to harvest this.", "#c86464" );
+				GameLog.RequestFocusAllTab();
 				TriggerSwingAnimation( false );
 				SoundLibrary.PlayHitNothing();
 				return;
@@ -560,6 +564,7 @@ public sealed class PlayerGatherResource : Component
 			{
 				_autoGatherNode = null;
 				GameLog.Add( "You need a pickaxe to harvest this.", "#c86464" );
+				GameLog.RequestFocusAllTab();
 				TriggerSwingAnimation( false );
 				SoundLibrary.PlayHitNothing();
 				return;
@@ -570,6 +575,7 @@ public sealed class PlayerGatherResource : Component
 			{
 				_autoGatherNode = null;
 				GameLog.Add( $"You need a tier {requiredToolTier}+ tool to harvest this.", "#c86464" );
+				GameLog.RequestFocusAllTab();
 				TriggerSwingAnimation( false );
 				SoundLibrary.PlayHitNothing();
 				return;
@@ -579,6 +585,7 @@ public sealed class PlayerGatherResource : Component
 			{
 				_autoGatherNode = null;
 				GameLog.Add( $"You need {node.GetSkillType()} level {node.RequiredLevel} to harvest this.", "#c86464" );
+				GameLog.RequestFocusAllTab();
 				TriggerSwingAnimation( false );
 				SoundLibrary.PlayHitNothing();
 				return;
@@ -591,6 +598,7 @@ public sealed class PlayerGatherResource : Component
 			{
 				_autoGatherNode = null;
 				GameLog.Add( "You can't chop trees with a pickaxe.", "#c86464" );
+				GameLog.RequestFocusAllTab();
 				TriggerSwingAnimation( false );
 				SoundLibrary.PlayHitNothing();
 				return;
@@ -600,6 +608,7 @@ public sealed class PlayerGatherResource : Component
 			{
 				_autoGatherNode = null;
 				GameLog.Add( "You can't mine rocks with a hatchet.", "#c86464" );
+				GameLog.RequestFocusAllTab();
 				TriggerSwingAnimation( false );
 				SoundLibrary.PlayHitNothing();
 				return;

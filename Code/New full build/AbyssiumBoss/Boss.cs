@@ -241,6 +241,7 @@ public sealed class Boss : Component
 	bool _wasMovingLastFrame;
 	float _deathAnimTimer;
 	bool _deathAnimFinished;
+	int _deathGeneration;
 
 	HashSet<ulong> _contributorSteamIds = new();
 
@@ -355,6 +356,7 @@ public sealed class Boss : Component
 		_battlecryPlayed = true;
 		BroadcastAnimBool( BattlecryParam, true );
 		SetMoving( false, false );
+		SoundLibrary.PlayBossRoar( WorldPosition );
 	}
 
 	void UpdateBattlecry()
@@ -561,6 +563,15 @@ public sealed class Boss : Component
 			return;
 		}
 
+		if ( attack.Type == BossAttackType.Kick )
+		{
+			SoundLibrary.PlayBossKick( WorldPosition );
+		}
+		else
+		{
+			SoundLibrary.PlaySwordBoss( WorldPosition );
+		}
+
 		var hitPlayers = ScanHitbox( hit );
 
 		if ( PrimaryTarget != null && PrimaryTarget.IsValid() && !hitPlayers.Contains( PrimaryTarget ) )
@@ -687,6 +698,8 @@ public sealed class Boss : Component
 		};
 
 		_activeBeams.Add( beam );
+
+		SoundLibrary.PlayMagicMissile( origin );
 	}
 
 	Vector3 GetBeamSpawnPosition()
@@ -1183,6 +1196,27 @@ public sealed class Boss : Component
 		BroadcastAnimBool( "b_death", true );
 		AwardLootToContributors();
 		BroadcastDeathStart();
+
+		_deathGeneration++;
+		PlayDeathSoundSequence( _deathGeneration );
+	}
+
+	async void PlayDeathSoundSequence( int generation )
+	{
+		await Task.Yield();
+		if ( !IsValid || !IsDead || generation != _deathGeneration )
+			return;
+		SoundLibrary.PlayBossDeathGrasp( WorldPosition );
+
+		await Task.DelaySeconds( 49f / AnimFrameRate );
+		if ( !IsValid || !IsDead || generation != _deathGeneration )
+			return;
+		SoundLibrary.PlayBossDeathKnees( WorldPosition );
+
+		await Task.DelaySeconds( ( 93f - 49f ) / AnimFrameRate );
+		if ( !IsValid || !IsDead || generation != _deathGeneration )
+			return;
+		SoundLibrary.PlayBossDeathFall( WorldPosition );
 	}
 
 	[Rpc.Broadcast]
@@ -1365,6 +1399,7 @@ public sealed class Boss : Component
 		BroadcastAnimBool( "is_running", running );
 	}
 
+	[Rpc.Broadcast]
 	void BroadcastAnimBool( string param, bool value )
 	{
 		if ( string.IsNullOrEmpty( param ) )

@@ -17,6 +17,18 @@ public static class GameLog
 
 	static long _nextSequence = 0;
 
+	public static bool FocusAllTabRequested { get; private set; } = false;
+
+	public static void RequestFocusAllTab()
+	{
+		FocusAllTabRequested = true;
+	}
+
+	public static void ConsumeFocusAllTabRequest()
+	{
+		FocusAllTabRequested = false;
+	}
+
 	public static void Add( string text, string color = "#e8e8e8" )
 	{
 		Messages.Add( new LogMessage

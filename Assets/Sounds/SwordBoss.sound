@@ -1,11 +1,23 @@
 {
   "UI": false,
-  "Volume": "0.5",
+  "Volume": "0.800000012",
   "Pitch": "1",
   "Decibels": 70,
   "SelectionMode": "Random",
   "Sounds": [
-    "sounds/teleportsound.vsnd"
+    "sounds/swordboss01.vsnd",
+    "sounds/swordboss02.vsnd",
+    "sounds/swordboss03.vsnd",
+    "sounds/swordboss04.vsnd",
+    "sounds/swordboss05.vsnd",
+    "sounds/swordboss06.vsnd",
+    "sounds/swordboss07.vsnd",
+    "sounds/swordboss08.vsnd",
+    "sounds/swordboss09.vsnd",
+    "sounds/swordboss10.vsnd",
+    "sounds/swordboss11.vsnd",
+    "sounds/swordboss12.vsnd",
+    "sounds/swordboss13.vsnd"
   ],
   "Occlusion": true,
   "AirAbsorption": true,

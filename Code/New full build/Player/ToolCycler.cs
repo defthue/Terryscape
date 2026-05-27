@@ -63,30 +63,24 @@ public sealed class ToolCycler : Component
 
 			var slot = inventory.GetSlot( candidate );
 
-			// Skip slots holding armor — pass over without action.
+			// Skip armor — pass over without action.
 			if ( slot != null && slot.IsUnique && IsArmor( slot.Unique.ItemId ) )
 				continue;
 
-			// Found a valid stop: equip unique non-armor, or empty hands for anything else.
-			ActOnSlot( inventory, candidate, slot );
-			return;
-		}
-	}
+			// Skip stackables (potions, arrows, resources) and empty slots — they aren't tools.
+			if ( slot == null || slot.IsEmpty || slot.IsStack )
+				continue;
 
-	void ActOnSlot( Inventory inventory, int slotIndex, Inventory.InventorySlot slot )
-	{
-		if ( slot == null || slot.IsEmpty || slot.IsStack )
-		{
-			// Stackable or empty → empty hands.
-			if ( inventory.GetEquipped( EquipSlot.Weapon ) != ItemId.None )
-				inventory.UnequipUnique( EquipSlot.Weapon );
-			return;
+			if ( slot.IsUnique )
+			{
+				inventory.EquipUniqueAtSlot( candidate );
+				return;
+			}
 		}
 
-		if ( slot.IsUnique )
-		{
-			inventory.EquipUniqueAtSlot( slotIndex );
-		}
+		// Cycled through everything without finding a tool — go bare-hands.
+		if ( inventory.GetEquipped( EquipSlot.Weapon ) != ItemId.None )
+			inventory.UnequipUnique( EquipSlot.Weapon );
 	}
 
 	static bool IsArmor( ItemId id )
