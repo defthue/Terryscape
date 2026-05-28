@@ -82,39 +82,31 @@
 			<div class="health-bar-container">
 				<div class="health-bar-fill" style="width: @HealthPercent%;"></div>
 				<div class="health-bar-text">@CurrentHealth / @MaxHealth HP</div>
+				@if ( ActiveBuffs.Count > 0 || PotionCooldownRemaining > 0 )
+				{
+					<div class="buff-row">
+						@foreach ( var buff in ActiveBuffs )
+						{
+							<div class="buff-icon" style="color: @GetBuffColor( buff.Type );">
+								<div class="buff-timer">@((int)buff.Remaining)s</div>
+								<div class="buff-tooltip">@buff.Type +@((int)buff.Percent)%</div>
+							</div>
+						}
+						@if ( PotionCooldownRemaining > 0 )
+						{
+							<div class="buff-icon">
+								<div class="buff-icon-symbol">🚫</div>
+								<div class="buff-timer">@((int)PotionCooldownRemaining)s</div>
+								<div class="buff-tooltip">Potion Cooldown</div>
+							</div>
+						}
+					</div>
+				}
 			</div>
 			<div class="mana-bar-container">
 				<div class="mana-bar-fill" style="width: @ManaPercent%;"></div>
 				<div class="mana-bar-text">@CurrentMana / @MaxMana MP @(IsDrinking ? "— Drinking..." : "")</div>
 			</div>
-			@if ( ActiveBuffs.Count > 0 || ManaSicknessRemaining > 0 || PotionCooldownRemaining > 0 )
-			{
-				<div class="buff-row">
-					@foreach ( var buff in ActiveBuffs )
-					{
-						<div class="buff-icon" style="background: @GetBuffColor( buff.Type );">
-							<div class="buff-timer">@((int)buff.Remaining)s</div>
-							<div class="buff-tooltip">@buff.Type +@((int)buff.Percent)%</div>
-						</div>
-					}
-					@if ( ManaSicknessRemaining > 0 )
-					{
-						<div class="buff-icon mana-sickness-icon">
-							<div class="buff-icon-symbol">💧</div>
-							<div class="buff-timer">@((int)ManaSicknessRemaining)s</div>
-							<div class="buff-tooltip">Mana Sickness — -25% magic damage</div>
-						</div>
-					}
-					@if ( PotionCooldownRemaining > 0 )
-					{
-						<div class="buff-icon potion-cooldown-icon">
-							<div class="buff-icon-symbol">🚫</div>
-							<div class="buff-timer">@((int)PotionCooldownRemaining)s</div>
-							<div class="buff-tooltip">Potion Cooldown</div>
-						</div>
-					}
-				</div>
-			}
 			@if ( IsHealTicking )
 			{
 				<div class="healing-indicator">Healing...</div>
@@ -433,7 +425,6 @@
 	int ManaPercent { get; set; }
 	bool IsDrinking { get; set; }
 	bool IsHealTicking { get; set; }
-	float ManaSicknessRemaining { get; set; }
 	float PotionCooldownRemaining { get; set; }
 	List<ActiveBuff> ActiveBuffs { get; set; } = new();
 
@@ -819,14 +810,12 @@
 			CurrentMana = mana.CurrentMana;
 			MaxMana = mana.MaxMana;
 			ManaPercent = MaxMana > 0 ? (int)( ( (float)CurrentMana / MaxMana ) * 100f ) : 0;
-			ManaSicknessRemaining = mana.ManaSicknessRemaining;
 		}
 		else
 		{
 			CurrentMana = 0;
 			MaxMana = 0;
 			ManaPercent = 0;
-			ManaSicknessRemaining = 0f;
 		}
 
 		if ( potions != null )
@@ -1115,7 +1104,6 @@
 			MaxMana,
 			IsDrinking,
 			IsHealTicking,
-			(int)ManaSicknessRemaining,
 			(int)PotionCooldownRemaining,
 			EquipmentSlots.Count > 0 ? EquipmentSlots[0].ItemName ?? "" : "",
 			PlayerGatherResource.UIOpen,

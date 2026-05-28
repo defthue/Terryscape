@@ -159,6 +159,16 @@ public sealed class PotionSystem : Component
 			return false;
 		}
 
+		if ( potionId == ItemId.LesserHealingPotion || potionId == ItemId.HealingPotion || potionId == ItemId.GreaterHealingPotion )
+		{
+			var health = Components.Get<PlayerHealth>();
+			if ( health != null && health.CurrentHealth >= health.MaxHealth )
+			{
+				GameLog.Add( "You're already at full health.", "#c86464" );
+				return false;
+			}
+		}
+
 		var def = ItemDatabase.Get( potionId );
 		if ( def == null || def.Type != ItemType.Potion )
 			return false;

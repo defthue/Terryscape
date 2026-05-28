@@ -109,6 +109,9 @@ public sealed class Skills : Component
 				GameManager.Instance?.BroadcastLevelMilestone( playerName, skillName, data.Level );
 			}
 
+			if ( skill == SkillType.Magic )
+				AnnounceSpellUnlocksForLevel( data.Level );
+
 			required = GetXpRequired( data.Level );
 		}
 
@@ -116,6 +119,17 @@ public sealed class Skills : Component
 			PlayerPersistence.Local?.SaveNow( SaveSection.Skills | SaveSection.Stats );
 		else
 			PlayerPersistence.Local?.MarkDirty( SaveSection.Skills | SaveSection.Stats );
+	}
+
+	void AnnounceSpellUnlocksForLevel( int magicLevel )
+	{
+		foreach ( var def in SpellDatabase.GetAll() )
+		{
+			if ( def.RequiredLevel != magicLevel )
+				continue;
+
+			GameLog.Add( $"New spell unlocked: {def.Name}! Open your spellbook to bind it.", "#a080d0" );
+		}
 	}
 
 	public void AddCombatXp( SkillType combatStyle, int amount )

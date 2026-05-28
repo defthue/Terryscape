@@ -186,7 +186,7 @@ root {
 	border: 1px solid #3a3020;
 	border-radius: 4px;
 	position: relative;
-	overflow: hidden;
+	overflow: visible;
 	margin-bottom: 6px;
 }
 
@@ -246,56 +246,52 @@ root {
 }
 
 .buff-row {
+	position: absolute;
+	left: 6px;
+	top: 0;
+	bottom: 0;
 	display: flex;
 	flex-direction: row;
-	gap: 4px;
-	flex-wrap: wrap;
-	padding: 4px 0;
+	align-items: center;
+	gap: 8px;
+	z-index: 3;
+	pointer-events: none;
 }
 
 .buff-icon {
-	width: 32px;
-	height: 32px;
-	border-radius: 4px;
 	display: flex;
+	flex-direction: row;
 	align-items: center;
-	justify-content: center;
+	gap: 2px;
 	position: relative;
-	border: 1px solid #ffffff20;
+	pointer-events: all;
 
 	&:hover {
 		.buff-tooltip {
 			display: flex;
 		}
 	}
-
-	&.mana-sickness-icon {
-		background: #2a3a5a;
-		border-color: #4a5a7a;
-	}
-
-	&.potion-cooldown-icon {
-		background: #3a2a2a;
-		border-color: #5a4040;
-	}
 }
 
 .buff-icon-symbol {
-	position: absolute;
-	top: 2px;
-	left: 0;
-	right: 0;
 	font-size: 14px;
-	text-align: center;
+	line-height: 1;
 	pointer-events: none;
-	opacity: 0.85;
+	text-shadow: 0 0 3px #000, 0 1px 2px #000;
 }
 
 .buff-timer {
 	font-size: 13px;
-	font-weight: 600;
+	font-weight: 700;
+	line-height: 1;
 	color: #ffffff;
-	text-shadow: 0 1px 3px #000000cc;
+	text-shadow:
+		-1px -1px 0 #000,
+		 1px -1px 0 #000,
+		 1px  1px 0 #000,
+		-1px  1px 0 #000,
+		 0 0 3px #000;
+	white-space: nowrap;
 }
 
 .buff-tooltip {

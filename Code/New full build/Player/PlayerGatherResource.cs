@@ -436,7 +436,8 @@ public sealed class PlayerGatherResource : Component
 		if ( manaCombat != null )
 			manaCombat.MarkCombat();
 
-		GameLog.Add( $"You hit {monster.MonsterName} for {damage} damage{( isCrit ? " (CRIT!)" : "" )}. ({monster.CurrentHealth}/{monster.MaxHealth} HP left)", "#a8c8a8" );
+		int monsterHpLeft = System.Math.Max( 0, monster.CurrentHealth - damage );
+		GameLog.Add( $"You hit {monster.MonsterName} for {damage} damage{( isCrit ? " (CRIT!)" : "" )}. ({monsterHpLeft}/{monster.MaxHealth} HP left)", "#a8c8a8" );
 
 		SoundLibrary.PlayMonsterHit( monster.WorldPosition );
 
@@ -491,7 +492,8 @@ public sealed class PlayerGatherResource : Component
 		if ( manaCombat != null )
 			manaCombat.MarkCombat();
 
-		GameLog.Add( $"You hit {boss.BossName} for {damage} damage{( isCrit ? " (CRIT!)" : "" )}. ({boss.CurrentHealth}/{boss.MaxHealth} HP left)", "#a8c8a8" );
+		int bossHpLeft = System.Math.Max( 0, boss.CurrentHealth - damage );
+		GameLog.Add( $"You hit {boss.BossName} for {damage} damage{( isCrit ? " (CRIT!)" : "" )}. ({bossHpLeft}/{boss.MaxHealth} HP left)", "#a8c8a8" );
 
 		SoundLibrary.PlayMonsterHit( boss.WorldPosition );
 

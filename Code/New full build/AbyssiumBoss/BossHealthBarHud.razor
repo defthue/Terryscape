@@ -4,22 +4,29 @@
 @inherits PanelComponent
 
 <root>
-	@{
-		var boss = GetActiveBoss();
-	}
-	@if ( boss != null && !boss.IsDead )
+	@foreach ( var boss in GetVisibleBosses() )
 	{
-		<div class="boss-bar-container">
-			<div class="boss-name">@(boss.BossName)</div>
-			<div class="boss-bar-bg">
-				<div class="boss-bar-fill" style="width: @(GetHealthPercent(boss))%;"></div>
-				<div class="boss-bar-text">@(boss.CurrentHealth) / @(boss.MaxHealth)</div>
+		@if ( IsInFrontOfCamera( boss ) )
+		{
+			var screenPos = GetScreenPosition( boss );
+			bool protectedNow = HasProtectedPillar( boss );
+			<div class="boss-plate" style="left: @(screenPos.x.ToString("0.##"))%; top: @(screenPos.y.ToString("0.##"))%;">
+				<div class="boss-crown">♛</div>
+				<div class="boss-name">@(boss.BossName)</div>
+				<div class="boss-bar-frame">
+					<div class="boss-bar-cap left"></div>
+					<div class="boss-bar-bg">
+						<div class="boss-bar-fill @(protectedNow ? "protected-fill" : "")" style="width: @(GetHealthPercent( boss ))%;"></div>
+						<div class="boss-bar-text">@(boss.CurrentHealth) / @(boss.MaxHealth)</div>
+					</div>
+					<div class="boss-bar-cap right"></div>
+				</div>
+				@if ( protectedNow )
+				{
+					<div class="boss-protected">✦ PROTECTED ✦</div>
+				}
 			</div>
-			@if ( HasProtectedPillar(boss) )
-			{
-				<div class="boss-protected">✦ PROTECTED ✦</div>
-			}
-		</div>
+		}
 	}
 </root>
 
@@ -27,30 +34,33 @@
 {
 	const float VisibilityRange = 1500f;
 
-	Boss GetActiveBoss()
+	System.Collections.Generic.List<Boss> GetVisibleBosses()
 	{
 		var player = PlayerHelper.GetLocalPlayer();
 		if ( player == null )
-			return null;
+			return new();
 
 		var playerPos = player.WorldPosition;
-		Boss closest = null;
-		float bestDistSq = VisibilityRange * VisibilityRange;
+		var bosses = Scene?.GetAllComponents<Boss>().ToList() ?? new();
 
-		foreach ( var boss in Scene.GetAllComponents<Boss>() )
-		{
-			if ( boss == null || boss.IsDead )
-				continue;
+		return bosses.FindAll( b =>
+			b != null &&
+			!b.IsDead &&
+			Vector3.DistanceBetween( b.WorldPosition, playerPos ) <= VisibilityRange
+		);
+	}
 
-			float distSq = ( boss.WorldPosition - playerPos ).LengthSquared;
-			if ( distSq < bestDistSq )
-			{
-				bestDistSq = distSq;
-				closest = boss;
-			}
-		}
+	Vector2 GetScreenPosition( Boss boss )
+	{
+		var worldPos = boss.WorldPosition + Vector3.Up * 160f;
+		var normal = Scene.Camera.PointToScreenNormal( worldPos );
+		return new Vector2( normal.x * 100f, normal.y * 100f );
+	}
 
-		return closest;
+	bool IsInFrontOfCamera( Boss boss )
+	{
+		var toBoss = boss.WorldPosition - Scene.Camera.WorldPosition;
+		return Vector3.Dot( Scene.Camera.WorldRotation.Forward, toBoss ) > 0;
 	}
 
 	int GetHealthPercent( Boss boss )
@@ -79,10 +89,12 @@
 
 	protected override int BuildHash()
 	{
-		var boss = GetActiveBoss();
-		if ( boss == null )
-			return 0;
-
-		return ( boss.CurrentHealth, boss.MaxHealth, boss.IsDead, HasProtectedPillar( boss ), boss.BossName ).GetHashCode();
+		int hash = 0;
+		foreach ( var b in GetVisibleBosses() )
+		{
+			var pos = GetScreenPosition( b );
+			hash = ( hash, b.CurrentHealth, b.MaxHealth, b.IsDead, HasProtectedPillar( b ), (int)pos.x, (int)pos.y ).GetHashCode();
+		}
+		return hash;
 	}
 }

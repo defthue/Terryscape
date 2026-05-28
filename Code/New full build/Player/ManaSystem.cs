@@ -10,17 +10,13 @@ public sealed class ManaSystem : Component
 
 	[Property] public float CombatStateDuration { get; set; } = 8f;
 
-	[Property] public float ManaSicknessDuration { get; set; } = 10f;
-
 	[Sync] public int CurrentMana { get; set; }
 	[Sync] public int MaxMana { get; set; }
-	[Sync] public float ManaSicknessRemaining { get; set; }
 
 	float _regenAccum = 0f;
 	float _lastCombatTime = -100f;
 
 	public bool IsInCombat => Time.Now - _lastCombatTime < CombatStateDuration;
-	public bool HasManaSickness => ManaSicknessRemaining > 0f;
 
 	public float GetManaDamageMultiplier()
 	{
@@ -45,14 +41,7 @@ public sealed class ManaSystem : Component
 
 		UpdateMaxMana();
 
-		if ( ManaSicknessRemaining > 0f )
-		{
-			ManaSicknessRemaining -= Time.Delta;
-			if ( ManaSicknessRemaining < 0f )
-				ManaSicknessRemaining = 0f;
-		}
-
-		if ( CurrentMana < MaxMana && !HasManaSickness )
+		if ( CurrentMana < MaxMana )
 		{
 			float baseRate = IsInCombat ? CombatRegenRate : OocRegenRate;
 
@@ -103,11 +92,6 @@ public sealed class ManaSystem : Component
 		CurrentMana = System.Math.Min( CurrentMana + amount, MaxMana );
 	}
 
-	public void ApplyManaSickness()
-	{
-		ManaSicknessRemaining = ManaSicknessDuration;
-	}
-
 	public bool TryDrinkManaPotion( ItemId potionId )
 	{
 		var inventory = Components.Get<Inventory>();
@@ -156,16 +140,21 @@ public sealed class ManaSystem : Component
 			return false;
 		}
 
+		if ( CurrentMana >= MaxMana )
+		{
+			GameLog.Add( "You're already at full mana.", "#c86464" );
+			return false;
+		}
+
 		inventory.RemoveFromSlot( slotIndex, 1 );
 		RestoreMana( restoreAmount );
-		ApplyManaSickness();
 
 		if ( potionSystem != null )
 			potionSystem.StartPotionCooldown();
 
 		var def = ItemDatabase.Get( potionId );
 		string name = def != null ? def.Name : "Mana Potion";
-		GameLog.Add( $"You drink a {name}. Restored {restoreAmount} mana. Mana regen disabled for {(int)ManaSicknessDuration}s.", "#4a8ac8" );
+		GameLog.Add( $"You drink a {name}. Restored {restoreAmount} mana.", "#4a8ac8" );
 
 		return true;
 	}

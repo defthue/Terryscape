@@ -49,25 +49,32 @@ public sealed class ToolCycler : Component
 	void CycleToNext( Inventory inventory )
 	{
 		int hotbarSize = Inventory.HotbarSize;
+		int emptyHandsPos = hotbarSize;
+		int totalPositions = hotbarSize + 1;
 
-		int startSlot = inventory.GetEquippedSlotIndex( EquipSlot.Weapon );
-		if ( startSlot < 0 || startSlot >= hotbarSize )
-			startSlot = -1;
+		int equippedSlot = inventory.GetEquippedSlotIndex( EquipSlot.Weapon );
+		int currentPos;
+		if ( equippedSlot >= 0 && equippedSlot < hotbarSize )
+			currentPos = equippedSlot;
+		else
+			currentPos = emptyHandsPos;
 
-		// Try each of the hotbar positions starting one after the current.
-		for ( int i = 1; i <= hotbarSize; i++ )
+		for ( int i = 1; i <= totalPositions; i++ )
 		{
-			int candidate = ( startSlot + i ) % hotbarSize;
-			if ( candidate < 0 )
-				candidate += hotbarSize;
+			int candidate = ( currentPos + i ) % totalPositions;
+
+			if ( candidate == emptyHandsPos )
+			{
+				if ( inventory.GetEquipped( EquipSlot.Weapon ) != ItemId.None )
+					inventory.UnequipUnique( EquipSlot.Weapon );
+				return;
+			}
 
 			var slot = inventory.GetSlot( candidate );
 
-			// Skip armor — pass over without action.
 			if ( slot != null && slot.IsUnique && IsArmor( slot.Unique.ItemId ) )
 				continue;
 
-			// Skip stackables (potions, arrows, resources) and empty slots — they aren't tools.
 			if ( slot == null || slot.IsEmpty || slot.IsStack )
 				continue;
 
@@ -77,10 +84,6 @@ public sealed class ToolCycler : Component
 				return;
 			}
 		}
-
-		// Cycled through everything without finding a tool — go bare-hands.
-		if ( inventory.GetEquipped( EquipSlot.Weapon ) != ItemId.None )
-			inventory.UnequipUnique( EquipSlot.Weapon );
 	}
 
 	static bool IsArmor( ItemId id )

@@ -26,11 +26,21 @@ public sealed class KnockbackReceiver : Component
 		if ( direction.LengthSquared < 0.0001f )
 			return;
 
+		StunTimeRemaining = MathF.Max( StunTimeRemaining, stunDuration );
+		TotalTimeRemaining = MathF.Max( TotalTimeRemaining, totalDuration );
+
 		var horizontal = direction.WithZ( 0f ).Normal * force;
 		var impulse = horizontal + Vector3.Up * VerticalImpulse;
 
-		StunTimeRemaining = MathF.Max( StunTimeRemaining, stunDuration );
-		TotalTimeRemaining = MathF.Max( TotalTimeRemaining, totalDuration );
+		ulong ownerSteamId = Network.Owner?.SteamId ?? 0;
+		ApplyKnockbackOnOwner( ownerSteamId, impulse );
+	}
+
+	[Rpc.Broadcast]
+	void ApplyKnockbackOnOwner( ulong targetSteamId, Vector3 impulse )
+	{
+		if ( Connection.Local == null || Connection.Local.SteamId != targetSteamId )
+			return;
 
 		var pc = GetPlayerController();
 		if ( pc != null )
@@ -47,10 +57,6 @@ public sealed class KnockbackReceiver : Component
 			StunTimeRemaining -= Time.Delta;
 			if ( StunTimeRemaining < 0f )
 				StunTimeRemaining = 0f;
-
-			var pc = GetPlayerController();
-			if ( pc != null )
-				pc.WishVelocity = Vector3.Zero;
 		}
 
 		if ( TotalTimeRemaining > 0f )

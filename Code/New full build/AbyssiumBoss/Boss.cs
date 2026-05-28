@@ -79,6 +79,7 @@ public sealed class Boss : Component
 	[Property, Group( "Stats" )] public int BaseDamage { get; set; } = 25;
 	[Property, Group( "Stats" )] public float ArmorValue { get; set; } = 40f;
 	[Property, Group( "Stats" )] public int DefenceLevel { get; set; } = 60;
+	[Property, Group( "Stats" )] public float LeashHealPercentPerSecond { get; set; } = 10f;
 
 	[Property, Group( "Ranges" )] public float AggroRange { get; set; } = 800f;
 	[Property, Group( "Ranges" )] public float DeaggroRange { get; set; } = 1600f;
@@ -91,8 +92,8 @@ public sealed class Boss : Component
 	[Property, Group( "Movement" )] public float TurnSpeedDegrees { get; set; } = 360f;
 	[Property, Group( "Movement" )] public float MoveStartDelay { get; set; } = 0.3f;
 
-	[Property, Group( "Target Switching" )] public float TargetSwitchMinInterval { get; set; } = 60f;
-	[Property, Group( "Target Switching" )] public float TargetSwitchMaxInterval { get; set; } = 120f;
+	[Property, Group( "Target Switching" )] public float TargetSwitchMinInterval { get; set; } = 15f;
+	[Property, Group( "Target Switching" )] public float TargetSwitchMaxInterval { get; set; } = 30f;
 
 	[Property, Group( "Attack Weights" )] public int DownwardWeight { get; set; } = 70;
 	[Property, Group( "Attack Weights" )] public int ThreeSixtyWeight { get; set; } = 20;
@@ -209,9 +210,8 @@ public sealed class Boss : Component
 	[Property, Group( "Victory" )] public string VictoryParam { get; set; } = "b_victory";
 	[Property, Group( "Victory" )] public float VictoryDuration { get; set; } = 3f;
 
-	[Property, Group( "Loot" )] public List<ItemId> LootItems { get; set; } = new();
-	[Property, Group( "Loot" )] public List<int> LootAmounts { get; set; } = new();
-	[Property, Group( "Loot" )] public List<float> LootChances { get; set; } = new();
+	[Property, Group( "Loot" )] public LootTable LootTable { get; set; }
+	[Property, Group( "Loot" ), Range( 0f, 1f )] public float GroupLootRetention { get; set; } = 0.5f;
 
 	[Property, Group( "References" )] public ModelRenderer ModelRenderer { get; set; }
 	[Property, Group( "References" )] public SkinnedModelRenderer SkinnedRenderer { get; set; }
@@ -239,6 +239,7 @@ public sealed class Boss : Component
 	float _respawnTimer;
 	bool _battlecryPlayed;
 	bool _respawnRequested;
+	float _leashHealAccum;
 
 	Dictionary<BossAttackType, float> _attackCooldowns = new();
 	BossAttackDefinition _currentAttack;
@@ -343,6 +344,7 @@ public sealed class Boss : Component
 	void UpdateIdle()
 	{
 		SetMoving( false, false );
+		_leashHealAccum = 0f;
 
 		var player = FindNearestPlayerInAggroRange();
 		if ( player == null )
@@ -926,6 +928,8 @@ public sealed class Boss : Component
 	{
 		PrimaryTarget = null;
 
+		ApplyLeashHeal();
+
 		float d = FlatDistance( WorldPosition, _spawnPosition );
 		if ( d < 20f )
 		{
@@ -933,6 +937,8 @@ public sealed class Boss : Component
 			WorldRotation = _spawnRotation;
 			SetMoving( false, false );
 			_battlecryPlayed = false;
+			CurrentHealth = MaxHealth;
+			_leashHealAccum = 0f;
 			_state = BossState.Idle;
 			return;
 		}
@@ -940,6 +946,22 @@ public sealed class Boss : Component
 		FaceTarget( _spawnPosition );
 		SetMoving( true, true );
 		MoveTowards( _spawnPosition, RunSpeed );
+	}
+
+	void ApplyLeashHeal()
+	{
+		if ( CurrentHealth >= MaxHealth )
+			return;
+
+		float perSecond = MaxHealth * ( LeashHealPercentPerSecond / 100f );
+		_leashHealAccum += perSecond * Time.Delta;
+
+		int whole = (int)_leashHealAccum;
+		if ( whole <= 0 )
+			return;
+
+		_leashHealAccum -= whole;
+		CurrentHealth = Math.Min( CurrentHealth + whole, MaxHealth );
 	}
 
 	void UpdatePrimaryTarget()
@@ -1282,8 +1304,7 @@ public sealed class Boss : Component
 		if ( _contributorSteamIds.Count == 0 )
 			return;
 
-		int count = Math.Min( LootItems.Count, Math.Min( LootAmounts.Count, LootChances.Count ) );
-		if ( count == 0 )
+		if ( LootTable == null )
 		{
 			_contributorSteamIds.Clear();
 			return;
@@ -1291,43 +1312,48 @@ public sealed class Boss : Component
 
 		var rng = new Random();
 
+		int contributorCount = _contributorSteamIds.Count;
+
+		int goldPool = LootTable.RollGoldPool( rng );
+		int goldPerPlayer = contributorCount > 0
+			? (int)Math.Ceiling( goldPool / (double)contributorCount )
+			: 0;
+
+		float oddsScale = GroupLootRetention + ( 1f - GroupLootRetention ) / contributorCount;
+
+		var entries = LootTable.Entries ?? new List<LootEntry>();
+
 		foreach ( var steamId in _contributorSteamIds )
 		{
-			var itemIds = new ItemId[count];
-			var amounts = new int[count];
+			var rolledItems = new List<ItemId>();
+			var rolledAmounts = new List<int>();
 
-			bool any = false;
-			for ( int i = 0; i < count; i++ )
+			foreach ( var entry in entries )
 			{
-				if ( LootItems[i] == ItemId.None )
-				{
-					itemIds[i] = ItemId.None;
-					amounts[i] = 0;
+				if ( entry == null || entry.Item == ItemId.None || entry.ChancePercent <= 0f )
 					continue;
-				}
 
-				if ( (float)( rng.NextDouble() * 100.0 ) < LootChances[i] )
-				{
-					itemIds[i] = LootItems[i];
-					amounts[i] = LootAmounts[i];
-					any = true;
-				}
-				else
-				{
-					itemIds[i] = ItemId.None;
-					amounts[i] = 0;
-				}
+				float scaledChance = entry.ChancePercent * oddsScale;
+				if ( (float)( rng.NextDouble() * 100.0 ) >= scaledChance )
+					continue;
+
+				int amount = LootTable.RollEntryAmount( rng, entry );
+				if ( amount <= 0 )
+					continue;
+
+				rolledItems.Add( entry.Item );
+				rolledAmounts.Add( amount );
 			}
 
-			if ( any )
-				BroadcastLootReward( steamId, itemIds, amounts );
+			if ( goldPerPlayer > 0 || rolledItems.Count > 0 )
+				BroadcastLootReward( steamId, goldPerPlayer, rolledItems.ToArray(), rolledAmounts.ToArray() );
 		}
 
 		_contributorSteamIds.Clear();
 	}
 
 	[Rpc.Broadcast]
-	void BroadcastLootReward( ulong recipientSteamId, ItemId[] items, int[] amounts )
+	void BroadcastLootReward( ulong recipientSteamId, int gold, ItemId[] items, int[] amounts )
 	{
 		if ( Connection.Local == null || Connection.Local.SteamId != recipientSteamId )
 			return;
@@ -1341,6 +1367,19 @@ public sealed class Boss : Component
 			return;
 
 		bool gainedAny = false;
+
+		if ( gold > 0 )
+		{
+			var (placed, banked) = inventory.AddItemOrBank( ItemId.GoldCoin, gold );
+			if ( placed > 0 || banked > 0 )
+			{
+				if ( placed > 0 )
+					GameLog.Add( $"You looted {placed} gold.", "#f0c040" );
+				if ( banked > 0 )
+					GameLog.Add( $"Inventory full — {banked} gold sent to your bank.", "#c9a84c" );
+				gainedAny = true;
+			}
+		}
 
 		int len = Math.Min( items.Length, amounts.Length );
 		for ( int i = 0; i < len; i++ )

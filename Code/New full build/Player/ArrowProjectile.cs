@@ -15,6 +15,7 @@ public sealed class ArrowProjectile : Component
 	public bool IsCrit { get; set; }
 
 	bool _stuck;
+	bool _impacted;
 	float _lifetime;
 	float _stickTimer;
 
@@ -56,15 +57,19 @@ public sealed class ArrowProjectile : Component
 			.Ray( previousPos, currentPos )
 			.Radius( TraceRadius )
 			.UseHitboxes( true )
-			.IgnoreGameObject( Shooter )
+			.IgnoreGameObjectHierarchy( Shooter )
 			.Run();
 
 		if ( !trace.Hit )
 			return;
 
+		if ( _impacted )
+			return;
+
 		var monster = trace.GameObject.Components.Get<Monster>();
 		if ( monster != null )
 		{
+			_impacted = true;
 			float triangleMult = CombatTriangle.GetDealMultiplier( Style, monster.CombatStyle );
 			int finalDamage = (int)( Damage * triangleMult );
 			if ( finalDamage < 1 ) finalDamage = 1;
@@ -79,6 +84,7 @@ public sealed class ArrowProjectile : Component
 		var boss = trace.GameObject.Components.Get<Boss>();
 		if ( boss != null )
 		{
+			_impacted = true;
 			float triangleMult = CombatTriangle.GetDealMultiplier( Style, boss.CombatStyle );
 			int finalDamage = (int)( Damage * triangleMult );
 			if ( finalDamage < 1 ) finalDamage = 1;
@@ -90,6 +96,7 @@ public sealed class ArrowProjectile : Component
 			return;
 		}
 
+		_impacted = true;
 		SoundLibrary.PlayArrowImpact( trace.HitPosition );
 		Stick( trace.HitPosition );
 	}

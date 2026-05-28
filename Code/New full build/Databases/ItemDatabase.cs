@@ -346,7 +346,7 @@ public static class ItemDatabase
 		Add( Define( ItemId.RoughFiber, "Rough Fiber", ItemType.Herb, tier: 1, baseSellPrice: 2 ) );
 		Add( Define( ItemId.CaveLichen, "Cave Lichen", ItemType.Herb, tier: 2, baseSellPrice: 4 ) );
 
-		Add( Define( ItemId.ArcaneDust, "Rune Essence", ItemType.Resource, tier: 0, baseSellPrice: 2 ) );
+		Add( Define( ItemId.ArcaneDust, "Arcane Dust", ItemType.Resource, tier: 0, baseSellPrice: 2 ) );
 
 		Add( Define( ItemId.PrimitiveHatchet, "Primitive Hatchet", ItemType.Tool, tier: 0, maxStack: 1, slot: EquipSlot.Weapon, skillRequired: SkillType.Woodcutting, levelRequired: 1, toolPower: 1.0f, weaponPower: 2f, baseSellPrice: 1 ) );
 		Add( Define( ItemId.PrimitivePickaxe, "Primitive Pickaxe", ItemType.Tool, tier: 0, maxStack: 1, slot: EquipSlot.Weapon, skillRequired: SkillType.Mining, levelRequired: 1, toolPower: 1.0f, weaponPower: 2f, baseSellPrice: 1 ) );
