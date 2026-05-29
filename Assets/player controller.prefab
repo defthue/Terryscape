@@ -332,7 +332,6 @@
         "CombatRegenRate": 0.6,
         "CombatStateDuration": 10,
         "ManaPerLevel": 2,
-        "ManaSicknessDuration": 10,
         "OnComponentDestroy": null,
         "OnComponentDisabled": null,
         "OnComponentEnabled": null,
@@ -348,26 +347,18 @@
         "Flags": 0,
         "AcidGravity": 800,
         "AcidLaunchPitchDegrees": 35,
-        "AcidPoisonDamagePerTick": 2,
-        "AcidPoisonDuration": 5,
-        "AcidPoisonTickInterval": 1,
         "AcidPoolColor": "0.5,0.95,0.2,0.55",
         "AcidSpitPrefab": {
           "_type": "gameobject",
           "prefab": "acidplaceholder.prefab"
         },
-        "AcidSplashRadius": 150,
-        "AcidSplashVisualDuration": 1.5,
         "AimSource": {
           "_type": "gameobject",
           "go": "d4b06bbf-e7cd-4dcc-9b9c-ac5b758c3ea9"
         },
         "AimTraceDistance": 5000,
         "BarrierColliderSize": "200,20,150",
-        "BarrierDepth": 1,
-        "BarrierDuration": 5,
         "BarrierForwardOffset": 70,
-        "BarrierHeight": 1,
         "BarrierHeightOffset": 0,
         "BarrierLateralOffset": 0,
         "BarrierPrefab": {
@@ -375,7 +366,6 @@
           "prefab": "arcaneshieldbarrier.prefab"
         },
         "BarrierTint": "0.2,0.4,1,0.4",
-        "BarrierWidth": 1,
         "BodyRenderer": {
           "_type": "component",
           "component_id": "2795f401-4c71-4fd7-8575-b6259ef80de0",
@@ -393,7 +383,6 @@
         "FpForwardOffset": 60,
         "FpHeightOffset": 40,
         "FpLateralOffset": 0,
-        "FrozenBonusDamage": 1,
         "HealPulseColor": "0.4,1,0.6,1",
         "HomingAcquireConeDegrees": 25,
         "HomingMaxAcquireRange": 2500,
@@ -402,12 +391,7 @@
           "_type": "gameobject",
           "prefab": "iceshardparticle.prefab"
         },
-        "InfernoDamagePerTick": 2,
-        "InfernoDuration": 5,
-        "InfernoHeight": 180,
-        "InfernoRadius": 100,
         "InfernoReticleColor": "1,0.5,0.15,1",
-        "InfernoTickInterval": 0.5,
         "LightningColor": "0.82353,0.72549,0.98039,1",
         "LightningForwardOffset": 30,
         "LightningHaloColor": "0.57255,0.5098,0.93333,1",
@@ -423,15 +407,11 @@
         "OnComponentFixedUpdate": null,
         "OnComponentStart": null,
         "OnComponentUpdate": null,
-        "SingularityCollapseRadius": 150,
-        "SingularityPullDuration": 1.5,
-        "SingularityPullRadius": 300,
         "SingularityReticleColor": "0.7,0.4,1,1",
         "StoneskinAuraPrefab": {
           "_type": "gameobject",
           "prefab": "stoneskinaura.prefab"
         },
-        "StoneskinDuration": 4,
         "TpForwardOffset": 60,
         "TpHeightOffset": 50,
         "TpLateralOffset": 0
@@ -510,13 +490,14 @@
         "__guid": "53c0742f-1843-47a2-8f6d-55b60c9b9d18",
         "__enabled": true,
         "Flags": 0,
-        "AutoSaveIntervalSeconds": 30,
+        "DebounceSeconds": 5,
         "OnComponentDestroy": null,
         "OnComponentDisabled": null,
         "OnComponentEnabled": null,
         "OnComponentFixedUpdate": null,
         "OnComponentStart": null,
-        "OnComponentUpdate": null
+        "OnComponentUpdate": null,
+        "SafetyNetSeconds": 90
       },
       {
         "__type": "PlayerSpeechBubble",
@@ -924,7 +905,7 @@
               {
                 "ItemId": "ElmheartStaff",
                 "Model": "models/tools/staffs/elmheartstaff.vmdl",
-                "PositionOffset": "-2,0,-12",
+                "PositionOffset": "0,0,-12",
                 "RotationOffset": "0,0,0"
               },
               {
@@ -990,7 +971,7 @@
               {
                 "ItemId": "ColdveinPickaxe",
                 "Model": "models/tools/pickaxes/coldveinpickaxe.vmdl",
-                "PositionOffset": "0,0,-12",
+                "PositionOffset": "0,-2.5,-12",
                 "RotationOffset": "0,90,0"
               },
               {
@@ -1051,6 +1032,12 @@
                 "ItemId": "PrimitivePickaxe",
                 "Model": "models/tools/pickaxes/primitivepickaxe.vmdl",
                 "PositionOffset": "0,0,-11",
+                "RotationOffset": "0,90,0"
+              },
+              {
+                "ItemId": "AbyssalBlade",
+                "Model": "models/tools/knightoftheabysssword.vmdl",
+                "PositionOffset": "0,0,4",
                 "RotationOffset": "0,90,0"
               }
             ],

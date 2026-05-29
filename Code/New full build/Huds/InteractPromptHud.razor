@@ -37,6 +37,7 @@
 		if ( JournalStation.IsOpen ) return true;
 		if ( LeaderboardStation.IsOpen ) return true;
 		if ( PlayerGatherResource.UIOpen ) return true;
+		if ( DailyChest.RewardHudOpen ) return true;
 		return false;
 	}
 
@@ -126,6 +127,19 @@
 				bestDist = d;
 				best = s.GameObject;
 				bestLabel = s.DisplayName;
+			}
+		}
+
+		foreach ( var s in Scene.GetAllComponents<DailyChest>() )
+		{
+			if ( !s.IsValid() ) continue;
+			float d = Vector3.DistanceBetween( s.WorldPosition, playerPos );
+			if ( d > s.InteractDistance ) continue;
+			if ( d < bestDist )
+			{
+				bestDist = d;
+				best = s.GameObject;
+				bestLabel = string.IsNullOrEmpty( s.ChestName ) ? "Loot Chest" : s.ChestName;
 			}
 		}
 

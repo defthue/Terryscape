@@ -1,0 +1,129 @@
+{
+  "GoldMin": 25,
+  "GoldMax": 100,
+  "Pulls": 1,
+  "Tiers": [
+    {
+      "Name": "Common",
+      "Weight": 60,
+      "Items": [
+        {
+          "Item": "AshwoodLog",
+          "MinAmount": 5,
+          "MaxAmount": 15,
+          "Weight": 100
+        },
+        {
+          "Item": "CoppiteOre",
+          "MinAmount": 5,
+          "MaxAmount": 12,
+          "Weight": 90
+        },
+        {
+          "Item": "Sticks",
+          "MinAmount": 5,
+          "MaxAmount": 12,
+          "Weight": 70
+        },
+        {
+          "Item": "GlassVial",
+          "MinAmount": 2,
+          "MaxAmount": 5,
+          "Weight": 50
+        },
+        {
+          "Item": "LesserHealingPotion",
+          "MinAmount": 1,
+          "MaxAmount": 2,
+          "Weight": 40
+        }
+      ]
+    },
+    {
+      "Name": "Uncommon",
+      "Weight": 27,
+      "Items": [
+        {
+          "Item": "ElmheartLog",
+          "MinAmount": 3,
+          "MaxAmount": 10,
+          "Weight": 100
+        },
+        {
+          "Item": "AshsteelOre",
+          "MinAmount": 3,
+          "MaxAmount": 8,
+          "Weight": 80
+        },
+        {
+          "Item": "CoppiteBar",
+          "MinAmount": 2,
+          "MaxAmount": 5,
+          "Weight": 60
+        },
+        {
+          "Item": "MonsterBone",
+          "MinAmount": 1,
+          "MaxAmount": 4,
+          "Weight": 50
+        },
+        {
+          "Item": "LesserManaPotion",
+          "MinAmount": 1,
+          "MaxAmount": 2,
+          "Weight": 40
+        }
+      ]
+    },
+    {
+      "Name": "Rare",
+      "Weight": 7,
+      "Items": [
+        {
+          "Item": "HealingPotion",
+          "MinAmount": 1,
+          "MaxAmount": 2,
+          "Weight": 100
+        },
+        {
+          "Item": "AshsteelBar",
+          "MinAmount": 1,
+          "MaxAmount": 3,
+          "Weight": 70
+        },
+        {
+          "Item": "Nugget",
+          "MinAmount": 1,
+          "MaxAmount": 2,
+          "Weight": 50
+        },
+        {
+          "Item": "Gem",
+          "MinAmount": 1,
+          "MaxAmount": 1,
+          "Weight": 30
+        }
+      ]
+    },
+    {
+      "Name": "Jackpot",
+      "Weight": 1,
+      "Items": [
+        {
+          "Item": "Rune",
+          "MinAmount": 1,
+          "MaxAmount": 2,
+          "Weight": 100
+        },
+        {
+          "Item": "Ring",
+          "MinAmount": 1,
+          "MaxAmount": 1,
+          "Weight": 50
+        }
+      ]
+    }
+  ],
+  "__references": [],
+  "__version": 0
+}

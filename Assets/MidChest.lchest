@@ -1,0 +1,141 @@
+{
+  "GoldMin": 75,
+  "GoldMax": 250,
+  "Pulls": 1,
+  "Tiers": [
+    {
+      "Name": "Common",
+      "Weight": 60,
+      "Items": [
+        {
+          "Item": "ElmheartLog",
+          "MinAmount": 5,
+          "MaxAmount": 15,
+          "Weight": 100
+        },
+        {
+          "Item": "IronbarkLog",
+          "MinAmount": 3,
+          "MaxAmount": 10,
+          "Weight": 85
+        },
+        {
+          "Item": "AshsteelOre",
+          "MinAmount": 5,
+          "MaxAmount": 12,
+          "Weight": 75
+        },
+        {
+          "Item": "HealingPotion",
+          "MinAmount": 1,
+          "MaxAmount": 2,
+          "Weight": 50
+        },
+        {
+          "Item": "GlassVial",
+          "MinAmount": 3,
+          "MaxAmount": 6,
+          "Weight": 40
+        }
+      ]
+    },
+    {
+      "Name": "Uncommon",
+      "Weight": 28,
+      "Items": [
+        {
+          "Item": "IronbarkLog",
+          "MinAmount": 4,
+          "MaxAmount": 10,
+          "Weight": 100
+        },
+        {
+          "Item": "ColdveinOre",
+          "MinAmount": 4,
+          "MaxAmount": 10,
+          "Weight": 80
+        },
+        {
+          "Item": "AshsteelBar",
+          "MinAmount": 3,
+          "MaxAmount": 6,
+          "Weight": 65
+        },
+        {
+          "Item": "MonsterHide",
+          "MinAmount": 2,
+          "MaxAmount": 5,
+          "Weight": 50
+        },
+        {
+          "Item": "ManaPotion",
+          "MinAmount": 1,
+          "MaxAmount": 2,
+          "Weight": 40
+        }
+      ]
+    },
+    {
+      "Name": "Rare",
+      "Weight": 10,
+      "Items": [
+        {
+          "Item": "Gem",
+          "MinAmount": 1,
+          "MaxAmount": 2,
+          "Weight": 100
+        },
+        {
+          "Item": "Rune",
+          "MinAmount": 1,
+          "MaxAmount": 3,
+          "Weight": 85
+        },
+        {
+          "Item": "ColdveinBar",
+          "MinAmount": 2,
+          "MaxAmount": 4,
+          "Weight": 65
+        },
+        {
+          "Item": "GreaterHealingPotion",
+          "MinAmount": 1,
+          "MaxAmount": 2,
+          "Weight": 55
+        },
+        {
+          "Item": "Ring",
+          "MinAmount": 1,
+          "MaxAmount": 1,
+          "Weight": 35
+        },
+        {
+          "Item": "Amulet",
+          "MinAmount": 1,
+          "MaxAmount": 1,
+          "Weight": 35
+        }
+      ]
+    },
+    {
+      "Name": "Jackpot",
+      "Weight": 2,
+      "Items": [
+        {
+          "Item": "ElixirOfPower",
+          "MinAmount": 1,
+          "MaxAmount": 1,
+          "Weight": 100
+        },
+        {
+          "Item": "SolariumBar",
+          "MinAmount": 2,
+          "MaxAmount": 4,
+          "Weight": 70
+        }
+      ]
+    }
+  ],
+  "__references": [],
+  "__version": 0
+}

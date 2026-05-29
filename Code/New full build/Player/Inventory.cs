@@ -111,6 +111,20 @@ public sealed class Inventory : Component
 		AddItem( ItemId.PrimitivePickaxe, 1 );
 	}
 
+	public void RepairEquipmentStacks()
+	{
+		for ( int i = 0; i < MaxSlots; i++ )
+		{
+			var slot = _slots[i];
+			if ( slot.IsStack && IsEquipmentItem( slot.ItemId ) )
+			{
+				var id = slot.ItemId;
+				slot.Clear();
+				slot.Unique = new ItemInstance( id );
+			}
+		}
+	}
+
 	public static bool IsEquipmentItem( ItemId id )
 	{
 		var def = ItemDatabase.Get( id );
@@ -1461,6 +1475,10 @@ public sealed class Inventory : Component
 
 					_slots[idx].Unique = instance;
 				}
+				else if ( IsEquipmentItem( id ) )
+				{
+					_slots[idx].Unique = new ItemInstance( id );
+				}
 				else
 				{
 					int count = entry.Count > 0 ? entry.Count : 1;
@@ -1622,6 +1640,8 @@ public sealed class Inventory : Component
 		}
 
 		_nodesMined = data.NodesMined;
+
+		RepairEquipmentStacks();
 	}
 }
 

@@ -195,7 +195,8 @@ public enum ItemId
 	Gem,
 	Ring,
 	Amulet,
-	Rune
+	Rune,
+	AbyssalBlade
 }
 
 public enum ItemType
@@ -372,6 +373,7 @@ public static class ItemDatabase
 		Add( Define( ItemId.SolariumSword, "Solarium Sword", ItemType.MeleeWeapon, tier: 4, maxStack: 1, slot: EquipSlot.Weapon, skillRequired: SkillType.Attack, levelRequired: 30, weaponPower: 30f, baseSellPrice: 50 ) );
 		Add( Define( ItemId.LunariteSword, "Lunarite Sword", ItemType.MeleeWeapon, tier: 5, maxStack: 1, slot: EquipSlot.Weapon, skillRequired: SkillType.Attack, levelRequired: 40, weaponPower: 42f, baseSellPrice: 72 ) );
 		Add( Define( ItemId.AbyssiumSword, "Abyssium Sword", ItemType.MeleeWeapon, tier: 6, maxStack: 1, slot: EquipSlot.Weapon, skillRequired: SkillType.Attack, levelRequired: 50, weaponPower: 56f, baseSellPrice: 100 ) );
+		Add( Define( ItemId.AbyssalBlade, "Abyssal Blade", ItemType.MeleeWeapon, tier: 6, maxStack: 1, slot: EquipSlot.Weapon, skillRequired: SkillType.Attack, levelRequired: 50, weaponPower: 56f, baseSellPrice: 100 ) );
 
 		Add( Define( ItemId.AshwoodBow, "Ashwood Bow", ItemType.RangedWeapon, tier: 1, maxStack: 1, slot: EquipSlot.Weapon, skillRequired: SkillType.Archery, levelRequired: 1, weaponPower: 5f, baseSellPrice: 7 ) );
 		Add( Define( ItemId.ElmheartBow, "Elmheart Bow", ItemType.RangedWeapon, tier: 2, maxStack: 1, slot: EquipSlot.Weapon, skillRequired: SkillType.Archery, levelRequired: 10, weaponPower: 10f, baseSellPrice: 16 ) );

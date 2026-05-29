@@ -57,10 +57,10 @@
       "ChancePercent": 1
     },
     {
-      "Item": "AbyssiumSword",
+      "Item": "AbyssalBlade",
       "MinAmount": 1,
       "MaxAmount": 1,
-      "ChancePercent": 0.1
+      "ChancePercent": 0.5
     }
   ],
   "__references": [],

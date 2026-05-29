@@ -1,0 +1,153 @@
+{
+  "GoldMin": 200,
+  "GoldMax": 600,
+  "Pulls": 1,
+  "Tiers": [
+    {
+      "Name": "Common",
+      "Weight": 55,
+      "Items": [
+        {
+          "Item": "IronbarkLog",
+          "MinAmount": 5,
+          "MaxAmount": 15,
+          "Weight": 100
+        },
+        {
+          "Item": "GhostwoodLog",
+          "MinAmount": 3,
+          "MaxAmount": 10,
+          "Weight": 85
+        },
+        {
+          "Item": "ColdveinOre",
+          "MinAmount": 5,
+          "MaxAmount": 15,
+          "Weight": 75
+        },
+        {
+          "Item": "GreaterHealingPotion",
+          "MinAmount": 1,
+          "MaxAmount": 3,
+          "Weight": 55
+        },
+        {
+          "Item": "CrystalVial",
+          "MinAmount": 2,
+          "MaxAmount": 5,
+          "Weight": 40
+        }
+      ]
+    },
+    {
+      "Name": "Uncommon",
+      "Weight": 30,
+      "Items": [
+        {
+          "Item": "GhostwoodLog",
+          "MinAmount": 4,
+          "MaxAmount": 12,
+          "Weight": 100
+        },
+        {
+          "Item": "DuskoakLog",
+          "MinAmount": 3,
+          "MaxAmount": 8,
+          "Weight": 80
+        },
+        {
+          "Item": "SolariumOre",
+          "MinAmount": 4,
+          "MaxAmount": 10,
+          "Weight": 70
+        },
+        {
+          "Item": "ColdveinBar",
+          "MinAmount": 3,
+          "MaxAmount": 6,
+          "Weight": 60
+        },
+        {
+          "Item": "GreaterManaPotion",
+          "MinAmount": 1,
+          "MaxAmount": 3,
+          "Weight": 45
+        }
+      ]
+    },
+    {
+      "Name": "Rare",
+      "Weight": 12,
+      "Items": [
+        {
+          "Item": "Gem",
+          "MinAmount": 2,
+          "MaxAmount": 4,
+          "Weight": 100
+        },
+        {
+          "Item": "Rune",
+          "MinAmount": 2,
+          "MaxAmount": 5,
+          "Weight": 85
+        },
+        {
+          "Item": "SolariumBar",
+          "MinAmount": 2,
+          "MaxAmount": 5,
+          "Weight": 65
+        },
+        {
+          "Item": "LunariteBar",
+          "MinAmount": 1,
+          "MaxAmount": 3,
+          "Weight": 50
+        },
+        {
+          "Item": "Amulet",
+          "MinAmount": 1,
+          "MaxAmount": 1,
+          "Weight": 40
+        },
+        {
+          "Item": "Ring",
+          "MinAmount": 1,
+          "MaxAmount": 1,
+          "Weight": 40
+        },
+        {
+          "Item": "ElixirOfPower",
+          "MinAmount": 1,
+          "MaxAmount": 1,
+          "Weight": 35
+        }
+      ]
+    },
+    {
+      "Name": "Jackpot",
+      "Weight": 3,
+      "Items": [
+        {
+          "Item": "AbyssiumBar",
+          "MinAmount": 3,
+          "MaxAmount": 6,
+          "Weight": 100
+        },
+        {
+          "Item": "AbyssiumOre",
+          "MinAmount": 6,
+          "MaxAmount": 12,
+          "Weight": 80
+        },
+        {
+          "Item": "Gem",
+          "MinAmount": 4,
+          "MaxAmount": 8,
+          "Weight": 60
+        }
+      ]
+    }
+  ],
+  "__references": [],
+  "__version": 0
+}
