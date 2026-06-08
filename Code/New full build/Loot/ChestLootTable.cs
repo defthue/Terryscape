@@ -17,7 +17,7 @@ public class ChestLootTier
 	[Property] public List<ChestLootItem> Items { get; set; } = new();
 }
 
-[GameResource( "Chest Loot Table", "lchest", "Tiered loot for daily chests." )]
+[AssetType( Name = "Chest Loot Table", Extension = "lchest" )]
 public class ChestLootTable : GameResource
 {
 	[Property] public int GoldMin { get; set; } = 0;

@@ -1,5 +1,6 @@
 @using Sandbox;
 @using Sandbox.UI;
+@using System;
 @using System.Linq;
 @using System.Collections.Generic;
 @inherits PanelComponent
@@ -7,162 +8,201 @@
 <root>
 	@if ( IsOpen )
 	{
-		<div class="shop-backdrop" onclick="@(() => CloseBank())"></div>
-		<div class="crafting-overlay">
-			<div class="crafting-popup" style="width: 750px; height: 550px;">
-				<div class="crafting-header">
-					<div class="crafting-title">@StationName</div>
-					<div class="crafting-close" onclick="@(() => CloseBank())">✕</div>
-				</div>
+		<div class="bank-backdrop" onclick="@(() => CloseBank())"></div>
+		<div class="bank-window">
+			<div class="bank-header">
+				<div class="bank-title">@StationName</div>
+				<div class="bank-stored">@BankRows.Count stored</div>
+				<div class="bank-close" onclick="@(() => CloseBank())">✕</div>
+			</div>
 
-				<div class="crafting-body">
-					<div class="recipe-list">
-						<div class="bank-section-header">
-							<div class="bank-sort-buttons">
-								<div class="bank-sort-button @(BankSortMode == SortMode.ByType ? "selected" : "")" onclick="@(() => SetBankSort( SortMode.ByType ))">Type</div>
-								<div class="bank-sort-button @(BankSortMode == SortMode.ByName ? "selected" : "")" onclick="@(() => SetBankSort( SortMode.ByName ))">Name</div>
-								<div class="bank-sort-button @(BankSortMode == SortMode.ByAmount ? "selected" : "")" onclick="@(() => SetBankSort( SortMode.ByAmount ))">Amount</div>
-							</div>
-						</div>
+			<div class="bank-body">
+
+				<div class="bank-col">
+					<div class="bank-search">
+						<span class="bank-search-icon">🔍</span>
+						<TextEntry @ref="BankSearchRef" class="bank-search-input" Value:bind="@BankSearch" Placeholder="Search bank"></TextEntry>
+					</div>
+					<div class="bank-sort-row">
+						<div class="bank-sort-btn @(BankSortMode == SortMode.ByType ? "selected" : "")" onclick="@(() => SetBankSort( SortMode.ByType ))">Type</div>
+						<div class="bank-sort-btn @(BankSortMode == SortMode.ByName ? "selected" : "")" onclick="@(() => SetBankSort( SortMode.ByName ))">Name</div>
+						<div class="bank-sort-btn @(BankSortMode == SortMode.ByAmount ? "selected" : "")" onclick="@(() => SetBankSort( SortMode.ByAmount ))">Amount</div>
+					</div>
+					<div class="bank-grid">
 						@if ( BankRows.Count == 0 )
 						{
-							<div class="no-recipes">Bank is empty.</div>
+							<div class="bank-grid-empty">Bank is empty.</div>
 						}
 						@foreach ( var row in BankRows )
 						{
 							if ( row.IsUnique )
 							{
 								var def = ItemDatabase.Get( row.UniqueInstance.ItemId );
-								string color = ( row.UniqueInstance.IsEnchanted || ( row.UniqueInstance.IsSocketable && row.UniqueInstance.SocketsUsed > 0 ) ) ? "#a080d0" : GetItemColor( def );
+								bool magic = row.UniqueInstance.IsEnchanted || ( row.UniqueInstance.IsSocketable && row.UniqueInstance.SocketsUsed > 0 );
+								string color = magic ? "#a080d0" : GetItemColor( def );
+								string dn = row.UniqueInstance.GetDisplayName();
+								bool sel = SelectedIsBank && SelectedIsUnique && SelectedUniqueIndex == row.BankUniqueIndex;
+								bool dim = !string.IsNullOrWhiteSpace( BankSearch ) && !MatchesSearch( dn, BankSearch );
+								int bidx = row.BankUniqueIndex;
 
-								<div class="recipe-row @(SelectedIsBank && SelectedIsUnique && SelectedUniqueIndex == row.BankUniqueIndex ? "selected" : "") craftable"
-									 onclick="@(() => SelectUnique( true, row.BankUniqueIndex ))">
-									<div class="recipe-icon" style="background: @color;">
-										<img class="recipe-icon-img" src="@GetIconPath( row.UniqueInstance.ItemId )" />
-									</div>
-									<div class="recipe-name">@row.UniqueInstance.GetDisplayName()</div>
-									<div class="recipe-amount">1</div>
+								<div class="bank-slot @(sel ? "selected" : "") @(dim ? "dimmed" : "")" style="background: @color;" onclick="@(() => SelectUnique( true, bidx ))">
+									<img class="bank-icon-img" src="@GetIconPath( row.UniqueInstance.ItemId )" />
 								</div>
 							}
 							else
 							{
 								var def = ItemDatabase.Get( row.StackId );
-								string name = def != null ? def.Name : row.StackId.ToString();
+								bool sel = SelectedItem == row.StackId && SelectedIsBank && !SelectedIsUnique;
+								bool dim = !string.IsNullOrWhiteSpace( BankSearch ) && !MatchesSearch( def != null ? def.Name : row.StackId.ToString(), BankSearch );
+								var sid = row.StackId;
 
-								<div class="recipe-row @(SelectedItem == row.StackId && SelectedIsBank && !SelectedIsUnique ? "selected" : "") craftable"
-									 onclick="@(() => Select( row.StackId, true, false, -1 ))">
-									<div class="recipe-icon" style="background: @GetItemColor( def );">
-										<img class="recipe-icon-img" src="@GetIconPath( row.StackId )" />
-									</div>
-									<div class="recipe-name">@name</div>
-									<div class="recipe-amount">@row.StackCount</div>
+								<div class="bank-slot @(sel ? "selected" : "") @(dim ? "dimmed" : "")" style="background: @GetItemColor( def );" onclick="@(() => Select( sid, true, false, -1 ))">
+									<img class="bank-icon-img" src="@GetIconPath( row.StackId )" />
+									<span class="bank-count">@FmtCount( row.StackCount )</span>
 								</div>
 							}
 						}
 					</div>
+				</div>
 
-					<div class="recipe-detail">
-						@if ( SelectedItem != ItemId.None && !SelectedIsUnique )
+				<div class="bank-hub">
+					@if ( SelectedIsUnique && SelectedUniqueIndex >= 0 )
+					{
+						ItemInstance inst = GetSelectedUnique();
+						if ( inst != null )
 						{
-							var def = ItemDatabase.Get( SelectedItem );
-							string name = def != null ? def.Name : SelectedItem.ToString();
-							int bankCount = BankStorage != null ? BankStorage.GetItemCount( SelectedItem ) : 0;
-							int invCount = PlayerInventory != null ? PlayerInventory.GetItemCount( SelectedItem ) : 0;
+							var udef = ItemDatabase.Get( inst.ItemId );
+							bool magic = inst.IsEnchanted || ( inst.IsSocketable && inst.SocketsUsed > 0 );
+							string color = magic ? "#a080d0" : GetItemColor( udef );
 
-							<div class="detail-header">@name</div>
-							<div class="detail-section-label">Bank: @bankCount</div>
-							<div class="detail-section-label">Inventory: @invCount</div>
-
-							@if ( SelectedIsBank && bankCount > 0 )
-							{
-								<div class="detail-section-label" style="margin-top: 8px;">Withdraw</div>
-								<div class="bank-buttons">
-									<div class="craft-button @(bankCount >= 1 ? "" : "disabled")"
-										 onclick="@(() => Withdraw( 1 ))">1</div>
-									<div class="craft-button @(bankCount >= 10 ? "" : "disabled")"
-										 onclick="@(() => Withdraw( 10 ))">10</div>
-									<div class="craft-button @(bankCount >= 100 ? "" : "disabled")"
-										 onclick="@(() => Withdraw( 100 ))">100</div>
-									<div class="craft-button"
-										 onclick="@(() => Withdraw( bankCount ))">All</div>
+							<div class="bank-preview">
+								<div class="bank-preview-icon" style="background: @color;">
+									<img class="bank-preview-img" src="@GetIconPath( inst.ItemId )" />
 								</div>
-							}
+								<div class="bank-preview-name">@inst.GetDisplayName()</div>
+								<div class="bank-where">@(SelectedIsBank ? "Selected in bank" : "Selected in inventory")</div>
+							</div>
 
-							@if ( !SelectedIsBank && invCount > 0 )
-							{
-								<div class="detail-section-label" style="margin-top: 8px;">Deposit</div>
-								<div class="bank-buttons">
-									<div class="craft-button @(invCount >= 1 ? "" : "disabled")"
-										 onclick="@(() => Deposit( 1 ))">1</div>
-									<div class="craft-button @(invCount >= 10 ? "" : "disabled")"
-										 onclick="@(() => Deposit( 10 ))">10</div>
-									<div class="craft-button @(invCount >= 100 ? "" : "disabled")"
-										 onclick="@(() => Deposit( 100 ))">100</div>
-									<div class="craft-button"
-										 onclick="@(() => Deposit( invCount ))">All</div>
-								</div>
-							}
-						}
-						else if ( SelectedIsUnique && SelectedUniqueIndex >= 0 )
-						{
-							<div class="detail-header">Equipment</div>
 							@if ( SelectedIsBank )
 							{
-								<div class="detail-section-label" style="margin-top: 8px;">Withdraw</div>
-								<div class="bank-buttons">
-									<div class="craft-button" onclick="@(() => WithdrawUnique())">Withdraw</div>
-								</div>
+								<div class="bank-action withdraw" onclick="@(() => WithdrawUnique())">Withdraw</div>
 							}
 							else
 							{
-								<div class="detail-section-label" style="margin-top: 8px;">Deposit</div>
-								<div class="bank-buttons">
-									<div class="craft-button" onclick="@(() => DepositUnique())">Deposit</div>
-								</div>
+								<div class="bank-action deposit" onclick="@(() => DepositUnique())">Deposit</div>
 							}
 						}
 						else
 						{
-							<div class="detail-empty">Select an item to deposit or withdraw.</div>
+							<div class="bank-empty">Select an item to deposit or withdraw.</div>
 						}
+					}
+					else if ( SelectedItem != ItemId.None )
+					{
+						var def = ItemDatabase.Get( SelectedItem );
+						string name = def != null ? def.Name : SelectedItem.ToString();
+						int bankCount = BankStorage != null ? BankStorage.GetItemCount( SelectedItem ) : 0;
+						int invCount = PlayerInventory != null ? PlayerInventory.GetItemCount( SelectedItem ) : 0;
+						int max = SelectedIsBank ? bankCount : invCount;
+						int shownAmount = TransferAmount > max ? max : TransferAmount;
+						if ( shownAmount < 1 ) shownAmount = 1;
+
+						<div class="bank-preview">
+							<div class="bank-preview-icon" style="background: @GetItemColor( def );">
+								<img class="bank-preview-img" src="@GetIconPath( SelectedItem )" />
+							</div>
+							<div class="bank-preview-name">@name</div>
+							<div class="bank-pill-row">
+								<span class="bank-pill @(SelectedIsBank ? "on" : "")">Bank @FmtCount( bankCount )</span>
+								<span class="bank-pill @(!SelectedIsBank ? "on" : "")">Inv @FmtCount( invCount )</span>
+							</div>
+						</div>
+
+						<div class="bank-where">@(SelectedIsBank ? "Selected in bank" : "Selected in inventory")</div>
+
+						<div class="bank-amount-row">
+							<div class="bank-step" onclick="@(() => StepAmount( -1 ))">−</div>
+							<div class="bank-amount-val">@shownAmount</div>
+							<div class="bank-step" onclick="@(() => StepAmount( 1 ))">+</div>
+						</div>
+
+						<div class="bank-quick-row">
+							<div class="bank-quick" onclick="@(() => SetAmount( 1 ))">1</div>
+							<div class="bank-quick" onclick="@(() => SetAmount( 10 ))">10</div>
+							<div class="bank-quick" onclick="@(() => SetAmount( 100 ))">100</div>
+							<div class="bank-quick" onclick="@(() => SetAmount( max ))">All</div>
+						</div>
+
+						@if ( SelectedIsBank )
+						{
+							<div class="bank-action withdraw" onclick="@(() => DoTransfer())">Withdraw</div>
+							<div class="bank-all" onclick="@(() => TransferAll())">Withdraw all</div>
+						}
+						else
+						{
+							<div class="bank-action deposit" onclick="@(() => DoTransfer())">Deposit</div>
+							<div class="bank-all" onclick="@(() => TransferAll())">Deposit all</div>
+						}
+					}
+					else
+					{
+						<div class="bank-empty">Select an item to deposit or withdraw.</div>
+					}
+				</div>
+
+				<div class="bank-col">
+					<div class="bank-search">
+						<span class="bank-search-icon">🔍</span>
+						<TextEntry @ref="InvSearchRef" class="bank-search-input" Value:bind="@InvSearch" Placeholder="Search inventory"></TextEntry>
 					</div>
-
-					<div class="recipe-list">
-						<div class="detail-section-label" style="padding: 8px 12px;">Inventory</div>
-						@if ( InventoryItems.Count == 0 && InventoryUnique.Count == 0 )
+					<div class="bank-col-head">
+						<span class="bank-col-label">Inventory</span>
+					</div>
+					<div class="bank-grid bank-inv-grid">
+						@foreach ( var view in InventorySlots )
 						{
-							<div class="no-recipes">Inventory is empty.</div>
-						}
-						@foreach ( var kv in InventoryItems )
-						{
-							var def = ItemDatabase.Get( kv.Key );
-							string name = def != null ? def.Name : kv.Key.ToString();
+							if ( view.IsEmpty )
+							{
+								<div class="bank-slot empty"></div>
+							}
+							else if ( view.IsUnique )
+							{
+								var def = ItemDatabase.Get( view.ItemId );
+								bool magic = view.Unique.IsEnchanted || ( view.Unique.IsSocketable && view.Unique.SocketsUsed > 0 );
+								string color = magic ? "#a080d0" : GetItemColor( def );
+								string dn = view.Unique.GetDisplayName();
+								bool sel = !SelectedIsBank && SelectedIsUnique && SelectedUniqueIndex == view.UniqueListIndex;
+								bool dim = !string.IsNullOrWhiteSpace( InvSearch ) && !MatchesSearch( dn, InvSearch );
+								int uidx = view.UniqueListIndex;
 
-							<div class="recipe-row @(SelectedItem == kv.Key && !SelectedIsBank && !SelectedIsUnique ? "selected" : "") craftable"
-								 onclick="@(() => Select( kv.Key, false, false, -1 ))">
-								<div class="recipe-icon" style="background: @GetItemColor( def );">
-									<img class="recipe-icon-img" src="@GetIconPath( kv.Key )" />
+								<div class="bank-slot @(sel ? "selected" : "") @(dim ? "dimmed" : "")" style="background: @color;" onclick="@(() => SelectUnique( false, uidx ))">
+									<img class="bank-icon-img" src="@GetIconPath( view.ItemId )" />
+									@if ( view.IsEquipped )
+									{
+										<div class="bank-equip-badge">@view.EquipBadge</div>
+									}
 								</div>
-								<div class="recipe-name">@name</div>
-								<div class="recipe-amount">@kv.Value</div>
-							</div>
-						}
-						@foreach ( var entry in InventoryUnique )
-						{
-							var def = ItemDatabase.Get( entry.Instance.ItemId );
-							string color = ( entry.Instance.IsEnchanted || ( entry.Instance.IsSocketable && entry.Instance.SocketsUsed > 0 ) ) ? "#a080d0" : GetItemColor( def );
+							}
+							else
+							{
+								var def = ItemDatabase.Get( view.ItemId );
+								bool sel = SelectedItem == view.ItemId && !SelectedIsBank && !SelectedIsUnique;
+								bool dim = !string.IsNullOrWhiteSpace( InvSearch ) && !MatchesSearch( def != null ? def.Name : view.ItemId.ToString(), InvSearch );
+								var iid = view.ItemId;
 
-							<div class="recipe-row @(!SelectedIsBank && SelectedIsUnique && SelectedUniqueIndex == entry.InventoryIndex ? "selected" : "") craftable"
-								 onclick="@(() => SelectUnique( false, entry.InventoryIndex ))">
-								<div class="recipe-icon" style="background: @color;">
-									<img class="recipe-icon-img" src="@GetIconPath( entry.Instance.ItemId )" />
+								<div class="bank-slot @(sel ? "selected" : "") @(dim ? "dimmed" : "")" style="background: @GetItemColor( def );" onclick="@(() => Select( iid, false, false, -1 ))">
+									<img class="bank-icon-img" src="@GetIconPath( view.ItemId )" />
+									<span class="bank-count">@FmtCount( view.Count )</span>
+									@if ( view.IsEquipped )
+									{
+										<div class="bank-equip-badge">@view.EquipBadge</div>
+									}
 								</div>
-								<div class="recipe-name">@entry.Instance.GetDisplayName()</div>
-								<div class="recipe-amount">1</div>
-							</div>
+							}
 						}
 					</div>
 				</div>
+
 			</div>
 		</div>
 	}
@@ -178,11 +218,17 @@
 	bool SelectedIsUnique { get; set; }
 	int SelectedUniqueIndex { get; set; } = -1;
 
+	int TransferAmount { get; set; } = 1;
+	string BankSearch { get; set; } = "";
+	string InvSearch { get; set; } = "";
+
+	TextEntry BankSearchRef { get; set; }
+	TextEntry InvSearchRef { get; set; }
+
 	Inventory PlayerInventory { get; set; }
 	BankStorage BankStorage { get; set; }
 
 	Dictionary<ItemId, int> BankedItems { get; set; } = new();
-	Dictionary<ItemId, int> InventoryItems { get; set; } = new();
 	SortMode BankSortMode { get; set; } = SortMode.ByType;
 
 	public class BankRow
@@ -204,7 +250,22 @@
 	}
 
 	List<UniqueEntry> BankedUnique { get; set; } = new();
-	List<UniqueEntry> InventoryUnique { get; set; } = new();
+
+	public class SlotView
+	{
+		public bool IsEmpty;
+		public bool IsStack;
+		public bool IsUnique;
+		public ItemId ItemId = ItemId.None;
+		public int Count;
+		public ItemInstance Unique;
+		public int UniqueListIndex = -1;
+		public int SlotIndex = -1;
+		public bool IsEquipped;
+		public string EquipBadge = "";
+	}
+
+	List<SlotView> InventorySlots { get; set; } = new();
 
 	string GetIconPath( ItemId id )
 	{
@@ -218,12 +279,44 @@
 		return $"/ItemIcons/{id}.vtex";
 	}
 
+	string GetEquipBadge( EquipSlot slot )
+	{
+		switch ( slot )
+		{
+			case EquipSlot.Weapon: return "⚔";
+			case EquipSlot.Shield: return "🛡";
+			case EquipSlot.Head: return "⛑";
+			case EquipSlot.Chest: return "🎽";
+			case EquipSlot.Legs: return "👖";
+			case EquipSlot.Ring: return "💍";
+			case EquipSlot.Amulet: return "📿";
+			case EquipSlot.Ammo: return "🏹";
+			default: return "★";
+		}
+	}
+
+	string FmtCount( int n )
+	{
+		if ( n >= 1000000 ) return $"{n / 1000000}m";
+		if ( n >= 10000 ) return $"{n / 1000}k";
+		return n.ToString();
+	}
+
+	bool MatchesSearch( string name, string search )
+	{
+		if ( string.IsNullOrWhiteSpace( search ) )
+			return true;
+
+		return name.ToLower().Contains( search.ToLower() );
+	}
+
 	void Select( ItemId item, bool isBank, bool isUnique, int uniqueIndex )
 	{
 		SelectedItem = item;
 		SelectedIsBank = isBank;
 		SelectedIsUnique = isUnique;
 		SelectedUniqueIndex = uniqueIndex;
+		TransferAmount = 1;
 	}
 
 	void SelectUnique( bool isBank, int index )
@@ -232,6 +325,88 @@
 		SelectedIsBank = isBank;
 		SelectedIsUnique = true;
 		SelectedUniqueIndex = index;
+		TransferAmount = 1;
+	}
+
+	ItemInstance GetSelectedUnique()
+	{
+		if ( SelectedUniqueIndex < 0 )
+			return null;
+
+		if ( SelectedIsBank )
+		{
+			if ( BankStorage == null )
+				return null;
+
+			var list = BankStorage.GetBankedUnique();
+			if ( SelectedUniqueIndex < list.Count )
+				return list[SelectedUniqueIndex];
+
+			return null;
+		}
+
+		if ( PlayerInventory == null )
+			return null;
+
+		var inv = PlayerInventory.GetUniqueItems();
+		if ( SelectedUniqueIndex < inv.Count )
+			return inv[SelectedUniqueIndex];
+
+		return null;
+	}
+
+	int CurrentMax()
+	{
+		if ( SelectedItem == ItemId.None )
+			return 1;
+
+		int n = SelectedIsBank
+			? ( BankStorage != null ? BankStorage.GetItemCount( SelectedItem ) : 0 )
+			: ( PlayerInventory != null ? PlayerInventory.GetItemCount( SelectedItem ) : 0 );
+
+		return n < 1 ? 1 : n;
+	}
+
+	void StepAmount( int delta )
+	{
+		SetAmount( TransferAmount + delta );
+	}
+
+	void SetAmount( int amount )
+	{
+		int m = CurrentMax();
+		int v = amount;
+		if ( v < 1 ) v = 1;
+		if ( v > m ) v = m;
+		TransferAmount = v;
+	}
+
+	void DoTransfer()
+	{
+		if ( SelectedItem == ItemId.None )
+			return;
+
+		int amt = TransferAmount;
+		int m = CurrentMax();
+		if ( amt > m ) amt = m;
+		if ( amt < 1 )
+			return;
+
+		if ( SelectedIsBank )
+			Withdraw( amt );
+		else
+			Deposit( amt );
+	}
+
+	void TransferAll()
+	{
+		if ( SelectedItem == ItemId.None )
+			return;
+
+		if ( SelectedIsBank )
+			Withdraw( CurrentMax() );
+		else
+			Deposit( CurrentMax() );
 	}
 
 	void Deposit( int amount )
@@ -275,6 +450,9 @@
 		SelectedItem = ItemId.None;
 		SelectedIsUnique = false;
 		SelectedUniqueIndex = -1;
+		TransferAmount = 1;
+		BankSearch = "";
+		InvSearch = "";
 		BankStation.Close();
 	}
 
@@ -314,11 +492,8 @@
 			BankStorage = PlayerHelper.GetLocalPlayer()?.Components.Get<BankStorage>();
 
 			BankedItems = BankStorage != null ? new Dictionary<ItemId, int>( BankStorage.GetAllItems() ) : new();
-			InventoryItems = PlayerInventory != null ? new Dictionary<ItemId, int>( PlayerInventory.GetAllItems() ) : new();
 
 			BankedUnique.Clear();
-			InventoryUnique.Clear();
-
 			if ( BankStorage != null )
 			{
 				var bankedU = BankStorage.GetBankedUnique();
@@ -326,19 +501,53 @@
 					BankedUnique.Add( new UniqueEntry { Instance = bankedU[i], BankIndex = i } );
 			}
 
+			InventorySlots.Clear();
 			if ( PlayerInventory != null )
 			{
-				var invU = PlayerInventory.GetUniqueItems();
-				for ( int i = 0; i < invU.Count; i++ )
-					InventoryUnique.Add( new UniqueEntry { Instance = invU[i], InventoryIndex = i } );
+				var slots = PlayerInventory.GetSlots();
+				int max = PlayerInventory.MaxSlots;
+				int uniqueCounter = 0;
+
+				for ( int i = 0; i < max && i < slots.Count; i++ )
+				{
+					var s = slots[i];
+					var view = new SlotView();
+					view.SlotIndex = i;
+
+					if ( PlayerInventory.IsSlotEquipped( i ) )
+					{
+						view.IsEquipped = true;
+						view.EquipBadge = GetEquipBadge( PlayerInventory.GetEquippedSlotTypeAt( i ) );
+					}
+
+					if ( s.IsUnique )
+					{
+						view.IsUnique = true;
+						view.Unique = s.Unique;
+						view.ItemId = s.Unique.ItemId;
+						view.UniqueListIndex = uniqueCounter;
+						uniqueCounter++;
+					}
+					else if ( s.IsStack )
+					{
+						view.IsStack = true;
+						view.ItemId = s.ItemId;
+						view.Count = s.Count;
+					}
+					else
+					{
+						view.IsEmpty = true;
+					}
+
+					InventorySlots.Add( view );
+				}
 			}
 		}
 		else
 		{
 			BankedItems.Clear();
-			InventoryItems.Clear();
 			BankedUnique.Clear();
-			InventoryUnique.Clear();
+			InventorySlots.Clear();
 			SelectedItem = ItemId.None;
 			SelectedIsUnique = false;
 			SelectedUniqueIndex = -1;
@@ -363,22 +572,19 @@
 		}
 
 		int invHash = 0;
-		foreach ( var kv in InventoryItems )
-			invHash += (int)kv.Key * 100 + kv.Value;
+		for ( int i = 0; i < InventorySlots.Count; i++ )
+		{
+			var v = InventorySlots[i];
+			if ( v.IsUnique )
+				invHash += ( (int)v.ItemId * 131 + i ) * 7 + ( v.IsEquipped ? 911 : 0 );
+			else if ( v.IsStack )
+				invHash += ( (int)v.ItemId * 100 + v.Count ) * 3 + i + ( v.IsEquipped ? 911 : 0 );
+		}
 
-		return (
-			IsOpen,
-			StationName,
-			SelectedItem,
-			SelectedIsBank,
-			SelectedIsUnique,
-			SelectedUniqueIndex,
-			BankSortMode,
-			bankHash,
-			invHash,
-			BankedUnique.Count,
-			InventoryUnique.Count
-		).GetHashCode();
+		return HashCode.Combine(
+			HashCode.Combine( IsOpen, StationName, SelectedItem, SelectedIsBank, SelectedIsUnique, SelectedUniqueIndex, (int)BankSortMode, bankHash ),
+			HashCode.Combine( invHash, BankedUnique.Count, InventorySlots.Count, BankSearch ?? "", InvSearch ?? "", TransferAmount )
+		);
 	}
 
 	void SetBankSort( SortMode mode )
@@ -405,21 +611,26 @@
 
 		switch ( mode )
 		{
-			case SortMode.ByType:
-				int typeCmp = typeA.CompareTo( typeB );
-				if ( typeCmp != 0 ) return typeCmp;
-				return string.Compare( nameA, nameB, System.StringComparison.OrdinalIgnoreCase );
-			case SortMode.ByTier:
-				int tierCmp = tierA.CompareTo( tierB );
-				if ( tierCmp != 0 ) return tierCmp;
-				return string.Compare( nameA, nameB, System.StringComparison.OrdinalIgnoreCase );
-			case SortMode.ByAmount:
-				int amountCmp = countB.CompareTo( countA );
-				if ( amountCmp != 0 ) return amountCmp;
-				return string.Compare( nameA, nameB, System.StringComparison.OrdinalIgnoreCase );
 			case SortMode.ByName:
+				return string.Compare( nameA, nameB, StringComparison.OrdinalIgnoreCase );
+
+			case SortMode.ByAmount:
+			{
+				int c = countB.CompareTo( countA );
+				return c != 0 ? c : string.Compare( nameA, nameB, StringComparison.OrdinalIgnoreCase );
+			}
+
+			case SortMode.ByType:
 			default:
-				return string.Compare( nameA, nameB, System.StringComparison.OrdinalIgnoreCase );
+			{
+				int c = typeA.CompareTo( typeB );
+				if ( c != 0 ) return c;
+
+				c = tierA.CompareTo( tierB );
+				if ( c != 0 ) return c;
+
+				return string.Compare( nameA, nameB, StringComparison.OrdinalIgnoreCase );
+			}
 		}
 	}
 }

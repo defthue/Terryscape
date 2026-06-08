@@ -71,6 +71,14 @@ public sealed class HotbarInput : Component
 
 		if ( slot.IsUnique )
 		{
+			var def = ItemDatabase.Get( slot.Unique.ItemId );
+			if ( def != null && def.Slot != EquipSlot.None )
+			{
+				int alreadyEquipped = inventory.GetEquippedSlotIndex( def.Slot );
+				if ( alreadyEquipped >= 0 && alreadyEquipped != slotIndex )
+					inventory.Unequip( def.Slot );
+			}
+
 			inventory.EquipUniqueAtSlot( slotIndex );
 			return;
 		}
@@ -78,11 +86,11 @@ public sealed class HotbarInput : Component
 		if ( !slot.IsStack )
 			return;
 
-		var def = ItemDatabase.Get( slot.ItemId );
-		if ( def == null )
+		var stackDef = ItemDatabase.Get( slot.ItemId );
+		if ( stackDef == null )
 			return;
 
-		if ( def.Type == ItemType.Potion )
+		if ( stackDef.Type == ItemType.Potion )
 		{
 			var potionSystem = GameObject.Components.Get<PotionSystem>();
 			if ( potionSystem != null )
@@ -90,7 +98,7 @@ public sealed class HotbarInput : Component
 			return;
 		}
 
-		if ( def.Type == ItemType.Arrow )
+		if ( stackDef.Type == ItemType.Arrow )
 		{
 			inventory.EquipAmmoFromSlot( slotIndex );
 			return;

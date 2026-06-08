@@ -293,7 +293,7 @@
       },
       {
         "__type": "Sandbox.Huds.DailyChestRewardHud",
-        "__guid": "1a55ab82-432b-415a-a88c-25d9df094d0a",
+        "__guid": "97b32ab4-d9db-409a-8489-a76cae7df7db",
         "__enabled": true,
         "Flags": 0,
         "OnComponentDestroy": null,
@@ -302,6 +302,47 @@
         "OnComponentFixedUpdate": null,
         "OnComponentStart": null,
         "OnComponentUpdate": null
+      },
+      {
+        "__type": "TerryPreviewRenderer",
+        "__guid": "3366de30-bbc8-460e-a1fe-351faad50f8e",
+        "__enabled": true,
+        "Flags": 0,
+        "BackgroundColor": "0.05,0.04,0.024,1",
+        "CameraDistance": 112,
+        "CameraHeight": 36,
+        "CameraPitch": 0,
+        "FallbackBodyModel": "models/citizen/citizen.vmdl",
+        "FieldOfView": 32,
+        "FillLightColor": "1.5,1.65,1.95,3",
+        "KeyLightColor": "8,7.68,7.04,8",
+        "LightRadius": 900,
+        "ModelYaw": 180,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "RenderHeight": 480,
+        "RenderInterval": 0.05,
+        "RenderWidth": 280,
+        "RenderWithAlpha": true,
+        "SourceBody": {
+          "_type": "component",
+          "component_id": "2795f401-4c71-4fd7-8575-b6259ef80de0",
+          "go": "c1f2a082-666f-46c2-963c-977b391ae411",
+          "component_type": "SkinnedModelRenderer"
+        },
+        "SourceTool": {
+          "_type": "component",
+          "component_id": "e6458b40-06a6-4874-a0c8-7933fae02629",
+          "go": "66d5a509-0479-4d5f-ad8d-a997ebffb121",
+          "component_type": "HeldToolController"
+        },
+        "VoidOrigin": "0,0,100000",
+        "WarmupSeconds": 0.75,
+        "WeaponSettleDelay": 0.2
       }
     ],
     "Children": [],

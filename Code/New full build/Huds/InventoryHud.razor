@@ -76,7 +76,7 @@
 		}
 	</div>
 
-	<div class="side-panel @(IsUIOpen ? "ui-open" : "")">
+	<div class="side-panel @(IsUIOpen ? "ui-open" : "") @(ActiveTab == 0 ? "gear-expanded" : "")">
 
 		<div class="health-section">
 			<div class="health-bar-container">
@@ -130,8 +130,6 @@
 						var slotData = GetSlotData( slotIndex );
 						bool isHotbar = slotIndex < HotbarSize;
 						bool isPickedFrom = PickedUpSlotIndex == slotIndex;
-						bool isEquipped = slotData != null && slotData.IsEquipped;
-						string equipBadge = slotData != null ? slotData.EquipBadge : "";
 
 						@if ( slotData != null && slotData.IsUnique )
 						{
@@ -140,15 +138,11 @@
 							bool hasMagicBackground = inst.IsEnchanted || ( inst.IsSocketable && inst.SocketsUsed > 0 );
 							string color = hasMagicBackground ? "#a080d0" : GetItemColor( inst.ItemId, def );
 
-							<div class="item-slot filled equippable @(isHotbar ? "hotbar" : "") @(isPickedFrom ? "picked-up" : "") @(isEquipped ? "is-equipped" : "") @(IsRecentlyReceived( inst.ItemId ) ? "just-received" : "")"
+							<div class="item-slot filled equippable @(isHotbar ? "hotbar" : "") @(isPickedFrom ? "picked-up" : "") @(IsRecentlyReceived( inst.ItemId ) ? "just-received" : "")"
 								 onclick="@(() => OnSlotLeftClick( slotIndex ))">
 								@if ( isHotbar )
 								{
 									<div class="hotbar-key">@(slotIndex + 1)</div>
-								}
-								@if ( isEquipped )
-								{
-									<div class="equipped-badge">@equipBadge</div>
 								}
 								<div class="item-icon" style="background: @color;">
 									<img class="item-icon-img" src="@GetIconPath( inst.ItemId )" />
@@ -161,7 +155,7 @@
 									 onclick="@(() => OnUseButtonClick( slotIndex ))">⚡</div>
 								<div class="item-tooltip">
 									@inst.GetDisplayName()
-									<div class="tooltip-hint">Click slot to move · Click ⚡ to @(isEquipped ? "unequip" : "equip")</div>
+									<div class="tooltip-hint">Click slot to move · Click ⚡ to equip</div>
 								</div>
 							</div>
 						}
@@ -171,15 +165,11 @@
 							bool isArrow = ItemDatabase.Get( slotData.ItemId )?.Type == ItemType.Arrow;
 							bool hasUseBtn = isPotion || isArrow;
 
-							<div class="item-slot filled @(isPotion ? "potion-slot" : "") @(isHotbar ? "hotbar" : "") @(isPickedFrom ? "picked-up" : "") @(isEquipped ? "is-equipped" : "") @(IsRecentlyReceived( slotData.ItemId ) ? "just-received" : "")"
+							<div class="item-slot filled @(isPotion ? "potion-slot" : "") @(isHotbar ? "hotbar" : "") @(isPickedFrom ? "picked-up" : "") @(IsRecentlyReceived( slotData.ItemId ) ? "just-received" : "")"
 								 onclick="@(() => OnSlotLeftClick( slotIndex ))">
 								@if ( isHotbar )
 								{
 									<div class="hotbar-key">@(slotIndex + 1)</div>
-								}
-								@if ( isEquipped )
-								{
-									<div class="equipped-badge">@equipBadge</div>
 								}
 								<div class="item-icon" style="background: @slotData.Color;">
 									<img class="item-icon-img" src="@GetIconPath( slotData.ItemId )" />
@@ -201,7 +191,7 @@
 									}
 									else if ( isArrow )
 									{
-										<div class="tooltip-hint">Click slot to move · Click 🏹 to @(isEquipped ? "unequip" : "equip")</div>
+										<div class="tooltip-hint">Click slot to move · Click 🏹 to equip</div>
 									}
 									else
 									{
@@ -249,37 +239,195 @@
 
 			@if ( ActiveTab == 0 )
 			{
-				<div class="equipped-panel">
-					@foreach ( var slot in EquipmentSlots )
-					{
-						<div class="equip-slot-row" onclick="@(() => OnEquipSlotClick( slot ))">
-							<div class="equip-label">@slot.Label</div>
-							@if ( slot.ItemName != null )
+				<div class="gear-tab">
+
+					<div class="gear-top">
+					<div class="equipment-tree">
+						<div class="equip-col">
+							@foreach ( var type in LeftColumn )
 							{
-								<div class="equip-slot filled clickable">
-									<div class="item-icon" style="background: @slot.Color;">
-										<img class="item-icon-img" src="@GetIconPath( slot.ItemId )" />
-									</div>
-									<div class="equip-name">@slot.ItemName</div>
-									@if ( !string.IsNullOrEmpty( slot.EnchantStat ) )
+								var e = GetEquip( type );
+								bool filled = e != null && e.ItemName != null;
+								<div class="equip-tree-slot @(filled ? "filled" : "")" onclick="@(() => OnEquipSlotClick( e ))">
+									@if ( filled )
 									{
-										<div class="equip-enchant">@slot.EnchantStat</div>
+										<div class="item-icon" style="background: @e.Color;">
+											<img class="item-icon-img" src="@GetIconPath( e.ItemId )" />
+										</div>
+										@if ( !string.IsNullOrEmpty( e.EnchantStat ) )
+										{
+											<div class="eq-enchant">@e.EnchantStat</div>
+										}
+										<div class="equip-tree-tooltip">
+											<div class="tt-name" style="color: @e.Color;">@e.ItemName</div>
+											<div class="tt-hint">Click to unequip</div>
+										</div>
+									}
+									else
+									{
+										<div class="equip-slot-empty">@GetSlotLabel( type )</div>
 									}
 								</div>
 							}
-							else
+						</div>
+
+						<div class="terry-render">
+							<img @ref="TerryImage" class="terry-image" />
+						</div>
+
+						<div class="equip-col">
+							@foreach ( var type in RightColumn )
 							{
-								<div class="equip-slot">
-									<div class="equip-name empty">— empty —</div>
+								var e = GetEquip( type );
+								bool filled = e != null && e.ItemName != null;
+								<div class="equip-tree-slot @(filled ? "filled" : "")" onclick="@(() => OnEquipSlotClick( e ))">
+									@if ( filled )
+									{
+										<div class="item-icon" style="background: @e.Color;">
+											<img class="item-icon-img" src="@GetIconPath( e.ItemId )" />
+										</div>
+										@if ( !string.IsNullOrEmpty( e.EnchantStat ) )
+										{
+											<div class="eq-enchant">@e.EnchantStat</div>
+										}
+										<div class="equip-tree-tooltip">
+											<div class="tt-name" style="color: @e.Color;">@e.ItemName</div>
+											<div class="tt-hint">Click to unequip</div>
+										</div>
+									}
+									else
+									{
+										<div class="equip-slot-empty">@GetSlotLabel( type )</div>
+									}
 								</div>
 							}
 						</div>
-					}
+					</div>
+
+					<div class="equippable-panel">
+							<div class="section-label">Equippable items</div>
+							<div class="equippable-grid">
+								@foreach ( var entry in EquippableItems )
+								{
+									var ec = entry;
+									<div class="equippable-slot @(ec.ReqMet ? "" : "locked")" onclick="@(() => OnEquippableItemClick( ec.SlotIndex ))">
+										<div class="item-icon" style="background: @ec.Color;">
+											<img class="item-icon-img" src="@GetIconPath( ec.ItemId )" />
+										</div>
+										@if ( !string.IsNullOrEmpty( ec.EnchantText ) )
+										{
+											<div class="eq-enchant">@ec.EnchantText</div>
+										}
+										<div class="eq-tooltip">
+											<div class="tt-name" style="color: @ec.Color;">@ec.Name</div>
+											<div class="tt-sub">@ec.TypeLabel — @ec.SlotLabel</div>
+											@if ( !string.IsNullOrEmpty( ec.ReqLabel ) )
+											{
+												<div class="tt-req @(ec.ReqMet ? "met" : "unmet")">@ec.ReqLabel</div>
+											}
+											@if ( !string.IsNullOrEmpty( ec.PrimaryStatLabel ) )
+											{
+												<div class="tt-stat-row">
+													<span>@ec.PrimaryStatLabel @ec.PrimaryStatValue</span>
+													@if ( ec.HasCompare )
+													{
+														<span class="tt-delta @(ec.CompareDelta >= 0 ? "pos" : "neg")">@(ec.CompareDelta >= 0 ? "+" : "")@ec.CompareDelta vs equipped</span>
+													}
+												</div>
+											}
+											@if ( !string.IsNullOrEmpty( ec.EnchantText ) )
+											{
+												<div class="tt-enchant">@ec.EnchantText</div>
+											}
+											<div class="tt-sell">Sell @ec.SellPrice g</div>
+											<div class="tt-hint">Click to equip</div>
+										</div>
+									</div>
+								}
+							</div>
+						</div>
+					</div>
+
+					<div class="gear-bottom">
+						<div class="gear-bottom-left">
+							<div class="appearance-strip">
+								<div class="section-label">Appearance</div>
+								<div class="cosmetic-row">
+									<div class="cosmetic-slot active"><span class="wip-badge">WIP</span></div>
+									<div class="cosmetic-slot dimmed"></div>
+									<div class="cosmetic-slot dimmed"></div>
+									<div class="cosmetic-slot dimmed"></div>
+									<div class="cosmetic-note">Cosmetic overrides — coming soon</div>
+								</div>
+							</div>
+
+							<div class="enchant-box">
+								<div class="section-label">Enchantments</div>
+								<div class="enchant-list">
+									@if ( EnchantLines.Count > 0 )
+									{
+										@foreach ( var en in EnchantLines )
+										{
+											<div class="stat-row"><span class="stat-key">@en.Name</span><span class="stat-val stat-ench">+@en.Percent%</span></div>
+										}
+									}
+									else
+									{
+										<div class="enchant-empty">No active enchantments</div>
+									}
+								</div>
+							</div>
+						</div>
+
+						<div class="stats-panel">
+							<div class="section-label">Stats</div>
+							<div class="stat-block">
+								<div class="stat-group-title">Combat</div>
+								<div class="stat-row"><span class="stat-key">Attack / Defence</span><span class="stat-val">@StatAttack / @StatDefence</span></div>
+								<div class="stat-row"><span class="stat-key">Archery / Magic</span><span class="stat-val">@StatArchery / @StatMagic</span></div>
+
+								<div class="stat-group-title">Offense</div>
+								<div class="stat-row"><span class="stat-key">Weapon power</span><span class="stat-val">@StatWeaponText</span></div>
+
+								<div class="stat-group-title">Defense</div>
+								<div class="stat-row"><span class="stat-key">Armor rating</span><span class="stat-val">@StatArmor</span></div>
+								<div class="stat-row"><span class="stat-key">Damage reduction</span><span class="stat-val">@StatArmorReductionPct%</span></div>
+
+								@if ( ManaRegenPenaltyPct > 0 || RangedDrawPenaltyPct > 0 )
+								{
+									<div class="stat-group-title">Penalties</div>
+									@if ( ManaRegenPenaltyPct > 0 )
+									{
+										<div class="stat-row"><span class="stat-key">Mana regen</span><span class="stat-val stat-pen">-@ManaRegenPenaltyPct%</span></div>
+									}
+									@if ( RangedDrawPenaltyPct > 0 )
+									{
+										<div class="stat-row"><span class="stat-key">Ranged draw</span><span class="stat-val stat-pen">-@RangedDrawPenaltyPct%</span></div>
+									}
+								}
+							</div>
+						</div>
+					</div>
+
 				</div>
 			}
 
 		</div>
 	</div>
+
+	@if ( ShowUnequipConfirm )
+	{
+		<div class="modal-overlay">
+			<div class="confirm-modal">
+				<div class="confirm-title">Inventory full</div>
+				<div class="confirm-text">@ConfirmItemName will be sent to your bank.</div>
+				<div class="confirm-buttons">
+					<div class="confirm-btn yes" onclick="@OnConfirmUnequipYes">Yes</div>
+					<div class="confirm-btn no" onclick="@OnConfirmUnequipNo">No</div>
+				</div>
+			</div>
+		</div>
+	}
 
 	@if ( PickedUpSlotIndex >= 0 && PickedUpGhost != null )
 	{
@@ -297,8 +445,15 @@
 {
 	const int HotbarSize = 5;
 
+	static readonly EquipSlot[] LeftColumn = { EquipSlot.Head, EquipSlot.Amulet, EquipSlot.Weapon, EquipSlot.Legs };
+	static readonly EquipSlot[] RightColumn = { EquipSlot.Chest, EquipSlot.Ammo, EquipSlot.Shield, EquipSlot.Ring };
+
 	int ActiveTab { get; set; } = 1;
 	int LogTab { get; set; } = 0;
+
+	public static bool GearTabExpanded { get; private set; }
+
+	Sandbox.UI.Image TerryImage { get; set; }
 	bool _hasInitialized = false;
 
 	int PickedUpSlotIndex { get; set; } = -1;
@@ -307,6 +462,10 @@
 	float CursorYPercent { get; set; } = 0;
 
 	bool _suppressNextSlotClick = false;
+
+	EquipSlot ConfirmUnequipSlot { get; set; } = EquipSlot.None;
+	bool ShowUnequipConfirm { get; set; }
+	string ConfirmItemName { get; set; } = "";
 
 	bool IsUIOpen => PlayerGatherResource.UIOpen;
 
@@ -431,6 +590,21 @@
 	List<SlotData> CachedSlots { get; set; } = new();
 	List<SkillDisplay> SkillEntries { get; set; } = new();
 	List<EquipSlotDisplay> EquipmentSlots { get; set; } = new();
+	List<EquippableEntry> EquippableItems { get; set; } = new();
+
+	int StatAttack { get; set; }
+	int StatDefence { get; set; }
+	int StatArchery { get; set; }
+	int StatMagic { get; set; }
+	bool HasWeapon { get; set; }
+	int StatWeaponPower { get; set; }
+	string StatWeaponText { get; set; } = "—";
+	string StatStyle { get; set; } = "—";
+	int StatArmor { get; set; }
+	int StatArmorReductionPct { get; set; }
+	int ManaRegenPenaltyPct { get; set; }
+	int RangedDrawPenaltyPct { get; set; }
+	List<EnchantLine> EnchantLines { get; set; } = new();
 
 	int TotalSlots { get; set; } = 30;
 
@@ -443,8 +617,6 @@
 		public string Name;
 		public string Color;
 		public ItemInstance Unique;
-		public bool IsEquipped;
-		public string EquipBadge;
 	}
 
 	public class GhostDisplay
@@ -475,6 +647,31 @@
 		public ItemId ItemId;
 	}
 
+	public class EquippableEntry
+	{
+		public int SlotIndex;
+		public ItemId ItemId;
+		public string Name;
+		public string Color;
+		public ItemInstance Instance;
+		public string TypeLabel;
+		public string SlotLabel;
+		public string ReqLabel;
+		public bool ReqMet;
+		public string PrimaryStatLabel;
+		public int PrimaryStatValue;
+		public bool HasCompare;
+		public int CompareDelta;
+		public string EnchantText;
+		public int SellPrice;
+	}
+
+	public class EnchantLine
+	{
+		public string Name;
+		public int Percent;
+	}
+
 	string GetIconPath( ItemId id )
 	{
 		if ( id == ItemId.None )
@@ -500,20 +697,14 @@
 		return CachedSlots[index];
 	}
 
-	string GetBadgeForEquipSlot( EquipSlot slot )
+	EquipSlotDisplay GetEquip( EquipSlot type )
 	{
-		switch ( slot )
+		foreach ( var e in EquipmentSlots )
 		{
-			case EquipSlot.Weapon: return "⚔";
-			case EquipSlot.Shield: return "🛡";
-			case EquipSlot.Head: return "⛑";
-			case EquipSlot.Chest: return "🎽";
-			case EquipSlot.Legs: return "👖";
-			case EquipSlot.Ring: return "💍";
-			case EquipSlot.Amulet: return "📿";
-			case EquipSlot.Ammo: return "🏹";
-			default: return "★";
+			if ( e.Slot == type )
+				return e;
 		}
+		return null;
 	}
 
 	void OnSlotLeftClick( int slotIndex )
@@ -566,16 +757,7 @@
 
 		if ( slot.IsUnique )
 		{
-			if ( inventory.IsSlotEquipped( slotIndex ) )
-			{
-				var equipType = inventory.GetEquippedSlotTypeAt( slotIndex );
-				if ( equipType != EquipSlot.None )
-					inventory.UnequipUnique( equipType );
-			}
-			else
-			{
-				inventory.EquipUniqueAtSlot( slotIndex );
-			}
+			inventory.EquipUniqueAtSlot( slotIndex );
 			return;
 		}
 
@@ -593,12 +775,56 @@
 
 		if ( def.Type == ItemType.Arrow )
 		{
-			if ( inventory.GetEquippedAmmoSlotIndex() == slotIndex )
-				inventory.UnequipAmmo();
-			else
-				inventory.EquipAmmoFromSlot( slotIndex );
+			inventory.EquipAmmoFromSlot( slotIndex );
 			return;
 		}
+	}
+
+	void OnEquippableItemClick( int slotIndex )
+	{
+		var inventory = PlayerHelper.GetLocalInventory();
+		if ( inventory == null )
+			return;
+
+		inventory.EquipUniqueAtSlot( slotIndex );
+	}
+
+	void OnEquipSlotClick( EquipSlotDisplay slot )
+	{
+		if ( slot == null || slot.ItemName == null )
+			return;
+
+		var inventory = PlayerHelper.GetLocalInventory();
+		if ( inventory == null )
+			return;
+
+		if ( inventory.CanUnequipToInventory( slot.Slot ) )
+		{
+			inventory.Unequip( slot.Slot );
+			return;
+		}
+
+		ConfirmUnequipSlot = slot.Slot;
+		ConfirmItemName = slot.ItemName;
+		ShowUnequipConfirm = true;
+	}
+
+	void OnConfirmUnequipYes()
+	{
+		var inventory = PlayerHelper.GetLocalInventory();
+		if ( inventory != null && ConfirmUnequipSlot != EquipSlot.None )
+			inventory.UnequipToBank( ConfirmUnequipSlot );
+
+		ShowUnequipConfirm = false;
+		ConfirmUnequipSlot = EquipSlot.None;
+		ConfirmItemName = "";
+	}
+
+	void OnConfirmUnequipNo()
+	{
+		ShowUnequipConfirm = false;
+		ConfirmUnequipSlot = EquipSlot.None;
+		ConfirmItemName = "";
 	}
 
 	void ClearPickup()
@@ -666,18 +892,6 @@
 			Count = slot.Count,
 			Color = GetItemColor( slot.ItemId, sdef )
 		};
-	}
-
-	void OnEquipSlotClick( EquipSlotDisplay slot )
-	{
-		if ( slot == null || slot.ItemName == null )
-			return;
-
-		var inventory = PlayerHelper.GetLocalInventory();
-		if ( inventory == null )
-			return;
-
-		inventory.Unequip( slot.Slot );
 	}
 
 	string GetBuffColor( BuffType type )
@@ -785,11 +999,31 @@
 		}
 	}
 
+	string GetTypeLabel( ItemType type )
+	{
+		switch ( type )
+		{
+			case ItemType.MeleeWeapon: return "Melee weapon";
+			case ItemType.RangedWeapon: return "Ranged weapon";
+			case ItemType.MagicWeapon: return "Magic weapon";
+			case ItemType.Tool: return "Tool";
+			case ItemType.Shield: return "Shield";
+			case ItemType.HeavyArmor: return "Heavy armor";
+			case ItemType.MediumArmor: return "Medium armor";
+			case ItemType.LightArmor: return "Light armor";
+			case ItemType.Ring: return "Ring";
+			case ItemType.Amulet: return "Amulet";
+			default: return type.ToString();
+		}
+	}
+
 	void RefreshData()
 	{
 		CachedSlots.Clear();
 		SkillEntries.Clear();
 		EquipmentSlots.Clear();
+		EquippableItems.Clear();
+		EnchantLines.Clear();
 		ActiveBuffs.Clear();
 
 		var inventory = PlayerHelper.GetLocalInventory();
@@ -865,14 +1099,15 @@
 					data.Color = GetItemColor( src.ItemId, def );
 				}
 
-				if ( inventory.IsSlotEquipped( i ) )
-				{
-					data.IsEquipped = true;
-					var equipType = inventory.GetEquippedSlotTypeAt( i );
-					data.EquipBadge = GetBadgeForEquipSlot( equipType );
-				}
-
 				CachedSlots.Add( data );
+
+				if ( src.IsUnique )
+				{
+					var inst = src.Unique;
+					var def = ItemDatabase.Get( inst.ItemId );
+					if ( def != null && def.Slot != EquipSlot.None )
+						EquippableItems.Add( BuildEquippableEntry( i, inst, def, inventory, skills ) );
+				}
 			}
 
 			EquipSlot[] equipSlots = { EquipSlot.Weapon, EquipSlot.Shield, EquipSlot.Head, EquipSlot.Chest, EquipSlot.Legs, EquipSlot.Ring, EquipSlot.Amulet, EquipSlot.Ammo };
@@ -924,7 +1159,7 @@
 						ItemName = baseName,
 						Color = color,
 						Slot = slot,
-						EnchantStat = equippedUnique.GetShortStat(),
+						EnchantStat = ( slot == EquipSlot.Ring || slot == EquipSlot.Amulet ) ? "" : equippedUnique.GetShortStat(),
 						ItemId = equippedUnique.ItemId
 					} );
 					continue;
@@ -940,6 +1175,8 @@
 					ItemId = ItemId.None
 				} );
 			}
+
+			BuildStats( inventory, skills );
 
 			if ( PickedUpSlotIndex >= 0 )
 			{
@@ -983,6 +1220,108 @@
 		}
 	}
 
+	EquippableEntry BuildEquippableEntry( int slotIndex, ItemInstance inst, ItemDefinition def, Inventory inventory, Skills skills )
+	{
+		var entry = new EquippableEntry();
+		entry.SlotIndex = slotIndex;
+		entry.ItemId = inst.ItemId;
+		entry.Instance = inst;
+		entry.Name = inst.GetDisplayName();
+
+		bool magic = inst.IsEnchanted || ( inst.IsSocketable && inst.SocketsUsed > 0 );
+		entry.Color = magic ? "#a080d0" : GetItemColor( inst.ItemId, def );
+		entry.TypeLabel = GetTypeLabel( def.Type );
+		entry.SlotLabel = GetSlotLabel( def.Slot );
+		entry.ReqLabel = def.LevelRequired > 0 ? $"Requires {def.SkillRequired} {def.LevelRequired}" : "";
+		entry.ReqMet = skills == null || skills.CanEquip( def );
+		entry.SellPrice = def.BaseSellPrice;
+		entry.EnchantText = inst.GetShortStat();
+
+		if ( def.WeaponPower > 0f )
+		{
+			entry.PrimaryStatLabel = "Weapon power";
+			entry.PrimaryStatValue = (int)def.WeaponPower;
+
+			var eqId = inventory.GetEquipped( def.Slot );
+			if ( eqId != ItemId.None )
+			{
+				var eqDef = ItemDatabase.Get( eqId );
+				entry.HasCompare = true;
+				entry.CompareDelta = (int)( def.WeaponPower - ( eqDef != null ? eqDef.WeaponPower : 0f ) );
+			}
+		}
+		else if ( def.ArmorValue > 0f )
+		{
+			entry.PrimaryStatLabel = "Armor";
+			entry.PrimaryStatValue = (int)def.ArmorValue;
+
+			var eqId = inventory.GetEquipped( def.Slot );
+			if ( eqId != ItemId.None )
+			{
+				var eqDef = ItemDatabase.Get( eqId );
+				entry.HasCompare = true;
+				entry.CompareDelta = (int)( def.ArmorValue - ( eqDef != null ? eqDef.ArmorValue : 0f ) );
+			}
+		}
+
+		return entry;
+	}
+
+	void BuildStats( Inventory inventory, Skills skills )
+	{
+		if ( skills != null )
+		{
+			StatAttack = skills.GetLevel( SkillType.Attack );
+			StatDefence = skills.GetLevel( SkillType.Defence );
+			StatArchery = skills.GetLevel( SkillType.Archery );
+			StatMagic = skills.GetLevel( SkillType.Magic );
+		}
+
+		var wdef = inventory.GetEquippedWeaponDef();
+		HasWeapon = wdef != null;
+		StatStyle = wdef != null ? CombatTriangle.GetStyleFromWeapon( wdef ).ToString() : "—";
+
+		if ( wdef == null )
+		{
+			StatWeaponPower = 0;
+			StatWeaponText = "—";
+		}
+		else if ( wdef.Type == ItemType.RangedWeapon )
+		{
+			int basePower = (int)wdef.WeaponPower;
+			int arrowPower = (int)inventory.GetArrowPower();
+			StatWeaponPower = basePower + arrowPower;
+			StatWeaponText = arrowPower > 0
+				? $"{StatWeaponPower} · {StatStyle} ({basePower} + {arrowPower} arrow)"
+				: $"{basePower} · {StatStyle}";
+		}
+		else
+		{
+			StatWeaponPower = (int)wdef.WeaponPower;
+			StatWeaponText = $"{StatWeaponPower} · {StatStyle}";
+		}
+
+		float armor = CombatTriangle.GetEffectiveArmorValue( inventory );
+		if ( armor < 0f )
+			armor = 0f;
+		StatArmor = (int)armor;
+		StatArmorReductionPct = (int)System.MathF.Round( armor / ( armor + 100f ) * 100f );
+
+		var pen = CombatTriangle.GetEquippedArmorPenalties( inventory );
+		ManaRegenPenaltyPct = (int)( pen.ManaRegenPenalty * 100f );
+		RangedDrawPenaltyPct = (int)( pen.RangedDrawPenalty * 100f );
+
+		foreach ( EnchantmentType t in System.Enum.GetValues( typeof( EnchantmentType ) ) )
+		{
+			if ( t == EnchantmentType.None )
+				continue;
+
+			float b = inventory.GetEnchantmentBonus( t );
+			if ( b > 0f )
+				EnchantLines.Add( new EnchantLine { Name = t.ToString(), Percent = (int)b } );
+		}
+	}
+
 	bool ShouldDropPickup()
 	{
 		if ( !IsUIOpen )
@@ -1016,6 +1355,16 @@
 
 	protected override void OnUpdate()
 	{
+		GearTabExpanded = ActiveTab == 0;
+
+		TerryPreviewRenderer.Instance?.SetActive( ActiveTab == 0 );
+		if ( ActiveTab == 0 && TerryImage != null )
+		{
+			var terryTex = TerryPreviewRenderer.PreviewTexture;
+			if ( terryTex != null )
+				TerryImage.Texture = terryTex;
+		}
+
 		if ( GameLog.FocusAllTabRequested )
 		{
 			LogTab = 0;
@@ -1038,6 +1387,9 @@
 			if ( ShouldDropPickup() )
 				ClearPickup();
 		}
+
+		if ( !IsUIOpen && ShowUnequipConfirm )
+			OnConfirmUnequipNo();
 
 		if ( IsChatOpen && ChatInputRef != null )
 			ChatInputRef.Focus();
@@ -1082,14 +1434,17 @@
 		for ( int i = 0; i < CachedSlots.Count; i++ )
 		{
 			var slot = CachedSlots[i];
-			int eq = slot.IsEquipped ? 1 : 0;
 			if ( slot.IsUnique )
-				slotHash = HashCode.Combine( slotHash, slot.ItemId, (int)( slot.Unique.EnchantmentPercent * 10 ), i, 1, eq );
+				slotHash = HashCode.Combine( slotHash, slot.ItemId, (int)( slot.Unique.EnchantmentPercent * 10 ), i, 1 );
 			else if ( slot.IsStack )
-				slotHash = HashCode.Combine( slotHash, slot.ItemId, slot.Count, i, 0, eq );
+				slotHash = HashCode.Combine( slotHash, slot.ItemId, slot.Count, i, 0 );
 			else
 				slotHash = HashCode.Combine( slotHash, i, -1 );
 		}
+
+		int gearHash = HashCode.Combine( EquippableItems.Count, EnchantLines.Count, StatAttack, StatDefence, StatArchery, StatMagic, StatArmor, StatWeaponPower );
+		foreach ( var e in EquipmentSlots )
+			gearHash = HashCode.Combine( gearHash, (int)e.Slot, e.ItemName ?? "", e.EnchantStat ?? "" );
 
 		int chatCount = GameManager.Instance != null ? GameManager.Instance.ChatMessages.Count : 0;
 
@@ -1105,13 +1460,15 @@
 			IsDrinking,
 			IsHealTicking,
 			(int)PotionCooldownRemaining,
-			EquipmentSlots.Count > 0 ? EquipmentSlots[0].ItemName ?? "" : "",
+			gearHash,
 			PlayerGatherResource.UIOpen,
 			GameLog.Messages.Count,
 			chatCount,
 			LogTab,
 			IsChatOpen,
 			PickedUpSlotIndex,
+			ActiveTab,
+			ShowUnequipConfirm,
 			(int)CursorXPercent,
 			(int)CursorYPercent
 		).GetHashCode();

@@ -1,15 +1,10 @@
 using Sandbox;
 
-/// <summary>
-/// Cycles through hotbar slots 1-5 on F key press.
-/// Starts from currently equipped weapon's slot index (or 0 if nothing equipped).
-/// Skips slots containing armor (helm/chest/legs/shield).
-/// Unique non-armor items → equip via standard hotbar path.
-/// Stackable items (potions, arrows, resources) or empty slots → unequip weapon (empty hands).
-/// </summary>
 public sealed class ToolCycler : Component
 {
 	[Property] public string CycleAction { get; set; } = "CycleAction";
+
+	int _lastBeltPos = -1;
 
 	protected override void OnUpdate()
 	{
@@ -19,20 +14,12 @@ public sealed class ToolCycler : Component
 		if ( !Input.Pressed( CycleAction ) )
 			return;
 
-		Log.Info( $"[ToolCycler] {CycleAction} pressed" );
-
 		if ( IsAnyUIBlocking() )
-		{
-			Log.Info( "[ToolCycler] UI blocking, skipping" );
 			return;
-		}
 
 		var inventory = GameObject.Components.Get<Inventory>();
 		if ( inventory == null )
-		{
-			Log.Info( "[ToolCycler] No Inventory on GameObject" );
 			return;
-		}
 
 		var potionSystem = GameObject.Components.Get<PotionSystem>();
 		if ( potionSystem != null && potionSystem.IsDrinking )
@@ -42,7 +29,6 @@ public sealed class ToolCycler : Component
 		if ( shooter != null && shooter.IsDrawing )
 			return;
 
-		Log.Info( "[ToolCycler] Cycling..." );
 		CycleToNext( inventory );
 	}
 
@@ -53,49 +39,55 @@ public sealed class ToolCycler : Component
 		int totalPositions = hotbarSize + 1;
 
 		int equippedSlot = inventory.GetEquippedSlotIndex( EquipSlot.Weapon );
-		int currentPos;
+
+		int startPos;
 		if ( equippedSlot >= 0 && equippedSlot < hotbarSize )
-			currentPos = equippedSlot;
+			startPos = equippedSlot;
+		else if ( _lastBeltPos >= 0 && _lastBeltPos <= hotbarSize )
+			startPos = _lastBeltPos;
 		else
-			currentPos = emptyHandsPos;
+			startPos = emptyHandsPos;
 
 		for ( int i = 1; i <= totalPositions; i++ )
 		{
-			int candidate = ( currentPos + i ) % totalPositions;
+			int candidate = ( startPos + i ) % totalPositions;
 
 			if ( candidate == emptyHandsPos )
 			{
 				if ( inventory.GetEquipped( EquipSlot.Weapon ) != ItemId.None )
 					inventory.UnequipUnique( EquipSlot.Weapon );
+
+				_lastBeltPos = emptyHandsPos;
 				return;
 			}
 
-			var slot = inventory.GetSlot( candidate );
-
-			if ( slot != null && slot.IsUnique && IsArmor( slot.Unique.ItemId ) )
+			if ( !IsCyclable( inventory, candidate ) )
 				continue;
 
-			if ( slot == null || slot.IsEmpty || slot.IsStack )
-				continue;
+			if ( inventory.GetEquipped( EquipSlot.Weapon ) != ItemId.None )
+				inventory.UnequipUnique( EquipSlot.Weapon );
 
-			if ( slot.IsUnique )
-			{
-				inventory.EquipUniqueAtSlot( candidate );
-				return;
-			}
+			inventory.EquipUniqueAtSlot( candidate );
+			_lastBeltPos = candidate;
+			return;
 		}
 	}
 
-	static bool IsArmor( ItemId id )
+	bool IsCyclable( Inventory inventory, int slotIndex )
 	{
-		var def = ItemDatabase.Get( id );
-		if ( def == null )
+		var slot = inventory.GetSlot( slotIndex );
+		if ( slot == null || !slot.IsUnique )
 			return false;
 
-		return def.Type == ItemType.HeavyArmor
-			|| def.Type == ItemType.MediumArmor
-			|| def.Type == ItemType.LightArmor
-			|| def.Type == ItemType.Shield;
+		var def = ItemDatabase.Get( slot.Unique.ItemId );
+		if ( def == null || def.Slot != EquipSlot.Weapon )
+			return false;
+
+		var skills = GameObject.Components.Get<Skills>();
+		if ( skills != null && !skills.CanEquip( def ) )
+			return false;
+
+		return true;
 	}
 
 	static bool IsAnyUIBlocking()

@@ -10,7 +10,7 @@ root {
 .sidebar-buttons {
 	position: absolute;
 	bottom: 12px;
-	right: 424px; // inventory is at right:12 + width 400 = 412, +12 gap = 424
+	right: 424px;
 	width: 70px;
 	display: flex;
 	flex-direction: column;
@@ -18,6 +18,11 @@ root {
 	font-family: Almendra;
 	font-smooth: auto;
 	pointer-events: all;
+	transition: right 0.18s ease;
+
+	&.gear-shift {
+		right: 824px;
+	}
 }
 
 .sidebar-button {

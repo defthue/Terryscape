@@ -2,7 +2,7 @@ using Sandbox;
 using System;
 using System.Collections.Generic;
 
-[GameResource( "Loot Table", "loot", "A reusable loot table: a gold range plus a list of item drop chances." )]
+[AssetType( Name = "Loot Table", Extension = "loot" )]
 public class LootTable : GameResource
 {
 	[Property, Group( "Gold" )] public int GoldMin { get; set; } = 0;

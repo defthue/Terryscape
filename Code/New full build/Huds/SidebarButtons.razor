@@ -3,7 +3,7 @@
 @inherits PanelComponent
 
 <root>
-	<div class="sidebar-buttons">
+	<div class="sidebar-buttons @(InventoryHud.GearTabExpanded ? "gear-shift" : "")">
 		<div class="sidebar-button" onclick="@(() => OpenJournal())">
 			<div class="sidebar-icon">📜</div>
 			<div class="sidebar-tooltip">Quest Journal</div>
@@ -104,6 +104,6 @@
 
 	protected override int BuildHash()
 	{
-		return ( JournalStation.IsOpen, LeaderboardStation.IsOpen, SpellbookStation.IsOpen ).GetHashCode();
+		return ( JournalStation.IsOpen, LeaderboardStation.IsOpen, SpellbookStation.IsOpen, InventoryHud.GearTabExpanded ).GetHashCode();
 	}
 }

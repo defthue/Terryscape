@@ -33,7 +33,7 @@
 							@foreach ( var entry in ItemRewards )
 							{
 								<div class="reward-slot">
-									<div class="reward-icon" style="background-color: @GetItemColor( entry.Item )">
+									<div class="reward-icon">
 										<img class="reward-icon-img" src="@GetIconPath( entry.Item )" />
 										@if ( entry.Amount > 1 )
 										{
@@ -85,30 +85,6 @@
 		if ( id == ItemId.Ring ) return "/ItemIcons/FineRing.vtex";
 		if ( id == ItemId.Amulet ) return "/ItemIcons/FineAmulet.vtex";
 		return $"/ItemIcons/{id}.vtex";
-	}
-
-	string GetItemColor( ItemId id )
-	{
-		var def = ItemDatabase.Get( id );
-		if ( def == null ) return "#2a2218";
-		switch ( def.Type )
-		{
-			case ItemType.Resource:
-				if ( def.Name.Contains( "Log" ) ) return "#5c3f2a";
-				if ( def.Name.Contains( "Ore" ) ) return "#7a4d22";
-				if ( def.Name.Contains( "Gem" ) ) return "#3a5a6a";
-				if ( def.Name.Contains( "Rune" ) ) return "#4a3a6a";
-				return "#3a3a2a";
-			case ItemType.Bar: return "#6a5320";
-			case ItemType.Herb: return "#3a5a30";
-			case ItemType.Potion: return "#5a2a2a";
-			case ItemType.Ring: return "#6a5320";
-			case ItemType.Amulet: return "#2a5060";
-			case ItemType.Misc:
-				if ( id == ItemId.Nugget ) return "#6a5320";
-				return "#2a2218";
-			default: return "#2a2218";
-		}
 	}
 
 	protected override int BuildHash()

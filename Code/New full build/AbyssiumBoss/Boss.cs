@@ -235,9 +235,7 @@ public sealed class Boss : Component
 	float _targetSwitchTimer;
 	float _pillarHealTimer;
 	float _battlecryRemaining;
-	float _victoryRemaining;
 	float _respawnTimer;
-	bool _battlecryPlayed;
 	bool _respawnRequested;
 	float _leashHealAccum;
 
@@ -364,7 +362,6 @@ public sealed class Boss : Component
 	{
 		_state = BossState.Battlecry;
 		_battlecryRemaining = BattlecryDuration;
-		_battlecryPlayed = true;
 		BroadcastAnimBool( BattlecryParam, true );
 		SetMoving( false, false );
 		SoundLibrary.PlayBossRoar( WorldPosition );
@@ -936,7 +933,6 @@ public sealed class Boss : Component
 			WorldPosition = _spawnPosition;
 			WorldRotation = _spawnRotation;
 			SetMoving( false, false );
-			_battlecryPlayed = false;
 			CurrentHealth = MaxHealth;
 			_leashHealAccum = 0f;
 			_state = BossState.Idle;
@@ -1190,7 +1186,6 @@ public sealed class Boss : Component
 		IsDead = false;
 		CurrentHealth = MaxHealth;
 		PrimaryTarget = null;
-		_battlecryPlayed = false;
 		_respawnRequested = false;
 		_deathAnimFinished = false;
 		_deathAnimTimer = 0f;
@@ -1225,7 +1220,7 @@ public sealed class Boss : Component
 		if ( attacker != null && attacker.IsValid() )
 		{
 			var ownerConnection = attacker.Network.Owner;
-			if ( ownerConnection != null && ownerConnection.SteamId != 0 )
+			if ( ownerConnection != null && ownerConnection.SteamId != 0L )
 				_contributorSteamIds.Add( ownerConnection.SteamId );
 		}
 
