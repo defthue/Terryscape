@@ -11,8 +11,8 @@
       "Resources": null,
       "PackageReferences": null,
       "EditorReferences": [
-        "penguins.side_table_01_1k#12033",
-        "duccsoft.forest_soil_tmat#60686"
+        "duccsoft.forest_soil_tmat#60686",
+        "penguins.side_table_01_1k#12033"
       ],
       "Mounts": null,
       "IsStandaloneOnly": false,
