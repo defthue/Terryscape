@@ -1,0 +1,23 @@
+{
+  "publish": {
+    "Enabled": false,
+    "ProjectConfig": {
+      "Title": "Treemandemtext",
+      "Type": "material",
+      "Org": "local",
+      "Ident": "treemandemtext",
+      "Schema": 0,
+      "IncludeSourceFiles": false,
+      "Resources": null,
+      "PackageReferences": null,
+      "EditorReferences": [
+        "duccsoft.forest_sticks_tmat#60687"
+      ],
+      "Mounts": null,
+      "IsStandaloneOnly": false,
+      "Metadata": {
+        "SingleAssetSource": "models/castle _kit/fbx format/treemandemtext.vmat"
+      }
+    }
+  }
+}

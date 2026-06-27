@@ -1,0 +1,23 @@
+{
+  "publish": {
+    "Enabled": false,
+    "ProjectConfig": {
+      "Title": "Pavingstone 02 2K Basecolor",
+      "Type": "material",
+      "Org": "local",
+      "Ident": "pavingstone022kbasecolor",
+      "Schema": 0,
+      "IncludeSourceFiles": false,
+      "Resources": null,
+      "PackageReferences": null,
+      "EditorReferences": [
+        "duccsoft.forest_sticks_tmat#60687"
+      ],
+      "Mounts": null,
+      "IsStandaloneOnly": false,
+      "Metadata": {
+        "SingleAssetSource": "models/castle _kit/fbx format/pavingstone02_2k_basecolor.vmat"
+      }
+    }
+  }
+}

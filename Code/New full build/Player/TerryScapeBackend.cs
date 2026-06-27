@@ -178,7 +178,13 @@ public static class TerryScapeBackend
 			};
 
 			var result = await CallEndpointWithRetry( "save-all", payload, SaveMaxAttempts );
-			return result.HasValue;
+			if ( !result.HasValue )
+			{
+				Log.Warning( "[TerryScapeBackend] save-all returned no value after retries — treating as failed save." );
+				return false;
+			}
+
+			return true;
 		}
 		catch ( Exception ex )
 		{

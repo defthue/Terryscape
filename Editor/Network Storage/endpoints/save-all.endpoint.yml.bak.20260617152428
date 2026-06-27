@@ -60,180 +60,143 @@ input:
   required: []
   type: "object"
 steps:
-  -
-    collection: "players"
+  - collection: "players"
     id: "existing"
     key: "{{steamId}}_default"
     type: "read"
-  -
-    check:
+  - check:
       expression: "{{num(input.totalLevel, 0)}} >= {{num(existing.totalLevel, 0)}}"
     errorCode: "SAVE_REGRESSION_BLOCKED"
     id: "guard_level"
     message: "Refusing to overwrite totalLevel {{num(existing.totalLevel, 0)}} with lower value {{num(input.totalLevel, 0)}}."
     status: 409
     type: "assert"
-  -
-    check:
+  - check:
       expression: "{{num(input.totalKills, 0)}} >= {{num(existing.totalKills, 0)}}"
     errorCode: "SAVE_REGRESSION_BLOCKED"
     id: "guard_kills"
     message: "Refusing to overwrite totalKills {{num(existing.totalKills, 0)}} with lower value {{num(input.totalKills, 0)}}."
     status: 409
     type: "assert"
-  -
-    check:
+  - check:
       expression: "{{num(input.nodesMined, 0)}} >= {{num(existing.nodesMined, 0)}}"
     errorCode: "SAVE_REGRESSION_BLOCKED"
     id: "guard_nodes"
     message: "Refusing to overwrite nodesMined {{num(existing.nodesMined, 0)}} with lower value {{num(input.nodesMined, 0)}}."
     status: 409
     type: "assert"
-  -
-    collection: "players"
+  - collection: "players"
     id: "save_players"
     key: "{{steamId}}_default"
     ops:
-      -
-        op: "set"
+      - op: "set"
         path: "savedAt"
         value: "{{input.savedAt}}"
-      -
-        op: "set"
+      - op: "set"
         path: "playerName"
         value: "{{input.playerName}}"
-      -
-        op: "set"
+      - op: "set"
         path: "currency"
         value: "{{input.currency}}"
-      -
-        op: "set"
+      - op: "set"
         path: "currentMana"
         value: "{{input.currentMana}}"
-      -
-        op: "set"
+      - op: "set"
         path: "totalLevel"
         value: "{{input.totalLevel}}"
-      -
-        op: "set"
+      - op: "set"
         path: "totalGold"
         value: "{{input.totalGold}}"
-      -
-        op: "set"
+      - op: "set"
         path: "totalKills"
         value: "{{input.totalKills}}"
-      -
-        op: "set"
+      - op: "set"
         path: "nodesMined"
         value: "{{input.nodesMined}}"
-      -
-        op: "set"
+      - op: "set"
         path: "inventoryExpansions"
         value: "{{input.inventoryExpansions}}"
-      -
-        op: "set"
+      - op: "set"
         path: "equippedAmmoId"
         value: "{{input.equippedAmmoId}}"
-      -
-        op: "set"
+      - op: "set"
         path: "equippedAmmoQty"
         value: "{{input.equippedAmmoQty}}"
-      -
-        op: "set"
+      - op: "set"
         path: "equippedAmmoSlotIndex"
         value: "{{input.equippedAmmoSlotIndex}}"
     type: "write"
-  -
-    collection: "skills"
+  - collection: "skills"
     id: "save_skills"
     key: "{{steamId}}_default"
     ops:
-      -
-        op: "set"
+      - op: "set"
         path: "entries"
         value: "{{input.skills}}"
     type: "write"
-  -
-    collection: "inventory"
+  - collection: "inventory"
     id: "save_inventory"
     key: "{{steamId}}_default"
     ops:
-      -
-        op: "set"
+      - op: "set"
         path: "slots"
         value: "{{input.slots}}"
     type: "write"
-  -
-    collection: "equipment"
+  - collection: "equipment"
     id: "save_equipment"
     key: "{{steamId}}_default"
     ops:
-      -
-        op: "set"
+      - op: "set"
         path: "equipped"
         value: "{{input.equipped}}"
-      -
-        op: "set"
+      - op: "set"
         path: "equippedSlotIndices"
         value: "{{input.equippedSlotIndices}}"
     type: "write"
-  -
-    collection: "bank"
+  - collection: "bank"
     id: "save_bank"
     key: "{{steamId}}_default"
     ops:
-      -
-        op: "set"
+      - op: "set"
         path: "stackables"
         value: "{{input.bankStackables}}"
     type: "write"
-  -
-    collection: "bank_unique"
+  - collection: "bank_unique"
     id: "save_bank_unique"
     key: "{{steamId}}_default"
     ops:
-      -
-        op: "set"
+      - op: "set"
         path: "items"
         value: "{{input.bankUnique}}"
     type: "write"
-  -
-    collection: "progression"
+  - collection: "progression"
     id: "save_progression"
     key: "{{steamId}}_default"
     ops:
-      -
-        op: "set"
+      - op: "set"
         path: "recipes"
         value: "{{input.recipes}}"
-      -
-        op: "set"
+      - op: "set"
         path: "stones"
         value: "{{input.stones}}"
-      -
-        op: "set"
+      - op: "set"
         path: "quests"
         value: "{{input.quests}}"
-      -
-        op: "set"
+      - op: "set"
         path: "discoveredQuests"
         value: "{{input.discoveredQuests}}"
-      -
-        op: "set"
+      - op: "set"
         path: "unlockedSpells"
         value: "{{input.unlockedSpells}}"
-      -
-        op: "set"
+      - op: "set"
         path: "chestClaims"
         value: "{{input.chestClaims}}"
     type: "write"
-  -
-    collection: "kills"
+  - collection: "kills"
     id: "save_kills"
     key: "{{steamId}}_default"
     ops:
-      -
-        op: "set"
+      - op: "set"
         path: "counts"
         value: "{{input.kills}}"
     type: "write"

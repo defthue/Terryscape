@@ -23,7 +23,7 @@ public static class NSEndpoints
 	/// <summary>Reads all 8 collections and returns the merged player state | Method: GET</summary>
 	public const string LoadPlayer = "load-player";
 
-	/// <summary>Writes every collection in one atomic call and updates the global leaderboard entry. Used for autosave and logout. | Method: POST</summary>
+	/// <summary>Writes every collection in one atomic call. Guards against regression overwrites: refuses to lower totalLevel, totalKills, or nodesMined. Used for autosave and logout. | Method: POST</summary>
 	public const string SaveAll = "save-all";
 
 	/// <summary>Writes the bank stackables and bank unique items collections | Method: POST</summary>
