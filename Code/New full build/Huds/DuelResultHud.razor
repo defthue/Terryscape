@@ -1,0 +1,78 @@
+@using Sandbox;
+@using Sandbox.UI;
+@inherits PanelComponent
+
+<root>
+	@if ( ShouldShow )
+	{
+		<div class="duel-result-overlay">
+			<div class="duel-result @(LocalWon ? "win" : "lose")">@ResultText</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	DuelManager Manager => DuelManager.Instance;
+
+	bool _latched;
+	float _latchUntil;
+	bool _localWon;
+
+	bool Resolved
+	{
+		get
+		{
+			var dm = Manager;
+			return dm != null && dm.MatchActive && ( dm.ScoreA >= dm.RoundsToWin || dm.ScoreB >= dm.RoundsToWin );
+		}
+	}
+
+	bool IsLocalDuelist
+	{
+		get
+		{
+			var dm = Manager;
+			if ( dm == null || !dm.MatchActive )
+				return false;
+			var local = PlayerHelper.GetLocalPlayer();
+			return local != null && dm.IsDuelist( local );
+		}
+	}
+
+	bool ShouldShow => ( Resolved && IsLocalDuelist ) || ( _latched && Time.Now < _latchUntil );
+
+	bool LocalWon => _localWon;
+
+	string ResultText => _localWon ? "Victory!" : "Defeat";
+
+	void EvaluateWinner()
+	{
+		var dm = Manager;
+		if ( dm == null )
+			return;
+		var local = PlayerHelper.GetLocalPlayer();
+		if ( local == null )
+			return;
+		ulong winnerId = dm.ScoreA >= dm.RoundsToWin ? dm.DuelistASteamId : dm.DuelistBSteamId;
+		ulong localId = local.Network?.Owner?.SteamId ?? 0;
+		_localWon = localId != 0 && localId == winnerId;
+	}
+
+	protected override void OnUpdate()
+	{
+		if ( Resolved && IsLocalDuelist )
+		{
+			EvaluateWinner();
+			_latched = true;
+			_latchUntil = Time.Now + 4f;
+		}
+
+		StateHasChanged();
+	}
+
+	protected override int BuildHash()
+	{
+		return ( ShouldShow, LocalWon, ResultText ).GetHashCode();
+	}
+}

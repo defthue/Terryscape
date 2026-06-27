@@ -50,7 +50,8 @@ public sealed class PlayerGatherResource : Component
 			NpcInteract.ActiveNpc != null ||
 			MinimapState.IsFullMapOpen ||
 			WelcomeHudState.IsOpen ||
-			BlackjackSeat.LocalSeat != null;
+			BlackjackSeat.LocalSeat != null ||
+			DuelManager.LocalDuelUiOpen;
 
 		if ( UIOpen && anyHudOpenNow )
 			UIOpen = false;
@@ -105,6 +106,12 @@ public sealed class PlayerGatherResource : Component
 
 				if ( WelcomeHudState.IsOpen )
 					WelcomeHudState.IsOpen = false;
+
+				if ( DuelMaster.IsOpen )
+					DuelMaster.Close();
+
+				if ( DuelManager.Instance != null && DuelManager.Instance.LocalChallengePending )
+					DuelManager.Instance.DeclineLocalChallenge();
 
 				UIOpen = false;
 				Mouse.Visibility = MouseVisibility.Hidden;
@@ -186,6 +193,9 @@ public sealed class PlayerGatherResource : Component
 			return;
 
 		if ( BlackjackSeat.LocalSeat != null )
+			return;
+
+		if ( DuelManager.LocalDuelUiOpen )
 			return;
 
 		if ( drinking )
@@ -333,8 +343,9 @@ public sealed class PlayerGatherResource : Component
 		var node = trace.GameObject.Components.Get<ResourceNode>();
 		var monster = trace.GameObject.Components.Get<Monster>();
 		var boss = trace.GameObject.Components.Get<Boss>();
+		var pvpTarget = PvpCombat.ResolveTarget( trace.GameObject, GameObject );
 
-		if ( node == null && monster == null && boss == null )
+		if ( node == null && monster == null && boss == null && pvpTarget == null )
 		{
 			var retryTrace = Scene.Trace
 				.Ray( start, end )
@@ -349,9 +360,10 @@ public sealed class PlayerGatherResource : Component
 				node = retryTrace.GameObject.Components.Get<ResourceNode>();
 				monster = retryTrace.GameObject.Components.Get<Monster>();
 				boss = retryTrace.GameObject.Components.Get<Boss>();
+				pvpTarget = PvpCombat.ResolveTarget( retryTrace.GameObject, GameObject );
 			}
 
-			if ( node == null && monster == null && boss == null )
+			if ( node == null && monster == null && boss == null && pvpTarget == null )
 			{
 				_autoGatherNode = null;
 				TriggerSwingAnimation( false );
@@ -366,6 +378,14 @@ public sealed class PlayerGatherResource : Component
 
 		if ( inventory == null || skills == null )
 			return;
+
+		if ( pvpTarget != null )
+		{
+			_autoGatherNode = null;
+			TriggerSwingAnimation( false );
+			HandlePvpHit( pvpTarget, inventory, skills );
+			return;
+		}
 
 		if ( boss != null )
 		{
@@ -444,6 +464,61 @@ public sealed class PlayerGatherResource : Component
 		monster.TakeDamage( damage, GameObject );
 
 		DamagePopupBroadcaster.Broadcast( monster.WorldPosition + Vector3.Up * 50f, damage, monster.MaxHealth, isCrit );
+	}
+
+	void HandlePvpHit( GameObject targetPlayer, Inventory inventory, Skills skills )
+	{
+		var weaponDef = inventory.GetEquippedWeaponDef();
+		CombatStyle playerStyle = CombatTriangle.GetStyleFromWeapon( weaponDef );
+
+		SkillType combatSkill = SkillType.Attack;
+		float weaponPower = 1f;
+
+		if ( weaponDef != null )
+		{
+			weaponPower = weaponDef.WeaponPower;
+			if ( weaponDef.Type == ItemType.MagicWeapon )
+				combatSkill = SkillType.Magic;
+		}
+
+		float skillBonus = skills.GetCombatPower( combatSkill );
+
+		float buffMult = 1f;
+		var potionSystem = GameObject.Components.Get<PotionSystem>();
+		if ( potionSystem != null )
+		{
+			if ( combatSkill == SkillType.Attack )
+				buffMult = potionSystem.GetBuffMultiplier( BuffType.Attack );
+			else if ( combatSkill == SkillType.Magic )
+				buffMult = potionSystem.GetBuffMultiplier( BuffType.Magic );
+		}
+
+		float staffMeleeMult = ( weaponDef != null && weaponDef.Type == ItemType.MagicWeapon ) ? StaffMeleeDamageMultiplier : 1f;
+
+		float enchantMult = 1f;
+		if ( weaponDef != null && ( weaponDef.Type == ItemType.MeleeWeapon || weaponDef.Type == ItemType.Tool ) )
+			enchantMult = 1f + inventory.GetEnchantmentBonus( EnchantmentType.Sharpness ) / 100f;
+
+		float rawOffence = weaponPower * skillBonus * buffMult * staffMeleeMult * enchantMult;
+
+		bool isCrit = CombatConstants.RollCrit();
+		if ( isCrit )
+			rawOffence *= CombatConstants.CritMultiplier;
+
+		var manaCombat = GameObject.Components.Get<ManaSystem>();
+		if ( manaCombat != null )
+			manaCombat.MarkCombat();
+
+		int finalDamage = PvpCombat.ResolveDamage( rawOffence, playerStyle, targetPlayer );
+
+		var targetHealth = targetPlayer.Components.Get<PlayerHealth>();
+		if ( targetHealth == null )
+			return;
+
+		targetHealth.TakeDamage( finalDamage );
+
+		SoundLibrary.PlayMonsterHit( targetPlayer.WorldPosition );
+		DamagePopupBroadcaster.Broadcast( targetPlayer.WorldPosition + Vector3.Up * 60f, finalDamage, targetHealth.MaxHealth, isCrit );
 	}
 
 	void HandleBossHit( Boss boss, Inventory inventory, Skills skills )

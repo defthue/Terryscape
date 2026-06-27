@@ -1,0 +1,70 @@
+@using Sandbox;
+@using Sandbox.UI;
+@inherits PanelComponent
+
+<root>
+	@if ( ShouldShow )
+	{
+		<div class="dc-backdrop"></div>
+		<div class="dc-overlay">
+			<div class="dc-popup">
+				<div class="dc-header">
+					<div class="dc-title">Duel Challenge</div>
+				</div>
+				<div class="dc-body">
+					<div class="dc-text">@ChallengerName challenges you to a duel.</div>
+					<div class="dc-sub">Best of @Rounds</div>
+					<div class="dc-actions">
+						<div class="dc-btn decline" onclick="@(() => Decline())">Decline</div>
+						<div class="dc-btn accept" onclick="@(() => Accept())">Accept</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	DuelManager Manager => DuelManager.Instance;
+
+	bool ShouldShow => Manager != null && Manager.LocalChallengePending;
+	string ChallengerName => Manager?.LocalChallenger?.Network?.Owner?.DisplayName ?? "Someone";
+	int Rounds => Manager?.LocalChallengeRounds ?? 1;
+
+	float _shownAt;
+	bool _wasShowing;
+
+	void Accept()
+	{
+		Manager?.AcceptLocalChallenge();
+	}
+
+	void Decline()
+	{
+		Manager?.DeclineLocalChallenge();
+	}
+
+	protected override void OnUpdate()
+	{
+		bool showing = ShouldShow;
+
+		if ( showing )
+		{
+			if ( !_wasShowing )
+				_shownAt = Time.Now;
+
+			float timeout = Manager != null ? Manager.ChallengeTimeoutSeconds : 15f;
+			if ( Time.Now - _shownAt > timeout )
+				Manager?.ClearLocalChallenge();
+		}
+
+		_wasShowing = showing;
+		StateHasChanged();
+	}
+
+	protected override int BuildHash()
+	{
+		return ( ShouldShow, ChallengerName, Rounds ).GetHashCode();
+	}
+}

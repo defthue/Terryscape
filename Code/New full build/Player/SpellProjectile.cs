@@ -62,6 +62,21 @@ public sealed class SpellProjectile : Component
 		if ( !trace.Hit )
 			return;
 
+		var pvpTarget = PvpCombat.ResolveTarget( trace.GameObject, Shooter );
+		if ( pvpTarget != null )
+		{
+			int finalDamage = PvpCombat.ResolveDamage( Damage, CombatStyle.Magic, pvpTarget );
+			var targetHealth = pvpTarget.Components.Get<PlayerHealth>();
+			if ( targetHealth != null )
+			{
+				targetHealth.TakeDamage( finalDamage );
+				DamagePopupBroadcaster.Broadcast( trace.HitPosition, finalDamage, targetHealth.MaxHealth, IsCrit );
+			}
+			PlayImpactSound( trace.HitPosition );
+			GameObject.Destroy();
+			return;
+		}
+
 		var monster = trace.GameObject.Components.Get<Monster>();
 
 		if ( monster != null )

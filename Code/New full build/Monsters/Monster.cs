@@ -37,6 +37,10 @@ public sealed class Monster : Component
 
 	[Property, Group( "Respawn" )] public float RespawnMin { get; set; } = 5f;
 	[Property, Group( "Respawn" )] public float RespawnMax { get; set; } = 20f;
+	[Property, Group( "Respawn" )] public float DespawnBlinkDuration { get; set; } = 0.6f;
+	[Property, Group( "Respawn" )] public float MaterializeDuration { get; set; } = 1.5f;
+	[Property, Group( "Respawn" )] public float BlinkIntervalSlow { get; set; } = 0.28f;
+	[Property, Group( "Respawn" )] public float BlinkIntervalFast { get; set; } = 0.05f;
 
 	[Property, Group( "Animations" )] public float AttackAnimLength { get; set; } = 1.0f;
 	[Property, Group( "Animations" )] public float DamageDelay { get; set; } = 0.6f;
@@ -81,7 +85,6 @@ public sealed class Monster : Component
 	float _targetYaw;
 	float _healthRegenAccum = 0f;
 	int _respawnGeneration = 0;
-	bool _pendingDeath = false;
 	int _strafeDirection = 1;
 	float _repositionExtra = 0f;
 
@@ -95,6 +98,12 @@ public sealed class Monster : Component
 	bool _localCulled = false;
 	float _nextCullCheckTime = 0f;
 
+	enum VisualPhase { Solid, Dying, DespawnBlink, Hidden, MaterializeBlink }
+	VisualPhase _visualPhase = VisualPhase.Solid;
+	float _phaseTimer = 0f;
+	float _blinkAccum = 0f;
+	bool _blinkVisible = true;
+
 	protected override void OnStart()
 	{
 		_spawnPosition = GameObject.WorldPosition;
@@ -104,24 +113,20 @@ public sealed class Monster : Component
 
 		if ( !IsDead )
 		{
-			_localCulled = ShouldCullForDistance();
-			ApplyCulling( _localCulled );
+			ApplyCulling( ShouldCullForDistance() );
+		}
+		else
+		{
+			_visualPhase = VisualPhase.Hidden;
+			ApplyVisibility();
+			if ( MonsterCollider != null )
+				MonsterCollider.Enabled = false;
 		}
 	}
 
 	protected override void OnUpdate()
 	{
-		if ( !IsDead && Time.Now >= _nextCullCheckTime )
-		{
-			_nextCullCheckTime = Time.Now + 0.5f;
-
-			bool shouldCull = ShouldCullForDistance();
-			if ( shouldCull != _localCulled )
-			{
-				_localCulled = shouldCull;
-				ApplyCulling( _localCulled );
-			}
-		}
+		UpdateVisualPhase();
 
 		if ( !Networking.IsHost )
 			return;
@@ -181,11 +186,105 @@ public sealed class Monster : Component
 
 	void ApplyCulling( bool culled )
 	{
-		if ( ModelRenderer != null )
-			ModelRenderer.Enabled = !culled;
+		_localCulled = culled;
+		ApplyVisibility();
 
 		if ( MonsterCollider != null )
-			MonsterCollider.Enabled = !culled;
+			MonsterCollider.Enabled = !culled && _visualPhase == VisualPhase.Solid;
+	}
+
+	void ApplyVisibility()
+	{
+		if ( ModelRenderer == null )
+			return;
+
+		switch ( _visualPhase )
+		{
+			case VisualPhase.Hidden:
+				ModelRenderer.Enabled = false;
+				break;
+
+			case VisualPhase.DespawnBlink:
+			case VisualPhase.MaterializeBlink:
+				ModelRenderer.Enabled = !_localCulled;
+				SetRendering( !_localCulled && _blinkVisible );
+				break;
+
+			default:
+				ModelRenderer.Enabled = !_localCulled;
+				SetRendering( true );
+				break;
+		}
+	}
+
+	void SetRendering( bool on )
+	{
+		if ( ModelRenderer != null && ModelRenderer.SceneModel != null )
+			ModelRenderer.SceneModel.RenderingEnabled = on;
+	}
+
+	void EnterVisualPhase( VisualPhase phase )
+	{
+		_visualPhase = phase;
+		_phaseTimer = 0f;
+		_blinkAccum = 0f;
+		_blinkVisible = phase != VisualPhase.Hidden;
+		ApplyVisibility();
+	}
+
+	void UpdateVisualPhase()
+	{
+		if ( _visualPhase == VisualPhase.Solid )
+		{
+			if ( !IsDead && Time.Now >= _nextCullCheckTime )
+			{
+				_nextCullCheckTime = Time.Now + 0.5f;
+				bool shouldCull = ShouldCullForDistance();
+				if ( shouldCull != _localCulled )
+					ApplyCulling( shouldCull );
+			}
+			return;
+		}
+
+		_phaseTimer += Time.Delta;
+
+		switch ( _visualPhase )
+		{
+			case VisualPhase.Dying:
+				if ( _phaseTimer >= MathF.Max( 0f, DeathAnimLength - DespawnBlinkDuration ) )
+					EnterVisualPhase( VisualPhase.DespawnBlink );
+				break;
+
+			case VisualPhase.DespawnBlink:
+				TickBlink( DespawnBlinkDuration );
+				if ( _phaseTimer >= DespawnBlinkDuration )
+				{
+					_blinkVisible = false;
+					EnterVisualPhase( VisualPhase.Hidden );
+				}
+				break;
+
+			case VisualPhase.MaterializeBlink:
+				TickBlink( MaterializeDuration );
+				if ( _phaseTimer >= MaterializeDuration )
+					EnterVisualPhase( VisualPhase.Solid );
+				break;
+		}
+	}
+
+	void TickBlink( float duration )
+	{
+		float t = duration > 0f ? Math.Clamp( _phaseTimer / duration, 0f, 1f ) : 1f;
+		t *= t;
+		float interval = BlinkIntervalSlow + ( BlinkIntervalFast - BlinkIntervalSlow ) * t;
+
+		_blinkAccum += Time.Delta;
+		if ( _blinkAccum >= interval )
+		{
+			_blinkAccum = 0f;
+			_blinkVisible = !_blinkVisible;
+			ApplyVisibility();
+		}
 	}
 
 	void UpdateIdle()
@@ -326,12 +425,6 @@ public sealed class Monster : Component
 			_attackAnimTimer -= Time.Delta;
 			if ( _target != null && _target.IsValid() )
 				FaceTarget( _target.WorldPosition );
-			return;
-		}
-
-		if ( _pendingDeath )
-		{
-			ExecuteDeath();
 			return;
 		}
 
@@ -833,18 +926,11 @@ public sealed class Monster : Component
 
 	void Die()
 	{
-		if ( _attackAnimTimer > 0f && _state == MonsterState.Attacking )
-		{
-			_pendingDeath = true;
-			return;
-		}
-
 		ExecuteDeath();
 	}
 
 	void ExecuteDeath()
 	{
-		_pendingDeath = false;
 		IsDead = true;
 		IsAggro = false;
 		_target = null;
@@ -1002,28 +1088,15 @@ public sealed class Monster : Component
 		if ( MonsterCollider != null )
 			MonsterCollider.Enabled = false;
 
-		ModelRenderer?.Set( "b_death", true );
+		ModelRenderer?.Set( "b_attack", false );
+		ModelRenderer?.Set( "b_victory", false );
 		ModelRenderer?.Set( "is_moving", false );
 		ModelRenderer?.Set( "is_running", false );
+		ModelRenderer?.Set( "b_death", true );
 
 		SoundLibrary.PlayMonsterDeath( WorldPosition );
 
-		HideAfterDeath();
-	}
-
-	async void HideAfterDeath()
-	{
-		int gen = _respawnGeneration;
-		await Task.DelaySeconds( DeathAnimLength + DeathLingerTime );
-
-		if ( !IsValid || _respawnGeneration != gen )
-			return;
-
-		if ( ModelRenderer != null )
-			ModelRenderer.Enabled = false;
-
-		if ( MonsterCollider != null )
-			MonsterCollider.Enabled = false;
+		EnterVisualPhase( VisualPhase.Dying );
 	}
 
 	async void StartRespawnTimer( int generation )
@@ -1034,16 +1107,22 @@ public sealed class Monster : Component
 		if ( !IsValid || _respawnGeneration != generation )
 			return;
 
-		BroadcastRespawn();
+		BroadcastRespawnTelegraph();
+
+		await Task.DelaySeconds( MaterializeDuration );
+
+		if ( !IsValid || _respawnGeneration != generation )
+			return;
+
+		BroadcastRespawnComplete();
 	}
 
 	[Rpc.Broadcast]
-	void BroadcastRespawn()
+	void BroadcastRespawnTelegraph()
 	{
 		if ( Networking.IsHost )
 		{
 			CurrentHealth = MaxHealth;
-			IsDead = false;
 			IsAggro = false;
 			IsFrozen = false;
 			FreezeTimeRemaining = 0f;
@@ -1054,9 +1133,8 @@ public sealed class Monster : Component
 			_attackCooldownRemaining = 0f;
 			_attackAnimTimer = 0f;
 			_healthRegenAccum = 0f;
-			_pendingDeath = false;
 			_repositionExtra = 0f;
-			_state = MonsterState.Idle;
+			_state = MonsterState.Dead;
 			GameObject.WorldPosition = _spawnPosition;
 
 			_lastBroadcastMoving = false;
@@ -1069,10 +1147,26 @@ public sealed class Monster : Component
 		ModelRenderer?.Set( "is_moving", false );
 		ModelRenderer?.Set( "is_running", false );
 
-		_localCulled = ShouldCullForDistance();
+		if ( MonsterCollider != null )
+			MonsterCollider.Enabled = false;
 
-		if ( ModelRenderer != null )
-			ModelRenderer.Enabled = !_localCulled;
+		_localCulled = ShouldCullForDistance();
+		EnterVisualPhase( VisualPhase.MaterializeBlink );
+	}
+
+	[Rpc.Broadcast]
+	void BroadcastRespawnComplete()
+	{
+		if ( Networking.IsHost )
+		{
+			IsDead = false;
+			IsAggro = false;
+			_target = null;
+			_state = MonsterState.Idle;
+		}
+
+		_localCulled = ShouldCullForDistance();
+		EnterVisualPhase( VisualPhase.Solid );
 
 		if ( MonsterCollider != null )
 			MonsterCollider.Enabled = !_localCulled;

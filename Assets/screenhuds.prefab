@@ -328,21 +328,71 @@
         "RenderInterval": 0.05,
         "RenderWidth": 280,
         "RenderWithAlpha": true,
-        "SourceBody": {
-          "_type": "component",
-          "component_id": "2795f401-4c71-4fd7-8575-b6259ef80de0",
-          "go": "c1f2a082-666f-46c2-963c-977b391ae411",
-          "component_type": "SkinnedModelRenderer"
-        },
-        "SourceTool": {
-          "_type": "component",
-          "component_id": "e6458b40-06a6-4874-a0c8-7933fae02629",
-          "go": "66d5a509-0479-4d5f-ad8d-a997ebffb121",
-          "component_type": "HeldToolController"
-        },
+        "SourceBody": null,
+        "SourceTool": null,
         "VoidOrigin": "0,0,100000",
         "WarmupSeconds": 0.75,
         "WeaponSettleDelay": 0.2
+      },
+      {
+        "__type": "Sandbox.Huds.DuelSetupHud",
+        "__guid": "2c948d8c-7b1e-4f66-9e77-4c5de216323b",
+        "__enabled": true,
+        "Flags": 0,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null
+      },
+      {
+        "__type": "Sandbox.Huds.DuelChallengePopup",
+        "__guid": "9bc288a0-34e0-44b3-82a1-869378f38e5d",
+        "__enabled": true,
+        "Flags": 0,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null
+      },
+      {
+        "__type": "Sandbox.Huds.DuelCountdownHud",
+        "__guid": "1f9245c0-f04b-42e0-b4a0-b3bccf6c9d8a",
+        "__enabled": true,
+        "Flags": 0,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null
+      },
+      {
+        "__type": "Sandbox.Huds.DuelOpponentHealthHud",
+        "__guid": "3bd2ab44-5ab6-4916-9a60-c6e2e21ae0c4",
+        "__enabled": true,
+        "Flags": 0,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null
+      },
+      {
+        "__type": "Sandbox.Huds.DuelResultHud",
+        "__guid": "b7c81f6e-41b3-4d4f-a044-e6088cfcf949",
+        "__enabled": true,
+        "Flags": 0,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null
       }
     ],
     "Children": [],

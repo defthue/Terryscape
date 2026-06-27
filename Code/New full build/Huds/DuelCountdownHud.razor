@@ -1,0 +1,92 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using System;
+@inherits PanelComponent
+
+<root>
+	@if ( ShowFight )
+	{
+		<div class="duel-cd-overlay">
+			<div class="duel-cd-fight">Fight!</div>
+		</div>
+	}
+	else if ( ShowCount )
+	{
+		<div class="duel-cd-overlay">
+			<div class="duel-cd-number">@CountText</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	DuelManager Manager => DuelManager.Instance;
+
+	bool _wasLive;
+	float _fightFlashUntil;
+
+	bool IsLocalDuelist
+	{
+		get
+		{
+			var dm = Manager;
+			if ( dm == null || !dm.MatchActive )
+				return false;
+			var local = PlayerHelper.GetLocalPlayer();
+			return local != null && dm.IsDuelist( local );
+		}
+	}
+
+	bool MatchResolved
+	{
+		get
+		{
+			var dm = Manager;
+			return dm != null && ( dm.ScoreA >= dm.RoundsToWin || dm.ScoreB >= dm.RoundsToWin );
+		}
+	}
+
+	bool ShowFight => Time.Now < _fightFlashUntil && IsLocalDuelist;
+
+	bool ShowCount
+	{
+		get
+		{
+			var dm = Manager;
+			if ( dm == null || !IsLocalDuelist )
+				return false;
+			return !dm.RoundLive && !MatchResolved && dm.PhaseTimer > 0f;
+		}
+	}
+
+	string CountText
+	{
+		get
+		{
+			var dm = Manager;
+			if ( dm == null )
+				return "";
+			int n = (int)MathF.Ceiling( dm.PhaseTimer );
+			if ( n < 1 ) n = 1;
+			return n.ToString();
+		}
+	}
+
+	protected override void OnUpdate()
+	{
+		var dm = Manager;
+		bool live = dm != null && dm.RoundLive;
+
+		if ( live && !_wasLive && IsLocalDuelist )
+			_fightFlashUntil = Time.Now + 1f;
+
+		_wasLive = live;
+		StateHasChanged();
+	}
+
+	protected override int BuildHash()
+	{
+		var dm = Manager;
+		return ( ShowFight, ShowCount, CountText, dm != null && dm.RoundLive ).GetHashCode();
+	}
+}

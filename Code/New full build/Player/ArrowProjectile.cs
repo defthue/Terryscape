@@ -66,6 +66,22 @@ public sealed class ArrowProjectile : Component
 		if ( _impacted )
 			return;
 
+		var pvpTarget = PvpCombat.ResolveTarget( trace.GameObject, Shooter );
+		if ( pvpTarget != null )
+		{
+			_impacted = true;
+			int finalDamage = PvpCombat.ResolveDamage( Damage, Style, pvpTarget );
+			var targetHealth = pvpTarget.Components.Get<PlayerHealth>();
+			if ( targetHealth != null )
+			{
+				targetHealth.TakeDamage( finalDamage );
+				DamagePopupBroadcaster.Broadcast( trace.HitPosition, finalDamage, targetHealth.MaxHealth, IsCrit );
+			}
+			SoundLibrary.PlayArrowImpact( trace.HitPosition );
+			GameObject.Destroy();
+			return;
+		}
+
 		var monster = trace.GameObject.Components.Get<Monster>();
 		if ( monster != null )
 		{

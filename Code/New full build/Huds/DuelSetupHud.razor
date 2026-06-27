@@ -1,0 +1,129 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using System.Collections.Generic;
+@using System.Linq;
+@inherits PanelComponent
+
+<root>
+	@if ( IsOpen )
+	{
+		<div class="ds-backdrop"></div>
+		<div class="ds-overlay">
+			<div class="ds-popup">
+				<div class="ds-header">
+					<div class="ds-title">Challenge to a Duel</div>
+					<div class="ds-close" onclick="@(() => Cancel())">✕</div>
+				</div>
+				<div class="ds-body">
+					<div class="ds-label">Opponent</div>
+					<div class="ds-opp-list">
+						@if ( Opponents.Count == 0 )
+						{
+							<div class="ds-empty">No other players in the arena.</div>
+						}
+						else
+						{
+							@foreach ( var opp in Opponents )
+							{
+								var oppRef = opp;
+								<div class="ds-opp @(SelectedOpponent == oppRef ? "selected" : "")" onclick="@(() => SelectOpponent( oppRef ))">
+									@GetName( oppRef )
+								</div>
+							}
+						}
+					</div>
+
+					<div class="ds-label">Rounds</div>
+					<div class="ds-rounds">
+						<div class="ds-round @(SelectedRounds == 1 ? "selected" : "")" onclick="@(() => SetRounds( 1 ))">Best of 1</div>
+						<div class="ds-round @(SelectedRounds == 3 ? "selected" : "")" onclick="@(() => SetRounds( 3 ))">Best of 3</div>
+						<div class="ds-round @(SelectedRounds == 5 ? "selected" : "")" onclick="@(() => SetRounds( 5 ))">Best of 5</div>
+					</div>
+
+					<div class="ds-actions">
+						<div class="ds-btn cancel" onclick="@(() => Cancel())">Cancel</div>
+						<div class="ds-btn send @(CanSend ? "" : "disabled")" onclick="@(() => Send())">Send Challenge</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	bool IsOpen => DuelMaster.IsOpen;
+
+	List<GameObject> Opponents { get; set; } = new();
+	GameObject SelectedOpponent { get; set; }
+	int SelectedRounds { get; set; } = 1;
+
+	bool CanSend => SelectedOpponent != null && SelectedOpponent.IsValid();
+
+	string GetName( GameObject p ) => p?.Network?.Owner?.DisplayName ?? "Player";
+
+	void SelectOpponent( GameObject p ) => SelectedOpponent = p;
+	void SetRounds( int r ) => SelectedRounds = r;
+
+	void Cancel()
+	{
+		DuelMaster.Close();
+	}
+
+	void Send()
+	{
+		if ( !CanSend )
+			return;
+
+		var local = PlayerHelper.GetLocalPlayer();
+		var dm = DuelManager.Instance;
+		if ( local != null && dm != null )
+		{
+			dm.RequestChallenge( local, SelectedOpponent, SelectedRounds );
+			GameLog.Add( "Duel challenge sent.", "#6db8f0" );
+		}
+
+		DuelMaster.Close();
+	}
+
+	void RefreshOpponents()
+	{
+		Opponents.Clear();
+
+		var local = PlayerHelper.GetLocalPlayer();
+		if ( local == null )
+			return;
+
+		foreach ( var p in PlayerHelper.GetAllPlayers() )
+		{
+			if ( p == null || p == local )
+				continue;
+
+			var state = p.Components.Get<PvpState>();
+			if ( state == null || !state.InArena )
+				continue;
+
+			Opponents.Add( p );
+		}
+
+		if ( SelectedOpponent != null && !Opponents.Contains( SelectedOpponent ) )
+			SelectedOpponent = null;
+	}
+
+	protected override void OnUpdate()
+	{
+		if ( IsOpen )
+			StateHasChanged();
+	}
+
+	protected override int BuildHash()
+	{
+		if ( IsOpen )
+			RefreshOpponents();
+
+		int hash = ( IsOpen, SelectedRounds, Opponents.Count, SelectedOpponent != null ? SelectedOpponent.GetHashCode() : 0 ).GetHashCode();
+		foreach ( var o in Opponents )
+			hash = ( hash, GetName( o ) ).GetHashCode();
+		return hash;
+	}
+}

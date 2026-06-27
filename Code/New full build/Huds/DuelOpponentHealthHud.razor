@@ -1,0 +1,83 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using System.Collections.Generic;
+@inherits PanelComponent
+
+<root>
+	@foreach ( var bar in Bars )
+	{
+		<div class="duel-hb" style="left: @(bar.X.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%; top: @(bar.Y.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%;">
+			<div class="duel-hb-name">@bar.Name</div>
+			<div class="duel-hb-bar">
+				<div class="duel-hb-fill" style="width: @(bar.Percent)%;"></div>
+			</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	struct Bar { public string Name; public int Percent; public float X; public float Y; }
+
+	List<Bar> Bars { get; set; } = new();
+
+	DuelManager Manager => DuelManager.Instance;
+
+	void AddBar( GameObject go )
+	{
+		if ( go == null )
+			return;
+
+		var cam = Scene.Camera;
+		if ( cam == null )
+			return;
+
+		var worldPos = go.WorldPosition + Vector3.Up * 100f;
+
+		var toGo = worldPos - cam.WorldPosition;
+		if ( Vector3.Dot( cam.WorldRotation.Forward, toGo ) <= 0f )
+			return;
+
+		var health = go.Components.Get<PlayerHealth>();
+		if ( health == null || health.MaxHealth <= 0 )
+			return;
+
+		var normal = cam.PointToScreenNormal( worldPos );
+		int percent = (int)( ( (float)health.CurrentHealth / health.MaxHealth ) * 100f );
+
+		Bars.Add( new Bar
+		{
+			Name = go.Network?.Owner?.DisplayName ?? "Player",
+			Percent = percent,
+			X = normal.x * 100f,
+			Y = normal.y * 100f
+		} );
+	}
+
+	void Rebuild()
+	{
+		Bars.Clear();
+
+		var dm = Manager;
+		if ( dm == null || !dm.MatchActive )
+			return;
+
+		AddBar( dm.FindDuelist( dm.DuelistASteamId ) );
+		AddBar( dm.FindDuelist( dm.DuelistBSteamId ) );
+	}
+
+	protected override void OnUpdate()
+	{
+		StateHasChanged();
+	}
+
+	protected override int BuildHash()
+	{
+		Rebuild();
+
+		int hash = Bars.Count;
+		foreach ( var b in Bars )
+			hash = ( hash, b.Name, b.Percent, (int)( b.X * 10f ), (int)( b.Y * 10f ) ).GetHashCode();
+		return hash;
+	}
+}

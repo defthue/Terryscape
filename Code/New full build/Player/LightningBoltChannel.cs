@@ -213,6 +213,31 @@ public sealed class LightningBoltChannel : Component
 			candidates.Add( ( boss.GameObject, dot ) );
 		}
 
+		var dm = DuelManager.Instance;
+		if ( dm != null && dm.MatchActive && dm.RoundLive && dm.IsDuelist( _caster ) )
+		{
+			GameObject opponent = dm.DuelistA == _caster ? dm.DuelistB : dm.DuelistA;
+			if ( opponent != null && opponent.IsValid() )
+			{
+				var oppHealth = opponent.Components.Get<PlayerHealth>();
+				if ( oppHealth != null && !oppHealth.IsDead )
+				{
+					Vector3 to = opponent.WorldPosition - origin;
+					float distSqr = to.LengthSquared;
+					if ( distSqr <= rangeSqr && distSqr >= 1f )
+					{
+						Vector3 dir = to.Normal;
+						float dot = forward.Dot( dir );
+
+						bool isClose = distSqr <= closeRangeSqr;
+						float effectiveThreshold = isClose ? 0f : cosThreshold;
+						if ( dot >= effectiveThreshold )
+							candidates.Add( ( opponent, dot ) );
+					}
+				}
+			}
+		}
+
 		candidates.Sort( ( a, b ) => b.dot.CompareTo( a.dot ) );
 
 		int count = Math.Min( candidates.Count, MaxTargets );
@@ -301,6 +326,19 @@ public sealed class LightningBoltChannel : Component
 		{
 			if ( target == null || !target.IsValid() )
 				continue;
+
+			var pvpTarget = PvpCombat.ResolveTarget( target, _caster );
+			if ( pvpTarget != null )
+			{
+				int dealt = PvpCombat.ResolveDamage( damage, CombatStyle.Magic, pvpTarget );
+				var targetHealth = pvpTarget.Components.Get<PlayerHealth>();
+				if ( targetHealth != null )
+				{
+					targetHealth.TakeDamage( dealt );
+					DamagePopupBroadcaster.Broadcast( pvpTarget.WorldPosition + Vector3.Up * 50f, dealt, targetHealth.MaxHealth, false );
+				}
+				continue;
+			}
 
 			var monster = target.Components.Get<Monster>();
 			if ( monster != null && !monster.IsDead )

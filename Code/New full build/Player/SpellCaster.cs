@@ -547,6 +547,9 @@ public sealed class SpellCaster : Component
 			if ( health == null || health.IsDead )
 				continue;
 
+			if ( PvpCombat.CanDamage( GameObject, player ) )
+				continue;
+
 			HealPlayer( player, healAmount );
 			targets++;
 		}

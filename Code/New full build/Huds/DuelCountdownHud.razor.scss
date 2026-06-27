@@ -1,0 +1,34 @@
+root {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	pointer-events: none;
+	z-index: 48;
+	font-family: Almendra;
+	font-smooth: auto;
+}
+
+.duel-cd-overlay {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	pointer-events: none;
+}
+
+.duel-cd-number {
+	font-size: 140px;
+	color: #f0e6c8;
+}
+
+.duel-cd-fight {
+	font-size: 100px;
+	color: #c9a84c;
+	letter-spacing: 2px;
+}

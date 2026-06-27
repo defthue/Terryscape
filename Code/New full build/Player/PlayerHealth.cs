@@ -143,6 +143,21 @@ public sealed class PlayerHealth : Component
 	{
 		IsDead = true;
 
+		var pvp = Components.Get<PvpState>();
+		if ( pvp != null && pvp.InArena )
+		{
+			var dm = DuelManager.Instance;
+			if ( dm != null && dm.MatchActive && dm.IsDuelist( GameObject ) )
+			{
+				GameLog.Add( "You lost the round!", "#c86464" );
+				return;
+			}
+
+			GameLog.Add( "You were defeated in the arena!", "#c86464" );
+			RespawnInArena();
+			return;
+		}
+
 		GameLog.Add( "You have died!", "#c86464" );
 
 		var inventory = Components.Get<Inventory>();
@@ -150,6 +165,36 @@ public sealed class PlayerHealth : Component
 			ApplyDeathPenalty( inventory );
 
 		Respawn();
+	}
+
+	void RespawnInArena()
+	{
+		CurrentHealth = MaxHealth;
+		IsDead = false;
+		_wasHit = false;
+		_timeSinceLastHit = 0f;
+		_regenTimer = 0f;
+
+		var arena = PvpArena.Active;
+		if ( arena != null )
+			GameObject.WorldPosition = arena.GetRespawnPosition();
+
+		GameLog.Add( $"You respawned at the arena. ({CurrentHealth}/{MaxHealth} HP)", "#6db8f0" );
+	}
+
+	[Rpc.Broadcast]
+	public void ArenaReset( Vector3 position )
+	{
+		if ( IsProxy )
+			return;
+
+		UpdateMaxHealth();
+		CurrentHealth = MaxHealth;
+		IsDead = false;
+		_wasHit = false;
+		_timeSinceLastHit = 0f;
+		_regenTimer = 0f;
+		GameObject.WorldPosition = position;
 	}
 
 	void ApplyDeathPenalty( Inventory inventory )
