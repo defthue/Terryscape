@@ -27,8 +27,6 @@ public sealed class FireTornado : Component
 	[Property] public Color InnerColor { get; set; } = new Color( 1f, 0.85f, 0.3f, 0.9f );
 	[Property] public Color EmberColor { get; set; } = new Color( 1f, 0.55f, 0.15f, 1f );
 
-	[Property] public string SpritePath { get; set; } = "particle_glow.sprite";
-
 	public GameObject Source { get; set; }
 	public bool VisualOnly { get; set; }
 
@@ -81,8 +79,7 @@ public sealed class FireTornado : Component
 
 	protected override void OnStart()
 	{
-		try { _spriteAsset = ResourceLibrary.Get<Sprite>( SpritePath ); }
-		catch ( System.Exception ) { _spriteAsset = null; }
+		_spriteAsset = SpellVfx.GlowSprite;
 	}
 
 	protected override void OnUpdate()

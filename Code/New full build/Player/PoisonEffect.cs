@@ -14,7 +14,6 @@ public sealed class PoisonEffect : Component
 	[Property] public float IndicatorHeight { get; set; } = 50f;
 	[Property] public float IndicatorParticleSize { get; set; } = 25f;
 	[Property] public Color IndicatorColor { get; set; } = new Color( 0.5f, 0.95f, 0.2f, 0.85f );
-	[Property] public string SpritePath { get; set; } = "particle_glow.sprite";
 
 	GameObject _source;
 	float _remaining;
@@ -64,9 +63,7 @@ public sealed class PoisonEffect : Component
 
 	void BuildIndicator()
 	{
-		Sprite spriteAsset = null;
-		try { spriteAsset = ResourceLibrary.Get<Sprite>( SpritePath ); }
-		catch ( System.Exception ) { spriteAsset = null; }
+		Sprite spriteAsset = SpellVfx.GlowSprite;
 
 		_indicatorRoot = new GameObject( true, "PoisonIndicator" );
 		_indicatorRoot.SetParent( GameObject );

@@ -37,8 +37,6 @@ public sealed class Singularity : Component
 	[Property] public float ShockwaveParticleSize { get; set; } = 50f;
 	[Property] public Color ShockwaveColor { get; set; } = new Color( 1f, 1f, 1f, 1f );
 
-	[Property] public string SpritePath { get; set; } = "particle_glow.sprite";
-
 	public GameObject Source { get; set; }
 	public bool VisualOnly { get; set; }
 
@@ -107,8 +105,7 @@ public sealed class Singularity : Component
 
 	protected override void OnStart()
 	{
-		try { _spriteAsset = ResourceLibrary.Get<Sprite>( SpritePath ); }
-		catch ( System.Exception ) { _spriteAsset = null; }
+		_spriteAsset = SpellVfx.GlowSprite;
 
 		BuildCore();
 		BuildHalo();

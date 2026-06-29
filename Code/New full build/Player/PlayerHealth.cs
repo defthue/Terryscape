@@ -14,6 +14,7 @@ public sealed class PlayerHealth : Component
 	[Sync] public int MaxHealth { get; set; } = 100;
 	[Sync] public int CurrentHealth { get; set; }
 	[Sync] public bool IsDead { get; set; }
+	[Sync] public int NormalizedMaxOverride { get; set; }
 
 	float _timeSinceLastHit = 0f;
 	float _regenTimer = 0f;
@@ -78,6 +79,9 @@ public sealed class PlayerHealth : Component
 		var inventory = Components.Get<Inventory>();
 		float vitalityBonus = inventory != null ? inventory.GetEnchantmentBonus( EnchantmentType.Vitality ) : 0f;
 		MaxHealth = (int)( baseMax * ( 1f + vitalityBonus / 100f ) );
+
+		if ( NormalizedMaxOverride > 0 )
+			MaxHealth = NormalizedMaxOverride;
 	}
 
 	public void TakeDamage( int damage )
@@ -183,11 +187,12 @@ public sealed class PlayerHealth : Component
 	}
 
 	[Rpc.Broadcast]
-	public void ArenaReset( Vector3 position )
+	public void ArenaReset( Vector3 position, int normalizedMax )
 	{
 		if ( IsProxy )
 			return;
 
+		NormalizedMaxOverride = normalizedMax;
 		UpdateMaxHealth();
 		CurrentHealth = MaxHealth;
 		IsDead = false;
@@ -195,6 +200,18 @@ public sealed class PlayerHealth : Component
 		_timeSinceLastHit = 0f;
 		_regenTimer = 0f;
 		GameObject.WorldPosition = position;
+	}
+
+	[Rpc.Broadcast]
+	public void EndNormalizedMode()
+	{
+		if ( IsProxy )
+			return;
+
+		NormalizedMaxOverride = 0;
+		UpdateMaxHealth();
+		if ( CurrentHealth > MaxHealth )
+			CurrentHealth = MaxHealth;
 	}
 
 	void ApplyDeathPenalty( Inventory inventory )

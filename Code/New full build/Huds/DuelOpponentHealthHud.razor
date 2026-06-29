@@ -1,5 +1,6 @@
 @using Sandbox;
 @using Sandbox.UI;
+@using System;
 @using System.Collections.Generic;
 @inherits PanelComponent
 
@@ -42,8 +43,13 @@
 		if ( health == null || health.MaxHealth <= 0 )
 			return;
 
+		ulong steamId = go.Network?.Owner?.SteamId ?? 0ul;
+		float shown = DuelHealthPrediction.GetDisplay( steamId, health.CurrentHealth );
+
 		var normal = cam.PointToScreenNormal( worldPos );
-		int percent = (int)( ( (float)health.CurrentHealth / health.MaxHealth ) * 100f );
+		int percent = (int)( ( shown / health.MaxHealth ) * 100f );
+		if ( percent < 0 ) percent = 0;
+		if ( percent > 100 ) percent = 100;
 
 		Bars.Add( new Bar
 		{
@@ -66,8 +72,32 @@
 		AddBar( dm.FindDuelist( dm.DuelistBSteamId ) );
 	}
 
+	void TickPrediction( ulong steamId )
+	{
+		if ( steamId == 0 )
+			return;
+
+		var go = Manager?.FindDuelist( steamId );
+		var health = go?.Components.Get<PlayerHealth>();
+		if ( health == null )
+			return;
+
+		DuelHealthPrediction.Tick( steamId, health.CurrentHealth );
+	}
+
 	protected override void OnUpdate()
 	{
+		var dm = Manager;
+		if ( dm != null && dm.MatchActive )
+		{
+			TickPrediction( dm.DuelistASteamId );
+			TickPrediction( dm.DuelistBSteamId );
+		}
+		else
+		{
+			DuelHealthPrediction.Clear();
+		}
+
 		StateHasChanged();
 	}
 

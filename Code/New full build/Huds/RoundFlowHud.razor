@@ -1,0 +1,156 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using System;
+@inherits PanelComponent
+
+<root>
+	@if ( ShowBanner )
+	{
+		<div class="rf-banner @BannerClass">
+			<div class="rf-main">@MainText</div>
+			@if ( !string.IsNullOrEmpty( SubText ) )
+			{
+				<div class="rf-sub">@SubText</div>
+			}
+		</div>
+	}
+</root>
+
+@code
+{
+	DuelManager Manager => DuelManager.Instance;
+
+	bool ShowBanner;
+	string MainText = "";
+	string SubText = "";
+	string BannerClass = "";
+
+	DuelManager.Phase _prevPhase = DuelManager.Phase.Idle;
+	float _liveStartTime;
+	int _lastScoreA;
+	int _lastScoreB;
+	int _roundWinner;
+
+	void OnPhaseChanged( DuelManager dm, DuelManager.Phase to )
+	{
+		if ( to == DuelManager.Phase.Live )
+		{
+			_liveStartTime = Time.Now;
+		}
+		else if ( to == DuelManager.Phase.RoundOver )
+		{
+			if ( dm.ScoreA > _lastScoreA )
+				_roundWinner = 1;
+			else if ( dm.ScoreB > _lastScoreB )
+				_roundWinner = 2;
+			else
+				_roundWinner = 0;
+		}
+
+		_lastScoreA = dm.ScoreA;
+		_lastScoreB = dm.ScoreB;
+	}
+
+	void Compose( DuelManager dm, DuelManager.Phase phase )
+	{
+		ShowBanner = false;
+		MainText = "";
+		SubText = "";
+		BannerClass = "";
+
+		ulong localSteam = PlayerHelper.GetLocalPlayer()?.Network?.Owner?.SteamId ?? 0ul;
+		bool isA = localSteam != 0 && localSteam == dm.DuelistASteamId;
+		bool isB = localSteam != 0 && localSteam == dm.DuelistBSteamId;
+		bool participant = isA || isB;
+
+		switch ( phase )
+		{
+			case DuelManager.Phase.Countdown:
+			{
+				int n = (int)MathF.Ceiling( dm.PhaseTimer );
+				if ( n < 1 ) n = 1;
+				ShowBanner = true;
+				MainText = n.ToString();
+				BannerClass = "rf-count";
+				break;
+			}
+			case DuelManager.Phase.Live:
+			{
+				if ( Time.Now - _liveStartTime < 0.6f )
+				{
+					ShowBanner = true;
+					MainText = "FIGHT!";
+					BannerClass = "rf-fight";
+				}
+				break;
+			}
+			case DuelManager.Phase.RoundOver:
+			{
+				ShowBanner = true;
+				BannerClass = "rf-round";
+
+				if ( participant )
+				{
+					bool won = ( isA && _roundWinner == 1 ) || ( isB && _roundWinner == 2 );
+					MainText = won ? "Round won" : "Round lost";
+				}
+				else
+				{
+					MainText = "Round over";
+				}
+
+				int you = isB ? dm.ScoreB : dm.ScoreA;
+				int them = isB ? dm.ScoreA : dm.ScoreB;
+				SubText = participant ? $"{you} — {them}" : $"{dm.ScoreA} — {dm.ScoreB}";
+				break;
+			}
+			case DuelManager.Phase.MatchOver:
+			{
+				ShowBanner = true;
+
+				if ( participant )
+				{
+					bool victory = ( isA && dm.ScoreA > dm.ScoreB ) || ( isB && dm.ScoreB > dm.ScoreA );
+					MainText = victory ? "Victory!" : "Defeat";
+					BannerClass = victory ? "rf-match rf-win" : "rf-match rf-lose";
+				}
+				else
+				{
+					ulong winnerSteam = dm.ScoreA > dm.ScoreB ? dm.DuelistASteamId : dm.DuelistBSteamId;
+					var winnerGo = dm.FindDuelist( winnerSteam );
+					string name = winnerGo?.Network?.Owner?.DisplayName ?? "Someone";
+					MainText = $"{name} wins!";
+					BannerClass = "rf-match";
+				}
+				break;
+			}
+		}
+	}
+
+	protected override void OnUpdate()
+	{
+		var dm = Manager;
+		if ( dm == null || !dm.MatchActive )
+		{
+			_prevPhase = DuelManager.Phase.Idle;
+			ShowBanner = false;
+			StateHasChanged();
+			return;
+		}
+
+		var phase = dm.CurrentPhase;
+
+		if ( phase != _prevPhase )
+			OnPhaseChanged( dm, phase );
+
+		Compose( dm, phase );
+
+		_prevPhase = phase;
+		StateHasChanged();
+	}
+
+	protected override int BuildHash()
+	{
+		return ( ShowBanner, MainText, SubText, BannerClass ).GetHashCode();
+	}
+}

@@ -21,8 +21,22 @@ public static class PvpCombat
 		return true;
 	}
 
-	public static int ResolveDamage( float rawOffence, CombatStyle attackerStyle, GameObject target )
+	public static int ResolveDamage( float rawOffence, CombatStyle attackerStyle, GameObject target, bool isCrit = false )
 	{
+		var dm = DuelManager.Instance;
+		if ( dm != null && dm.MatchActive && dm.NormalizedActive )
+		{
+			var nWeaponDef = target.Components.Get<Inventory>()?.GetEquippedWeaponDef();
+			CombatStyle nTargetStyle = CombatTriangle.GetStyleFromWeapon( nWeaponDef );
+			float nTriangle = CombatTriangle.GetDealMultiplier( attackerStyle, nTargetStyle );
+			float nDmg = dm.NormalizedHitPower * nTriangle;
+			if ( isCrit )
+				nDmg *= CombatConstants.CritMultiplier;
+			int nFinal = (int)nDmg;
+			if ( nFinal < 1 ) nFinal = 1;
+			return nFinal;
+		}
+
 		var targetInventory = target.Components.Get<Inventory>();
 		var targetSkills = target.Components.Get<Skills>();
 

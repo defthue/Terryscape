@@ -223,9 +223,33 @@ root {
 
 .lb-name {
 	flex: 1;
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	gap: 8px;
+	overflow: hidden;
+}
+
+.lb-name-text {
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+}
+
+.lb-online-dot {
+	width: 10px;
+	height: 10px;
+	border-radius: 5px;
+	flex-shrink: 0;
+
+	&.online {
+		background: #5fd35f;
+		box-shadow: 0 0 6px #5fd35f88;
+	}
+
+	&.offline {
+		background: #4a4034;
+	}
 }
 
 .lb-value {

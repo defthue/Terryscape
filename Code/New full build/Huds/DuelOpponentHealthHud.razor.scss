@@ -39,4 +39,5 @@ root {
 .duel-hb-fill {
 	height: 100%;
 	background: linear-gradient(180deg, #d06a5a, #a83a30);
+	transition: width 0.1s ease;
 }

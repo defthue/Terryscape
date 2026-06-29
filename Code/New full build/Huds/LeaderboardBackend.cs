@@ -17,6 +17,7 @@ public static class LeaderboardBackend
 	{
 		public string SteamId { get; set; } = "";
 		public string PlayerName { get; set; } = "";
+		public bool IsOnline { get; set; }
 		public int TotalLevel { get; set; }
 		public int TotalGold { get; set; }
 		public int NodesMined { get; set; }
@@ -97,9 +98,18 @@ public static class LeaderboardBackend
 				if ( item.TryGetProperty( "value", out var valueEl ) )
 					apply( entry, ReadInt( valueEl ) );
 
-				var name = ReadName( item );
+				bool hasOutputs = item.TryGetProperty( "outputValues", out var outputs ) && outputs.ValueKind == JsonValueKind.Object;
+
+				var name = ReadName( item, outputs, hasOutputs );
 				if ( !string.IsNullOrEmpty( name ) )
 					entry.PlayerName = name;
+
+				if ( hasOutputs )
+				{
+					var online = ReadOnline( outputs );
+					if ( online.HasValue )
+						entry.IsOnline = online.Value;
+				}
 			}
 		}
 		catch ( Exception ex )
@@ -121,8 +131,15 @@ public static class LeaderboardBackend
 		}
 	}
 
-	static string ReadName( JsonElement entry )
+	static string ReadName( JsonElement entry, JsonElement outputs, bool hasOutputs )
 	{
+		if ( hasOutputs && outputs.TryGetProperty( "playerProfile.playerName", out var pp ) && pp.ValueKind == JsonValueKind.String )
+		{
+			var enriched = pp.GetString();
+			if ( !string.IsNullOrEmpty( enriched ) )
+				return enriched;
+		}
+
 		if ( entry.TryGetProperty( "playerName", out var pn ) )
 		{
 			if ( pn.ValueKind == JsonValueKind.String )
@@ -132,12 +149,30 @@ public static class LeaderboardBackend
 				return nested.GetString();
 		}
 
-		if ( entry.TryGetProperty( "playerName.default", out var flat ) && flat.ValueKind == JsonValueKind.String )
-			return flat.GetString();
-
 		if ( entry.TryGetProperty( "name", out var nm ) && nm.ValueKind == JsonValueKind.String )
 			return nm.GetString();
 
 		return null;
+	}
+
+	static bool? ReadOnline( JsonElement outputs )
+	{
+		if ( !outputs.TryGetProperty( "playerProfile.isOnline", out var el ) )
+			return null;
+
+		switch ( el.ValueKind )
+		{
+			case JsonValueKind.True:
+				return true;
+			case JsonValueKind.False:
+				return false;
+			case JsonValueKind.Number:
+				return el.GetDouble() != 0;
+			case JsonValueKind.String:
+				var s = el.GetString();
+				return s == "true" || s == "1";
+			default:
+				return null;
+		}
 	}
 }

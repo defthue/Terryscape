@@ -18,7 +18,6 @@ public sealed class StoneskinBuff : Component
 	[Property] public float IndicatorHeight { get; set; } = 60f;
 	[Property] public float IndicatorParticleSize { get; set; } = 28f;
 	[Property] public Color IndicatorColor { get; set; } = new Color( 0.7f, 0.7f, 0.75f, 0.85f );
-	[Property] public string SpritePath { get; set; } = "particle_glow.sprite";
 
 	public bool VisualOnly { get; set; }
 
@@ -81,9 +80,7 @@ public sealed class StoneskinBuff : Component
 
 	void BuildIndicator()
 	{
-		Sprite spriteAsset = null;
-		try { spriteAsset = ResourceLibrary.Get<Sprite>( SpritePath ); }
-		catch ( System.Exception ) { spriteAsset = null; }
+		Sprite spriteAsset = SpellVfx.GlowSprite;
 
 		_indicatorRoot = new GameObject( true, "StoneskinIndicator" );
 		_indicatorRoot.SetParent( GameObject );

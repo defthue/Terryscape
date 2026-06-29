@@ -55,7 +55,7 @@
 		if ( local == null )
 			return;
 		ulong winnerId = dm.ScoreA >= dm.RoundsToWin ? dm.DuelistASteamId : dm.DuelistBSteamId;
-		ulong localId = local.Network?.Owner?.SteamId ?? 0;
+		ulong localId = local.Network?.Owner?.SteamId ?? 0ul;
 		_localWon = localId != 0 && localId == winnerId;
 	}
 

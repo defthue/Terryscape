@@ -54,7 +54,10 @@
 
 							<div class="leaderboard-row @(isLocal ? "local" : "") @(rank <= 3 ? "top-three" : "")">
 								<div class="lb-rank">@GetRankDisplay( rank )</div>
-								<div class="lb-name">@entry.PlayerName</div>
+								<div class="lb-name">
+									<span class="lb-online-dot @(entry.IsOnline ? "online" : "offline")"></span>
+									<span class="lb-name-text">@entry.PlayerName</span>
+								</div>
 								<div class="lb-value">@GetValueFor( entry )</div>
 							</div>
 						}

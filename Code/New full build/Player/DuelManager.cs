@@ -21,10 +21,22 @@ public sealed class DuelManager : Component
 	[Sync] public int RoundsToWin { get; set; }
 	[Sync] public int ScoreA { get; set; }
 	[Sync] public int ScoreB { get; set; }
+	[Sync] public bool NormalizedActive { get; set; }
+	[Sync] public int NormalizedHP { get; set; } = 100;
+	[Property] public int NormalizedHitPower { get; set; } = 10;
 	[Sync] public float PhaseTimer { get; set; }
 
-	enum Phase { Idle, Countdown, Live, RoundOver, MatchOver }
-	Phase _phase = Phase.Idle;
+	[Sync] public bool LobbyActive { get; set; }
+	[Sync] public ulong LobbyChallengerSteamId { get; set; }
+	[Sync] public ulong LobbyTargetSteamId { get; set; }
+	[Sync] public int LobbyMode { get; set; }
+	[Sync] public int LobbyPaceIndex { get; set; }
+	[Sync] public int LobbyRounds { get; set; }
+	[Sync] public bool LobbyChallengerLocked { get; set; }
+	[Sync] public bool LobbyTargetLocked { get; set; }
+
+	public enum Phase { Idle, Countdown, Live, RoundOver, MatchOver }
+	[Sync] public Phase CurrentPhase { get; set; } = Phase.Idle;
 
 	GameObject _pendingChallenger;
 	GameObject _pendingTarget;
@@ -60,7 +72,7 @@ public sealed class DuelManager : Component
 	static ulong SteamIdOf( GameObject go )
 	{
 		var owner = go?.Network?.Owner;
-		return owner != null ? owner.SteamId : 0;
+		return owner != null ? owner.SteamId : 0ul;
 	}
 
 	public GameObject FindDuelist( ulong steamId )
@@ -87,6 +99,14 @@ public sealed class DuelManager : Component
 
 		ExpirePending();
 
+		if ( LobbyActive )
+		{
+			var lc = FindDuelist( LobbyChallengerSteamId );
+			var lt = FindDuelist( LobbyTargetSteamId );
+			if ( lc == null || !lc.IsValid() || lt == null || !lt.IsValid() )
+				CloseLobby();
+		}
+
 		if ( !MatchActive )
 			return;
 
@@ -96,7 +116,7 @@ public sealed class DuelManager : Component
 			return;
 		}
 
-		switch ( _phase )
+		switch ( CurrentPhase )
 		{
 			case Phase.Countdown: TickCountdown(); break;
 			case Phase.Live: TickLive(); break;
@@ -132,20 +152,20 @@ public sealed class DuelManager : Component
 		_localChallengePending = false;
 	}
 
-	public static bool LocalDuelUiOpen => DuelMaster.IsOpen || ( Instance != null && Instance._localChallengePending );
+	public static bool LocalDuelUiOpen => DuelMaster.IsOpen || ( Instance != null && ( Instance._localChallengePending || Instance.LocalInLobby ) );
 
 	bool _cursorShownByDuel;
 
 	void UpdateLocalDuelCursor()
 	{
-		bool wantCursor = DuelMaster.IsOpen || _localChallengePending;
+		bool wantCursor = DuelMaster.IsOpen || _localChallengePending || LocalInLobby;
 
-		if ( wantCursor && !_cursorShownByDuel )
+		if ( wantCursor )
 		{
 			Mouse.Visibility = MouseVisibility.Visible;
 			_cursorShownByDuel = true;
 		}
-		else if ( !wantCursor && _cursorShownByDuel )
+		else if ( _cursorShownByDuel )
 		{
 			Mouse.Visibility = MouseVisibility.Hidden;
 			_cursorShownByDuel = false;
@@ -237,10 +257,10 @@ public sealed class DuelManager : Component
 		if ( challenger == null || !challenger.IsValid() || target == null || !target.IsValid() )
 			return;
 
-		StartMatch( challenger, target, rounds );
+		OpenLobby( challenger, target, rounds );
 	}
 
-	void StartMatch( GameObject a, GameObject b, int rounds )
+	void StartMatch( GameObject a, GameObject b, int rounds, bool normalized = false, int normalizedHp = 100 )
 	{
 		DuelistA = a;
 		DuelistB = b;
@@ -249,23 +269,148 @@ public sealed class DuelManager : Component
 		RoundsToWin = ( rounds / 2 ) + 1;
 		ScoreA = 0;
 		ScoreB = 0;
+		NormalizedActive = normalized;
+		NormalizedHP = normalizedHp;
 		MatchActive = true;
 
 		GameLog.Add( "Duel accepted! Get ready...", "#6db8f0" );
 		BeginRound();
 	}
 
+	void OpenLobby( GameObject challenger, GameObject target, int rounds )
+	{
+		LobbyChallengerSteamId = SteamIdOf( challenger );
+		LobbyTargetSteamId = SteamIdOf( target );
+		LobbyMode = 0;
+		LobbyPaceIndex = 1;
+		LobbyRounds = ( rounds == 1 || rounds == 3 || rounds == 5 ) ? rounds : 1;
+		LobbyChallengerLocked = false;
+		LobbyTargetLocked = false;
+		LobbyActive = true;
+	}
+
+	[Rpc.Broadcast]
+	public void RequestSetLobbyMode( ulong actor, int mode )
+	{
+		if ( !Networking.IsHost ) return;
+		if ( !LobbyActive || actor != LobbyChallengerSteamId ) return;
+		LobbyMode = mode == 1 ? 1 : 0;
+		LobbyChallengerLocked = false;
+		LobbyTargetLocked = false;
+	}
+
+	[Rpc.Broadcast]
+	public void RequestSetLobbyPace( ulong actor, int paceIndex )
+	{
+		if ( !Networking.IsHost ) return;
+		if ( !LobbyActive || actor != LobbyChallengerSteamId ) return;
+		LobbyPaceIndex = paceIndex < 0 ? 0 : ( paceIndex > 2 ? 2 : paceIndex );
+		LobbyChallengerLocked = false;
+		LobbyTargetLocked = false;
+	}
+
+	[Rpc.Broadcast]
+	public void RequestSetLobbyRounds( ulong actor, int rounds )
+	{
+		if ( !Networking.IsHost ) return;
+		if ( !LobbyActive || actor != LobbyChallengerSteamId ) return;
+		if ( rounds == 1 || rounds == 3 || rounds == 5 )
+			LobbyRounds = rounds;
+		LobbyChallengerLocked = false;
+		LobbyTargetLocked = false;
+	}
+
+	[Rpc.Broadcast]
+	public void RequestSetLobbyLock( ulong actor, bool locked )
+	{
+		if ( !Networking.IsHost ) return;
+		if ( !LobbyActive ) return;
+
+		if ( actor == LobbyChallengerSteamId )
+			LobbyChallengerLocked = locked;
+		else if ( actor == LobbyTargetSteamId )
+			LobbyTargetLocked = locked;
+		else
+			return;
+
+		if ( LobbyChallengerLocked && LobbyTargetLocked )
+			BeginMatchFromLobby();
+	}
+
+	[Rpc.Broadcast]
+	public void RequestCancelLobby( ulong actor )
+	{
+		if ( !Networking.IsHost ) return;
+		if ( !LobbyActive ) return;
+		if ( actor != LobbyChallengerSteamId && actor != LobbyTargetSteamId ) return;
+		CloseLobby();
+	}
+
+	void BeginMatchFromLobby()
+	{
+		var challenger = FindDuelist( LobbyChallengerSteamId );
+		var target = FindDuelist( LobbyTargetSteamId );
+		int rounds = LobbyRounds;
+		bool normalized = LobbyMode == 1;
+		int hp = PaceToHp( LobbyPaceIndex );
+
+		CloseLobby();
+
+		if ( challenger == null || !challenger.IsValid() || target == null || !target.IsValid() )
+			return;
+
+		StartMatch( challenger, target, rounds, normalized, hp );
+	}
+
+	void CloseLobby()
+	{
+		LobbyActive = false;
+		LobbyChallengerSteamId = 0ul;
+		LobbyTargetSteamId = 0ul;
+		LobbyChallengerLocked = false;
+		LobbyTargetLocked = false;
+	}
+
+	static int PaceToHp( int paceIndex )
+	{
+		switch ( paceIndex )
+		{
+			case 0: return 50;
+			case 2: return 150;
+			default: return 100;
+		}
+	}
+
+	public bool LocalInLobby
+	{
+		get
+		{
+			if ( !LobbyActive ) return false;
+			ulong local = PlayerHelper.GetLocalPlayer()?.Network?.Owner?.SteamId ?? 0ul;
+			return local != 0ul && ( local == LobbyChallengerSteamId || local == LobbyTargetSteamId );
+		}
+	}
+
 	void BeginRound()
 	{
 		RoundLive = false;
-		_phase = Phase.Countdown;
+		CurrentPhase = Phase.Countdown;
 		PhaseTimer = CountdownSeconds;
 
-		ResetDuelist( DuelistA, PadA );
-		ResetDuelist( DuelistB, PadB );
+		int nMax = NormalizedActive ? NormalizedHP : 0;
+		ResetDuelist( DuelistA, PadA, nMax );
+		ResetDuelist( DuelistB, PadB, nMax );
+
+		BroadcastCountdownSound();
 	}
 
-	void ResetDuelist( GameObject duelist, GameObject pad )
+	[Rpc.Broadcast]
+	void BroadcastCountdownSound()
+	{
+		SoundLibrary.PlayCountdown();
+	}
+
+	void ResetDuelist( GameObject duelist, GameObject pad, int normalizedMax )
 	{
 		if ( duelist == null )
 			return;
@@ -275,7 +420,7 @@ public sealed class DuelManager : Component
 			return;
 
 		Vector3 pos = pad != null ? pad.WorldPosition : duelist.WorldPosition;
-		health.ArenaReset( pos );
+		health.ArenaReset( pos, normalizedMax );
 	}
 
 	void TickCountdown()
@@ -285,7 +430,7 @@ public sealed class DuelManager : Component
 			return;
 
 		RoundLive = true;
-		_phase = Phase.Live;
+		CurrentPhase = Phase.Live;
 		GameLog.Add( "Fight!", "#6db8f0" );
 	}
 
@@ -304,7 +449,7 @@ public sealed class DuelManager : Component
 		else if ( aDead )
 			ScoreB++;
 
-		_phase = Phase.RoundOver;
+		CurrentPhase = Phase.RoundOver;
 		PhaseTimer = BetweenRoundSeconds;
 
 		GameLog.Add( $"Round over. Score {ScoreA} - {ScoreB}.", "#a8c8a8" );
@@ -318,15 +463,15 @@ public sealed class DuelManager : Component
 
 		if ( ScoreA >= RoundsToWin || ScoreB >= RoundsToWin )
 		{
-			_phase = Phase.MatchOver;
+			CurrentPhase = Phase.MatchOver;
 			PhaseTimer = MatchEndSeconds;
 
 			GameObject winner = ScoreA > ScoreB ? DuelistA : DuelistB;
 			string name = winner?.Network?.Owner?.DisplayName ?? "Someone";
 			GameLog.Add( $"{name} wins the duel!", "#e0c060" );
 
-			ResetDuelist( DuelistA, ReturnPoint != null ? ReturnPoint : PadA );
-			ResetDuelist( DuelistB, ReturnPoint != null ? ReturnPoint : PadB );
+			ResetDuelist( DuelistA, ReturnPoint != null ? ReturnPoint : PadA, 0 );
+			ResetDuelist( DuelistB, ReturnPoint != null ? ReturnPoint : PadB, 0 );
 			return;
 		}
 
@@ -364,7 +509,7 @@ public sealed class DuelManager : Component
 		{
 			string name = winner.Network?.Owner?.DisplayName ?? "Someone";
 			GameLog.Add( $"{name} wins by forfeit.", "#e0c060" );
-			ResetDuelist( winner, ReturnPoint != null ? ReturnPoint : PadA );
+			ResetDuelist( winner, ReturnPoint != null ? ReturnPoint : PadA, 0 );
 		}
 
 		EndMatch();
@@ -372,7 +517,13 @@ public sealed class DuelManager : Component
 
 	void EndMatch()
 	{
+		if ( DuelistA != null && DuelistA.IsValid() )
+			DuelistA.Components.Get<PlayerHealth>()?.EndNormalizedMode();
+		if ( DuelistB != null && DuelistB.IsValid() )
+			DuelistB.Components.Get<PlayerHealth>()?.EndNormalizedMode();
+
 		MatchActive = false;
+		NormalizedActive = false;
 		RoundLive = false;
 		DuelistA = null;
 		DuelistB = null;
@@ -380,7 +531,7 @@ public sealed class DuelManager : Component
 		DuelistBSteamId = 0;
 		ScoreA = 0;
 		ScoreB = 0;
-		_phase = Phase.Idle;
+		CurrentPhase = Phase.Idle;
 	}
 
 	bool IsDead( GameObject duelist )

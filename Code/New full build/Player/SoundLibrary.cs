@@ -6,6 +6,8 @@ public sealed class SoundLibrary : Component
 	const string CHOP = "Sounds/chop.sound";
 	const string ORE_HIT = "Sounds/HitResourceOre.sound";
 	const string MONSTER_HIT = "Sounds/HitMonsterSound.sound";
+	const string PVP_HIT = "Sounds/PvpHit.sound";
+	const string COUNTDOWN = "Sounds/321fight.sound";
 	const string HIT_NOTHING = "Sounds/HitNothing.sound";
 	const string FORAGE = "Sounds/Forage.sound";
 	const string MONSTER_DEATH = "Sounds/MonsterDeath.sound";
@@ -136,6 +138,16 @@ public sealed class SoundLibrary : Component
 	public static void PlayMonsterHit( Vector3 position )
 	{
 		PlayPlayerActionSound( MONSTER_HIT, position );
+	}
+
+	public static void PlayPvpHit( Vector3 position )
+	{
+		PlayPlayerActionSound( PVP_HIT, position );
+	}
+
+	public static void PlayCountdown()
+	{
+		Sound.Play( COUNTDOWN, GetLocalListenerPosition() );
 	}
 
 	public static void PlayForage( Vector3 position )

@@ -117,7 +117,6 @@ public sealed class AcidPoolVisual : Component
 	public float RiseSpeedMin { get; set; } = 8f;
 	public float RiseSpeedMax { get; set; } = 22f;
 	public float SpawnSpread { get; set; } = 0.6f;
-	public string SpritePath { get; set; } = "particle_glow.sprite";
 
 	float _elapsed;
 	int _spawnedSoFar;
@@ -137,8 +136,7 @@ public sealed class AcidPoolVisual : Component
 
 	protected override void OnStart()
 	{
-		try { _spriteAsset = ResourceLibrary.Get<Sprite>( SpritePath ); }
-		catch ( System.Exception ) { _spriteAsset = null; }
+		_spriteAsset = SpellVfx.GlowSprite;
 	}
 
 	void SpawnParticle()

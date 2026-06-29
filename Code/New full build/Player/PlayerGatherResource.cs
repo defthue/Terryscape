@@ -14,7 +14,6 @@ public sealed class PlayerGatherResource : Component
 	[Property] public float PunchStanceResetTime { get; set; } = 2.0f;
 	[Property] public int ForageHoldType { get; set; } = 4;
 	[Property] public int ForageHoldTypeAttack { get; set; } = 0;
-	[Property] public float StaffMeleeDamageMultiplier { get; set; } = 0.5f;
 
 	public static bool UIOpen { get; private set; } = false;
 	public static bool IsForaging { get; private set; } = false;
@@ -70,6 +69,12 @@ public sealed class PlayerGatherResource : Component
 
 		if ( Input.Pressed( "inventory" ) )
 		{
+			if ( DuelManager.Instance != null && DuelManager.Instance.LocalInLobby )
+			{
+				DuelManager.Instance.RequestCancelLobby( PlayerHelper.GetLocalPlayer()?.Network?.Owner?.SteamId ?? 0ul );
+				return;
+			}
+
 			bool anyHudOpen = anyHudOpenNow;
 
 			if ( UIOpen || anyHudOpen )
@@ -333,6 +338,16 @@ public sealed class PlayerGatherResource : Component
 
 		if ( !trace.Hit )
 		{
+			var combatMiss = GameObject.Components.Get<PlayerCombat>();
+			var arcTarget = combatMiss?.FindArcPvpTarget();
+			if ( arcTarget != null )
+			{
+				_autoGatherNode = null;
+				TriggerSwingAnimation( false );
+				combatMiss.DoPvpHit( arcTarget, GameObject.Components.Get<Inventory>(), GameObject.Components.Get<Skills>() );
+				return;
+			}
+
 			_autoGatherNode = null;
 			TriggerSwingAnimation( false );
 			GameLog.Add( "You swing but hit nothing.", "#6a6a6a" );
@@ -365,6 +380,16 @@ public sealed class PlayerGatherResource : Component
 
 			if ( node == null && monster == null && boss == null && pvpTarget == null )
 			{
+				var combatMiss = GameObject.Components.Get<PlayerCombat>();
+				var arcTarget = combatMiss?.FindArcPvpTarget();
+				if ( arcTarget != null )
+				{
+					_autoGatherNode = null;
+					TriggerSwingAnimation( false );
+					combatMiss.DoPvpHit( arcTarget, GameObject.Components.Get<Inventory>(), GameObject.Components.Get<Skills>() );
+					return;
+				}
+
 				_autoGatherNode = null;
 				TriggerSwingAnimation( false );
 				GameLog.Add( "You swing but hit nothing.", "#6a6a6a" );
@@ -379,27 +404,32 @@ public sealed class PlayerGatherResource : Component
 		if ( inventory == null || skills == null )
 			return;
 
-		if ( pvpTarget != null )
+		var combat = GameObject.Components.Get<PlayerCombat>();
+
+		if ( pvpTarget == null && node == null && monster == null && boss == null && combat != null )
+			pvpTarget = combat.FindArcPvpTarget();
+
+		if ( pvpTarget != null && combat != null )
 		{
 			_autoGatherNode = null;
 			TriggerSwingAnimation( false );
-			HandlePvpHit( pvpTarget, inventory, skills );
+			combat.DoPvpHit( pvpTarget, inventory, skills );
 			return;
 		}
 
-		if ( boss != null )
+		if ( boss != null && combat != null )
 		{
 			_autoGatherNode = null;
 			TriggerSwingAnimation( false );
-			HandleBossHit( boss, inventory, skills );
+			combat.DoBossHit( boss, inventory, skills );
 			return;
 		}
 
-		if ( monster != null )
+		if ( monster != null && combat != null )
 		{
 			_autoGatherNode = null;
 			TriggerSwingAnimation( false );
-			HandleCombatHit( monster, inventory, skills );
+			combat.DoMonsterHit( monster, inventory, skills );
 			return;
 		}
 
@@ -408,173 +438,6 @@ public sealed class PlayerGatherResource : Component
 			TriggerSwingAnimation( node.GatherSkill == GatherType.Foraging );
 			HandleResourceHit( node, inventory, skills );
 		}
-	}
-
-	void HandleCombatHit( Monster monster, Inventory inventory, Skills skills )
-	{
-		var weaponDef = inventory.GetEquippedWeaponDef();
-		CombatStyle playerStyle = CombatTriangle.GetStyleFromWeapon( weaponDef );
-
-		SkillType combatSkill = SkillType.Attack;
-		float weaponPower = 1f;
-
-		if ( weaponDef != null )
-		{
-			weaponPower = weaponDef.WeaponPower;
-
-			if ( weaponDef.Type == ItemType.MagicWeapon )
-				combatSkill = SkillType.Magic;
-		}
-
-		float skillBonus = skills.GetCombatPower( combatSkill );
-		float triangleMult = CombatTriangle.GetDealMultiplier( playerStyle, monster.CombatStyle );
-
-		float buffMult = 1f;
-		var potionSystem = GameObject.Components.Get<PotionSystem>();
-		if ( potionSystem != null )
-		{
-			if ( combatSkill == SkillType.Attack )
-				buffMult = potionSystem.GetBuffMultiplier( BuffType.Attack );
-			else if ( combatSkill == SkillType.Magic )
-				buffMult = potionSystem.GetBuffMultiplier( BuffType.Magic );
-		}
-
-		float staffMeleeMult = ( weaponDef != null && weaponDef.Type == ItemType.MagicWeapon ) ? StaffMeleeDamageMultiplier : 1f;
-
-		float enchantMult = 1f;
-		if ( weaponDef != null && ( weaponDef.Type == ItemType.MeleeWeapon || weaponDef.Type == ItemType.Tool ) )
-			enchantMult = 1f + inventory.GetEnchantmentBonus( EnchantmentType.Sharpness ) / 100f;
-
-		int damage = (int)( weaponPower * skillBonus * triangleMult * buffMult * staffMeleeMult * enchantMult );
-		if ( damage < 1 ) damage = 1;
-
-		bool isCrit = CombatConstants.RollCrit();
-		if ( isCrit )
-			damage = (int)( damage * CombatConstants.CritMultiplier );
-
-		var manaCombat = GameObject.Components.Get<ManaSystem>();
-		if ( manaCombat != null )
-			manaCombat.MarkCombat();
-
-		int monsterHpLeft = System.Math.Max( 0, monster.CurrentHealth - damage );
-		GameLog.Add( $"You hit {monster.MonsterName} for {damage} damage{( isCrit ? " (CRIT!)" : "" )}. ({monsterHpLeft}/{monster.MaxHealth} HP left)", "#a8c8a8" );
-
-		SoundLibrary.PlayMonsterHit( monster.WorldPosition );
-
-		monster.TakeDamage( damage, GameObject );
-
-		DamagePopupBroadcaster.Broadcast( monster.WorldPosition + Vector3.Up * 50f, damage, monster.MaxHealth, isCrit );
-	}
-
-	void HandlePvpHit( GameObject targetPlayer, Inventory inventory, Skills skills )
-	{
-		var weaponDef = inventory.GetEquippedWeaponDef();
-		CombatStyle playerStyle = CombatTriangle.GetStyleFromWeapon( weaponDef );
-
-		SkillType combatSkill = SkillType.Attack;
-		float weaponPower = 1f;
-
-		if ( weaponDef != null )
-		{
-			weaponPower = weaponDef.WeaponPower;
-			if ( weaponDef.Type == ItemType.MagicWeapon )
-				combatSkill = SkillType.Magic;
-		}
-
-		float skillBonus = skills.GetCombatPower( combatSkill );
-
-		float buffMult = 1f;
-		var potionSystem = GameObject.Components.Get<PotionSystem>();
-		if ( potionSystem != null )
-		{
-			if ( combatSkill == SkillType.Attack )
-				buffMult = potionSystem.GetBuffMultiplier( BuffType.Attack );
-			else if ( combatSkill == SkillType.Magic )
-				buffMult = potionSystem.GetBuffMultiplier( BuffType.Magic );
-		}
-
-		float staffMeleeMult = ( weaponDef != null && weaponDef.Type == ItemType.MagicWeapon ) ? StaffMeleeDamageMultiplier : 1f;
-
-		float enchantMult = 1f;
-		if ( weaponDef != null && ( weaponDef.Type == ItemType.MeleeWeapon || weaponDef.Type == ItemType.Tool ) )
-			enchantMult = 1f + inventory.GetEnchantmentBonus( EnchantmentType.Sharpness ) / 100f;
-
-		float rawOffence = weaponPower * skillBonus * buffMult * staffMeleeMult * enchantMult;
-
-		bool isCrit = CombatConstants.RollCrit();
-		if ( isCrit )
-			rawOffence *= CombatConstants.CritMultiplier;
-
-		var manaCombat = GameObject.Components.Get<ManaSystem>();
-		if ( manaCombat != null )
-			manaCombat.MarkCombat();
-
-		int finalDamage = PvpCombat.ResolveDamage( rawOffence, playerStyle, targetPlayer );
-
-		var targetHealth = targetPlayer.Components.Get<PlayerHealth>();
-		if ( targetHealth == null )
-			return;
-
-		targetHealth.TakeDamage( finalDamage );
-
-		SoundLibrary.PlayMonsterHit( targetPlayer.WorldPosition );
-		DamagePopupBroadcaster.Broadcast( targetPlayer.WorldPosition + Vector3.Up * 60f, finalDamage, targetHealth.MaxHealth, isCrit );
-	}
-
-	void HandleBossHit( Boss boss, Inventory inventory, Skills skills )
-	{
-		var weaponDef = inventory.GetEquippedWeaponDef();
-		CombatStyle playerStyle = CombatTriangle.GetStyleFromWeapon( weaponDef );
-
-		SkillType combatSkill = SkillType.Attack;
-		float weaponPower = 1f;
-
-		if ( weaponDef != null )
-		{
-			weaponPower = weaponDef.WeaponPower;
-
-			if ( weaponDef.Type == ItemType.MagicWeapon )
-				combatSkill = SkillType.Magic;
-		}
-
-		float skillBonus = skills.GetCombatPower( combatSkill );
-		float triangleMult = CombatTriangle.GetDealMultiplier( playerStyle, boss.CombatStyle );
-
-		float buffMult = 1f;
-		var potionSystem = GameObject.Components.Get<PotionSystem>();
-		if ( potionSystem != null )
-		{
-			if ( combatSkill == SkillType.Attack )
-				buffMult = potionSystem.GetBuffMultiplier( BuffType.Attack );
-			else if ( combatSkill == SkillType.Magic )
-				buffMult = potionSystem.GetBuffMultiplier( BuffType.Magic );
-		}
-
-		float staffMeleeMult = ( weaponDef != null && weaponDef.Type == ItemType.MagicWeapon ) ? StaffMeleeDamageMultiplier : 1f;
-
-		float enchantMult = 1f;
-		if ( weaponDef != null && ( weaponDef.Type == ItemType.MeleeWeapon || weaponDef.Type == ItemType.Tool ) )
-			enchantMult = 1f + inventory.GetEnchantmentBonus( EnchantmentType.Sharpness ) / 100f;
-
-		int damage = (int)( weaponPower * skillBonus * triangleMult * buffMult * staffMeleeMult * enchantMult );
-		if ( damage < 1 ) damage = 1;
-
-		bool isCrit = CombatConstants.RollCrit();
-		if ( isCrit )
-			damage = (int)( damage * CombatConstants.CritMultiplier );
-
-		var manaCombat = GameObject.Components.Get<ManaSystem>();
-		if ( manaCombat != null )
-			manaCombat.MarkCombat();
-
-		int bossHpLeft = System.Math.Max( 0, boss.CurrentHealth - damage );
-		GameLog.Add( $"You hit {boss.BossName} for {damage} damage{( isCrit ? " (CRIT!)" : "" )}. ({bossHpLeft}/{boss.MaxHealth} HP left)", "#a8c8a8" );
-
-		SoundLibrary.PlayMonsterHit( boss.WorldPosition );
-
-		boss.TakeDamage( damage, GameObject );
-
-		DamagePopupBroadcaster.Broadcast( boss.WorldPosition + Vector3.Up * 50f, damage, boss.MaxHealth, isCrit );
 	}
 
 	void HandleResourceHit( ResourceNode node, Inventory inventory, Skills skills )

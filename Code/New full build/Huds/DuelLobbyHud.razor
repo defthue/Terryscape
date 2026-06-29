@@ -1,0 +1,133 @@
+@using Sandbox;
+@using Sandbox.UI;
+@inherits PanelComponent
+
+<root>
+	@if ( ShouldShow )
+	{
+		<div class="dl-backdrop"></div>
+		<div class="dl-overlay">
+			<div class="dl-popup">
+				<div class="dl-header">
+					<div class="dl-title">Duel Lobby</div>
+					<div class="dl-close" onclick="@(() => Leave())">✕</div>
+				</div>
+				<div class="dl-body">
+					<div class="dl-vs">
+						<div class="dl-name">@ChallengerName</div>
+						<div class="dl-vs-x">vs</div>
+						<div class="dl-name">@TargetName</div>
+					</div>
+
+					<div class="dl-label">Mode</div>
+					<div class="dl-row">
+						<div class="dl-opt @(Mode == 0 ? "selected" : "") @(CanEdit ? "" : "readonly")" onclick="@(() => SetMode( 0 ))">Casual</div>
+						<div class="dl-opt @(Mode == 1 ? "selected" : "") @(CanEdit ? "" : "readonly")" onclick="@(() => SetMode( 1 ))">Normalized</div>
+					</div>
+
+					@if ( Mode == 1 )
+					{
+						<div class="dl-label">Fight Length</div>
+						<div class="dl-row">
+							<div class="dl-opt @(Pace == 0 ? "selected" : "") @(CanEdit ? "" : "readonly")" onclick="@(() => SetPace( 0 ))">Fast</div>
+							<div class="dl-opt @(Pace == 1 ? "selected" : "") @(CanEdit ? "" : "readonly")" onclick="@(() => SetPace( 1 ))">Standard</div>
+							<div class="dl-opt @(Pace == 2 ? "selected" : "") @(CanEdit ? "" : "readonly")" onclick="@(() => SetPace( 2 ))">Long</div>
+						</div>
+					}
+
+					<div class="dl-label">Rounds</div>
+					<div class="dl-row">
+						<div class="dl-opt @(Rounds == 1 ? "selected" : "") @(CanEdit ? "" : "readonly")" onclick="@(() => SetRounds( 1 ))">Best of 1</div>
+						<div class="dl-opt @(Rounds == 3 ? "selected" : "") @(CanEdit ? "" : "readonly")" onclick="@(() => SetRounds( 3 ))">Best of 3</div>
+						<div class="dl-opt @(Rounds == 5 ? "selected" : "") @(CanEdit ? "" : "readonly")" onclick="@(() => SetRounds( 5 ))">Best of 5</div>
+					</div>
+
+					<div class="dl-note">@RulesNote</div>
+
+					<div class="dl-status">
+						<div class="dl-lock @(LocalLocked ? "on" : "")">You: @(LocalLocked ? "Locked in" : "Not ready")</div>
+						<div class="dl-lock @(OpponentLocked ? "on" : "")">Opponent: @(OpponentLocked ? "Locked in" : "Not ready")</div>
+					</div>
+
+					<div class="dl-actions">
+						<div class="dl-btn cancel" onclick="@(() => Leave())">Leave</div>
+						<div class="dl-btn lock @(LocalLocked ? "unlock" : "")" onclick="@(() => ToggleLock())">@(LocalLocked ? "Unlock" : "Lock In")</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	DuelManager Manager => DuelManager.Instance;
+
+	bool ShouldShow => Manager != null && Manager.LobbyActive && IsParticipant;
+
+	ulong LocalSteamId => PlayerHelper.GetLocalPlayer()?.Network?.Owner?.SteamId ?? 0ul;
+	bool IsParticipant => Manager != null && LocalSteamId != 0ul && ( LocalSteamId == Manager.LobbyChallengerSteamId || LocalSteamId == Manager.LobbyTargetSteamId );
+	bool IsChallenger => Manager != null && LocalSteamId != 0ul && LocalSteamId == Manager.LobbyChallengerSteamId;
+	bool CanEdit => IsChallenger;
+
+	int Mode => Manager?.LobbyMode ?? 0;
+	int Pace => Manager?.LobbyPaceIndex ?? 1;
+	int Rounds => Manager?.LobbyRounds ?? 1;
+
+	bool LocalLocked => Manager != null && ( IsChallenger ? Manager.LobbyChallengerLocked : Manager.LobbyTargetLocked );
+	bool OpponentLocked => Manager != null && ( IsChallenger ? Manager.LobbyTargetLocked : Manager.LobbyChallengerLocked );
+
+	string ChallengerName => NameOf( Manager?.LobbyChallengerSteamId ?? 0ul );
+	string TargetName => NameOf( Manager?.LobbyTargetSteamId ?? 0ul );
+
+	string RulesNote => Mode == 1
+		? "Both fighters use identical stats and HP. Gear and levels don't count — pure skill."
+		: "Fight with your real gear, stats, and levels.";
+
+	string NameOf( ulong steamId )
+	{
+		if ( steamId == 0ul || Manager == null )
+			return "Player";
+		var go = Manager.FindDuelist( steamId );
+		return go?.Network?.Owner?.DisplayName ?? "Player";
+	}
+
+	void SetMode( int mode )
+	{
+		if ( !CanEdit ) return;
+		Manager?.RequestSetLobbyMode( LocalSteamId, mode );
+	}
+
+	void SetPace( int pace )
+	{
+		if ( !CanEdit ) return;
+		Manager?.RequestSetLobbyPace( LocalSteamId, pace );
+	}
+
+	void SetRounds( int rounds )
+	{
+		if ( !CanEdit ) return;
+		Manager?.RequestSetLobbyRounds( LocalSteamId, rounds );
+	}
+
+	void ToggleLock()
+	{
+		Manager?.RequestSetLobbyLock( LocalSteamId, !LocalLocked );
+	}
+
+	void Leave()
+	{
+		Manager?.RequestCancelLobby( LocalSteamId );
+	}
+
+	protected override void OnUpdate()
+	{
+		if ( ShouldShow )
+			StateHasChanged();
+	}
+
+	protected override int BuildHash()
+	{
+		return ( ShouldShow, Mode, Pace, Rounds, LocalLocked, OpponentLocked, IsChallenger, LocalSteamId ).GetHashCode();
+	}
+}

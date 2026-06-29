@@ -104,7 +104,7 @@ public sealed class GameManager : Component, Component.INetworkListener
 			if ( pc != null )
 			{
 				name = pc.Network.Owner?.DisplayName ?? "Player";
-				steamId = pc.Network.Owner?.SteamId ?? 0;
+				steamId = pc.Network.Owner?.SteamId ?? 0ul;
 			}
 		}
 
@@ -159,7 +159,7 @@ public sealed class GameManager : Component, Component.INetworkListener
 	{
 		foreach ( var bubble in Scene.GetAllComponents<PlayerSpeechBubble>() )
 		{
-			var ownerId = bubble.Network.Owner?.SteamId ?? 0;
+			var ownerId = bubble.Network.Owner?.SteamId ?? 0ul;
 			if ( ownerId == steamId )
 				return bubble;
 		}

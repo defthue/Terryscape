@@ -32,7 +32,7 @@ public sealed class KnockbackReceiver : Component
 		var horizontal = direction.WithZ( 0f ).Normal * force;
 		var impulse = horizontal + Vector3.Up * VerticalImpulse;
 
-		ulong ownerSteamId = Network.Owner?.SteamId ?? 0;
+		ulong ownerSteamId = Network.Owner?.SteamId ?? 0ul;
 		ApplyKnockbackOnOwner( ownerSteamId, impulse );
 	}
 

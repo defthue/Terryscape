@@ -70,14 +70,16 @@ public sealed class ArrowProjectile : Component
 		if ( pvpTarget != null )
 		{
 			_impacted = true;
-			int finalDamage = PvpCombat.ResolveDamage( Damage, Style, pvpTarget );
+			int finalDamage = PvpCombat.ResolveDamage( Damage, Style, pvpTarget, IsCrit );
 			var targetHealth = pvpTarget.Components.Get<PlayerHealth>();
 			if ( targetHealth != null )
 			{
 				targetHealth.TakeDamage( finalDamage );
 				DamagePopupBroadcaster.Broadcast( trace.HitPosition, finalDamage, targetHealth.MaxHealth, IsCrit );
+				Shooter?.Components.Get<PlayerCombat>()?.NotifyPvpHit( pvpTarget, finalDamage );
 			}
 			SoundLibrary.PlayArrowImpact( trace.HitPosition );
+			SoundLibrary.PlayPvpHit( trace.HitPosition );
 			GameObject.Destroy();
 			return;
 		}

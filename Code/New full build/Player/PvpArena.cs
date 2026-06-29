@@ -3,7 +3,7 @@ using System;
 
 public sealed class PvpArena : Component
 {
-	public static PvpArena Active { get; private set; }
+	public static new PvpArena Active { get; private set; }
 
 	[Property] public float Radius { get; set; } = 600f;
 	[Property] public float HeightTolerance { get; set; } = 400f;

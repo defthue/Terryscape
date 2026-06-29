@@ -12,6 +12,8 @@ public sealed class SpellCaster : Component
 	[Property, Group( "Spell Prefabs" )] public GameObject StoneskinAuraPrefab { get; set; }
 	[Property, Group( "Spell Prefabs" )] public GameObject AcidSpitPrefab { get; set; }
 
+	[Property, Group( "Spell VFX" )] public Sprite GlowSprite { get; set; }
+
 	[Property] public GameObject AimSource { get; set; }
 	[Property] public SkinnedModelRenderer BodyRenderer { get; set; }
 
@@ -27,7 +29,7 @@ public sealed class SpellCaster : Component
 	[Property, Group( "Barrier" )] public float BarrierHeightOffset { get; set; } = 0f;
 	[Property, Group( "Barrier" )] public float BarrierLateralOffset { get; set; } = 0f;
 	[Property, Group( "Barrier" )] public Color BarrierTint { get; set; } = new Color( 0.2f, 0.4f, 1f, 0.4f );
-	[Property, Group( "Barrier" )] public Vector3 BarrierColliderSize { get; set; } = new Vector3( 200f, 20f, 150f );
+	[Property, Group( "Barrier" )] public float BarrierYawOffset { get; set; } = 0f;
 
 	[Property, Group( "Aim Trace" )] public float AimTraceDistance { get; set; } = 5000f;
 
@@ -109,6 +111,9 @@ public sealed class SpellCaster : Component
 
 	protected override void OnUpdate()
 	{
+		if ( GlowSprite != null )
+			SpellVfx.GlowSprite = GlowSprite;
+
 		if ( IsProxy )
 			return;
 
@@ -772,7 +777,7 @@ public sealed class SpellCaster : Component
 			+ Vector3.Up * BarrierHeightOffset
 			+ aimRight * BarrierLateralOffset;
 
-		var barrierRotation = Rotation.LookAt( flatForward, Vector3.Up ) * Rotation.FromYaw( 90f );
+		var barrierRotation = Rotation.LookAt( flatForward, Vector3.Up ) * Rotation.FromYaw( BarrierYawOffset );
 
 		CreateBarrierLocal( spawnPos, barrierRotation );
 
@@ -803,20 +808,13 @@ public sealed class SpellCaster : Component
 		if ( BarrierPrefab != null )
 		{
 			var barrier = BarrierPrefab.Clone( pos );
-			barrier.WorldRotation = rot * Rotation.FromYaw( 90f );
+			barrier.WorldRotation = rot;
 			barrier.Tags.Add( "solid" );
 
 			var barrierComp = barrier.Components.Get<ArcaneBarrier>();
 			if ( barrierComp == null )
 				barrierComp = barrier.Components.Create<ArcaneBarrier>();
 			barrierComp.Duration = barrierDuration;
-
-			foreach ( var col in barrier.Components.GetAll<Collider>() )
-				col.Destroy();
-
-			var collider = barrier.Components.Create<BoxCollider>();
-			collider.Scale = BarrierColliderSize;
-			collider.Static = true;
 
 			var renderer = barrier.Components.Get<ModelRenderer>();
 			if ( renderer != null )
