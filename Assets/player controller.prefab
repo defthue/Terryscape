@@ -623,7 +623,9 @@
         "OnComponentEnabled": null,
         "OnComponentFixedUpdate": null,
         "OnComponentStart": null,
-        "OnComponentUpdate": null
+        "OnComponentUpdate": null,
+        "SwingArcForward": 55,
+        "SwingArcHeight": 45
       }
     ],
     "Children": [

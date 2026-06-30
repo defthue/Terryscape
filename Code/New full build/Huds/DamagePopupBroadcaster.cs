@@ -86,6 +86,11 @@ public sealed class DamagePopupBroadcaster : Component
 	[Rpc.Broadcast]
 	void RpcSpawnPopup( Vector3 worldPos, int damage, int tier, bool isCrit )
 	{
+		AddPopup( worldPos, damage, tier, isCrit );
+	}
+
+	void AddPopup( Vector3 worldPos, int damage, int tier, bool isCrit )
+	{
 		ActivePopups.Add( new ActivePopup
 		{
 			WorldPosition = worldPos + Vector3.Up * 40f,
@@ -94,6 +99,16 @@ public sealed class DamagePopupBroadcaster : Component
 			IsCrit = isCrit,
 			SpawnTime = Time.Now
 		} );
+	}
+
+	public static void ShowLocal( Vector3 worldPos, int damage, int targetMaxHealth, bool isCrit )
+	{
+		var instance = GetInstance();
+		if ( instance == null )
+			return;
+
+		int tier = ComputeColorTier( damage, targetMaxHealth );
+		instance.AddPopup( worldPos, damage, tier, isCrit );
 	}
 
 	protected override void OnUpdate()

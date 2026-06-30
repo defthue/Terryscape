@@ -70,11 +70,9 @@ public sealed class SpellProjectile : Component
 			if ( targetHealth != null )
 			{
 				targetHealth.TakeDamage( finalDamage );
-				DamagePopupBroadcaster.Broadcast( trace.HitPosition, finalDamage, targetHealth.MaxHealth, IsCrit );
-				Shooter?.Components.Get<PlayerCombat>()?.NotifyPvpHit( pvpTarget, finalDamage );
+				Shooter?.Components.Get<PlayerCombat>()?.NotifyPvpHit( pvpTarget, finalDamage, IsCrit, true );
 			}
 			PlayImpactSound( trace.HitPosition );
-			SoundLibrary.PlayPvpHit( trace.HitPosition );
 			GameObject.Destroy();
 			return;
 		}

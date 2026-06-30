@@ -5,6 +5,8 @@ public sealed class PlayerCombat : Component
 {
 	[Property] public float MeleeRange { get; set; } = 130f;
 	[Property] public float ArcHalfAngleDegrees { get; set; } = 60f;
+	[Property] public float SwingArcHeight { get; set; } = 45f;
+	[Property] public float SwingArcForward { get; set; } = 55f;
 
 	public GameObject FindArcPvpTarget()
 	{
@@ -54,6 +56,33 @@ public sealed class PlayerCombat : Component
 		return best;
 	}
 
+	public void TrySwingArc( Vector3 forward )
+	{
+		var inventory = GameObject.Components.Get<Inventory>();
+		var weaponDef = inventory?.GetEquippedWeaponDef();
+		if ( weaponDef == null || weaponDef.Type != ItemType.MeleeWeapon )
+			return;
+
+		Vector3 fwd = forward.WithZ( 0f );
+		if ( fwd.LengthSquared < 0.0001f )
+			fwd = WorldRotation.Forward.WithZ( 0f );
+		fwd = fwd.Normal;
+
+		Vector3 origin = GameObject.WorldPosition + Vector3.Up * SwingArcHeight + fwd * SwingArcForward;
+
+		MeleeSwingArc.Spawn( Scene, origin, fwd );
+		BroadcastSwingArc( origin, fwd );
+	}
+
+	[Rpc.Broadcast]
+	void BroadcastSwingArc( Vector3 origin, Vector3 forward )
+	{
+		if ( !IsProxy )
+			return;
+
+		MeleeSwingArc.Spawn( Scene, origin, forward );
+	}
+
 	public void DoPvpHit( GameObject target, Inventory inventory, Skills skills )
 	{
 		var weaponDef = inventory.GetEquippedWeaponDef();
@@ -95,27 +124,32 @@ public sealed class PlayerCombat : Component
 
 		targetHealth.TakeDamage( finalDamage );
 
-		ulong targetSteamId = target.Network?.Owner?.SteamId ?? 0ul;
-		BroadcastDuelHit( targetSteamId, target, finalDamage );
-
-		SoundLibrary.PlayPvpHit( target.WorldPosition );
-		DamagePopupBroadcaster.Broadcast( target.WorldPosition + Vector3.Up * 60f, finalDamage, targetHealth.MaxHealth, isCrit );
+		NotifyPvpHit( target, finalDamage, isCrit, true );
 	}
 
-	public void NotifyPvpHit( GameObject target, int dealt )
+	public void NotifyPvpHit( GameObject target, int dealt, bool isCrit = false, bool playSound = true )
 	{
 		if ( target == null )
 			return;
 
 		ulong targetSteamId = target.Network?.Owner?.SteamId ?? 0ul;
-		BroadcastDuelHit( targetSteamId, target, dealt );
+		BroadcastDuelHit( targetSteamId, target, dealt, isCrit, playSound );
 	}
 
 	[Rpc.Broadcast]
-	void BroadcastDuelHit( ulong targetSteamId, GameObject target, int dealt )
+	void BroadcastDuelHit( ulong targetSteamId, GameObject target, int dealt, bool isCrit, bool playSound )
 	{
 		DuelHealthPrediction.NotifyHit( targetSteamId, dealt );
 		HitFlash.Trigger( target );
+
+		if ( target == null )
+			return;
+
+		if ( playSound )
+			SoundLibrary.PlayPvpHitLocal( target.WorldPosition );
+
+		int maxHp = target.Components.Get<PlayerHealth>()?.MaxHealth ?? 0;
+		DamagePopupBroadcaster.ShowLocal( target.WorldPosition + Vector3.Up * 60f, dealt, maxHp, isCrit );
 	}
 
 	public void DoMonsterHit( Monster monster, Inventory inventory, Skills skills )

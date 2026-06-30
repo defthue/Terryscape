@@ -335,8 +335,7 @@ public sealed class LightningBoltChannel : Component
 				if ( targetHealth != null )
 				{
 					targetHealth.TakeDamage( dealt );
-					DamagePopupBroadcaster.Broadcast( pvpTarget.WorldPosition + Vector3.Up * 50f, dealt, targetHealth.MaxHealth, false );
-					_caster?.Components.Get<PlayerCombat>()?.NotifyPvpHit( pvpTarget, dealt );
+					_caster?.Components.Get<PlayerCombat>()?.NotifyPvpHit( pvpTarget, dealt, false, false );
 				}
 				continue;
 			}

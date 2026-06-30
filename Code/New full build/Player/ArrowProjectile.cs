@@ -75,11 +75,9 @@ public sealed class ArrowProjectile : Component
 			if ( targetHealth != null )
 			{
 				targetHealth.TakeDamage( finalDamage );
-				DamagePopupBroadcaster.Broadcast( trace.HitPosition, finalDamage, targetHealth.MaxHealth, IsCrit );
-				Shooter?.Components.Get<PlayerCombat>()?.NotifyPvpHit( pvpTarget, finalDamage );
+				Shooter?.Components.Get<PlayerCombat>()?.NotifyPvpHit( pvpTarget, finalDamage, IsCrit, true );
 			}
 			SoundLibrary.PlayArrowImpact( trace.HitPosition );
-			SoundLibrary.PlayPvpHit( trace.HitPosition );
 			GameObject.Destroy();
 			return;
 		}

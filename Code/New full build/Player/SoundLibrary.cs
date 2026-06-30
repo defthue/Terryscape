@@ -145,6 +145,11 @@ public sealed class SoundLibrary : Component
 		PlayPlayerActionSound( PVP_HIT, position );
 	}
 
+	public static void PlayPvpHitLocal( Vector3 position )
+	{
+		Sound.Play( PVP_HIT, position );
+	}
+
 	public static void PlayCountdown()
 	{
 		Sound.Play( COUNTDOWN, GetLocalListenerPosition() );

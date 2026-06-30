@@ -314,6 +314,9 @@ public sealed class PlayerGatherResource : Component
 
 		var forward = cam.WorldRotation.Forward;
 		var playerPos = GameObject.WorldPosition;
+
+		GameObject.Components.Get<PlayerCombat>()?.TrySwingArc( forward );
+
 		var start = playerPos + Vector3.Up * HeightOffset + forward * ForwardOffset;
 		var end = start + forward * TraceDistance;
 
