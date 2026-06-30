@@ -10,9 +10,9 @@ public sealed class FireTornado : Component
 	[Property] public float DamagePerTick { get; set; } = 1f;
 	[Property] public float TickInterval { get; set; } = 0.5f;
 
-	[Property] public int OuterParticleRate { get; set; } = 80;
-	[Property] public int InnerParticleRate { get; set; } = 40;
-	[Property] public int EmberRate { get; set; } = 20;
+	[Property] public int OuterParticleRate { get; set; } = 48;
+	[Property] public int InnerParticleRate { get; set; } = 24;
+	[Property] public int EmberRate { get; set; } = 12;
 
 	[Property] public float RiseSpeedMin { get; set; } = 80f;
 	[Property] public float RiseSpeedMax { get; set; } = 140f;
@@ -35,7 +35,6 @@ public sealed class FireTornado : Component
 	float _outerAccum;
 	float _innerAccum;
 	float _emberAccum;
-	Sprite _spriteAsset;
 
 	List<TornadoParticle> _particles = new();
 
@@ -43,8 +42,6 @@ public sealed class FireTornado : Component
 
 	class TornadoParticle
 	{
-		public GameObject Go;
-		public SpriteRenderer Renderer;
 		public ParticleKind Kind;
 		public float SpawnTime;
 		public float Lifetime;
@@ -54,6 +51,7 @@ public sealed class FireTornado : Component
 		public float RiseSpeed;
 		public float BaseSize;
 		public Color BaseColor;
+		public float CurrentHeight;
 	}
 
 	public static FireTornado Spawn( Scene scene, Vector3 position, GameObject source, float radius, float height, float duration, float damage, float tickInterval, bool visualOnly = false )
@@ -75,11 +73,6 @@ public sealed class FireTornado : Component
 		tornado.VisualOnly = visualOnly;
 
 		return tornado;
-	}
-
-	protected override void OnStart()
-	{
-		_spriteAsset = SpellVfx.GlowSprite;
 	}
 
 	protected override void OnUpdate()
@@ -176,20 +169,8 @@ public sealed class FireTornado : Component
 
 		float angle = Game.Random.Float( 0f, MathF.PI * 2f );
 
-		var go = new GameObject( true, $"FireParticle{_particles.Count}" );
-		go.SetParent( GameObject );
-		go.LocalPosition = new Vector3( MathF.Cos( angle ) * orbitRadius, MathF.Sin( angle ) * orbitRadius, startHeight );
-
-		var sr = go.Components.Create<SpriteRenderer>();
-		if ( _spriteAsset != null )
-			sr.Sprite = _spriteAsset;
-		sr.Color = baseColor;
-		sr.Size = new Vector2( baseSize, baseSize );
-
 		_particles.Add( new TornadoParticle
 		{
-			Go = go,
-			Renderer = sr,
 			Kind = kind,
 			SpawnTime = _elapsed,
 			Lifetime = lifetime,
@@ -198,7 +179,8 @@ public sealed class FireTornado : Component
 			SwirlSpeed = swirl,
 			RiseSpeed = rise,
 			BaseSize = baseSize,
-			BaseColor = baseColor
+			BaseColor = baseColor,
+			CurrentHeight = startHeight
 		} );
 	}
 
@@ -209,10 +191,8 @@ public sealed class FireTornado : Component
 			var p = _particles[i];
 			float age = _elapsed - p.SpawnTime;
 
-			if ( age >= p.Lifetime || p.Go == null || !p.Go.IsValid() )
+			if ( age >= p.Lifetime )
 			{
-				if ( p.Go != null && p.Go.IsValid() )
-					p.Go.Destroy();
 				_particles.RemoveAt( i );
 				continue;
 			}
@@ -221,12 +201,13 @@ public sealed class FireTornado : Component
 
 			p.OrbitAngle += p.SwirlSpeed * Time.Delta;
 
-			float currentHeight = p.Go.LocalPosition.z + p.RiseSpeed * Time.Delta;
+			p.CurrentHeight += p.RiseSpeed * Time.Delta;
+			float currentHeight = p.CurrentHeight;
 
 			float radiusScale = p.Kind == ParticleKind.Ember ? 1f : ( 1f - 0.4f * ageNorm );
 			float currentRadius = p.OrbitRadius * radiusScale;
 
-			p.Go.LocalPosition = new Vector3(
+			Vector3 worldPos = WorldPosition + new Vector3(
 				MathF.Cos( p.OrbitAngle ) * currentRadius,
 				MathF.Sin( p.OrbitAngle ) * currentRadius,
 				currentHeight
@@ -235,7 +216,6 @@ public sealed class FireTornado : Component
 			float sizePulse = 1f + 0.15f * MathF.Sin( age * 8f );
 			float sizeShrink = p.Kind == ParticleKind.Ember ? ( 1f - ageNorm ) : ( 1f - 0.3f * ageNorm );
 			float size = p.BaseSize * sizePulse * sizeShrink;
-			p.Renderer.Size = new Vector2( size, size );
 
 			float fade;
 			if ( ageNorm < 0.2f )
@@ -244,8 +224,9 @@ public sealed class FireTornado : Component
 				fade = 1f - ( ( ageNorm - 0.2f ) / 0.8f );
 
 			var c = p.BaseColor;
-			c.a = p.BaseColor.a * fade;
-			p.Renderer.Color = c;
+			c.a = p.BaseColor.a * fade * 0.6f;
+
+			SpellGizmo.SoftSphere( worldPos, size, c );
 		}
 	}
 

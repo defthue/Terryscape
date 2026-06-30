@@ -522,8 +522,8 @@
         "OnComponentFixedUpdate": null,
         "OnComponentStart": null,
         "OnComponentUpdate": null,
-        "RunSpeedMultiplier": 1.5,
-        "WalkSpeedMultiplier": 1.75
+        "RunSpeedMultiplier": 1.25,
+        "WalkSpeedMultiplier": 1.5
       },
       {
         "__type": "Sandbox.Huds.PlayerNameplatePanel",
@@ -626,6 +626,22 @@
         "OnComponentUpdate": null,
         "SwingArcForward": 55,
         "SwingArcHeight": 45
+      },
+      {
+        "__type": "PetManager",
+        "__guid": "2c4d5834-80be-420b-a136-9ba38601d6d7",
+        "__enabled": true,
+        "Flags": 0,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "PetSlimePrefab": {
+          "_type": "gameobject",
+          "prefab": "petslime.prefab"
+        }
       }
     ],
     "Children": [

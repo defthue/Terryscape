@@ -18,6 +18,8 @@
 {
 	[Property] public float HeightOffset { get; set; } = 100f;
 
+	const float MountPromptRange = 150f;
+
 	bool ShouldShow { get; set; }
 	float ScreenX { get; set; }
 	float ScreenY { get; set; }
@@ -88,6 +90,19 @@
 				bestDist = d;
 				best = s.GameObject;
 				bestLabel = string.IsNullOrEmpty( s.StationName ) ? "Bank" : s.StationName;
+			}
+		}
+
+		foreach ( var s in Scene.GetAllComponents<DuelMaster>() )
+		{
+			if ( !s.IsValid() ) continue;
+			float d = Vector3.DistanceBetween( s.WorldPosition, playerPos );
+			if ( d > s.InteractDistance ) continue;
+			if ( d < bestDist )
+			{
+				bestDist = d;
+				best = s.GameObject;
+				bestLabel = "Duel";
 			}
 		}
 
@@ -165,6 +180,37 @@
 					bestLabel = string.IsNullOrEmpty( n.NpcName ) ? "Talk" : n.NpcName;
 				else
 					bestLabel = shopOnNpc.DisplayName;
+			}
+		}
+
+		if ( best == null && Scene.Camera != null )
+		{
+			var localConn = player.Network.Owner;
+			ulong localSteam = localConn != null ? localConn.SteamId : 0;
+
+			var aimOrigin = playerPos + Vector3.Up * 30f;
+			var aimDir = Scene.Camera.WorldRotation.Forward;
+
+			foreach ( var slime in Scene.GetAllComponents<PetSlime>() )
+			{
+				if ( !slime.IsValid() ) continue;
+				if ( !slime.MountAvailableFor( localSteam ) ) continue;
+
+				var center = slime.MountAimCenter();
+				var toCenter = center - aimOrigin;
+				float along = Vector3.Dot( toCenter, aimDir );
+				if ( along < 0f || along > MountPromptRange ) continue;
+
+				var closest = aimOrigin + aimDir * along;
+				float off = ( center - closest ).Length;
+				if ( off > slime.MountAimRadius() ) continue;
+
+				if ( along < bestDist )
+				{
+					bestDist = along;
+					best = slime.GameObject;
+					bestLabel = "Mount";
+				}
 			}
 		}
 

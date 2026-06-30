@@ -1,0 +1,122 @@
+.pet-body {
+	display: flex;
+	flex-direction: row;
+	width: 100%;
+	height: 440px;
+	padding: 16px;
+	gap: 16px;
+	font-family: "Almendra", serif;
+	pointer-events: all;
+}
+
+.pet-slot-section {
+	display: flex;
+	flex-direction: column;
+	width: 240px;
+	gap: 12px;
+}
+
+.pet-library-section {
+	display: flex;
+	flex-direction: column;
+	width: 420px;
+	gap: 12px;
+}
+
+.pet-section-label {
+	font-size: 20px;
+	color: #c9a84c;
+	font-weight: bold;
+}
+
+.pet-slot {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	width: 240px;
+	height: 220px;
+	background-color: #2a1f14e0;
+	border: 2px solid #c9a84c;
+	border-radius: 10px;
+	gap: 8px;
+	pointer-events: all;
+	cursor: pointer;
+}
+
+.pet-slot.empty {
+	border-color: #6b5a3a;
+	cursor: default;
+}
+
+.pet-slot-name {
+	font-size: 22px;
+	color: #f0e6d2;
+}
+
+.pet-slot-hint {
+	font-size: 14px;
+	color: #b8a888;
+}
+
+.pet-ride-hint {
+	font-size: 14px;
+	color: #b8a888;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+	width: 240px;
+}
+
+.pet-grid {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	gap: 12px;
+	pointer-events: all;
+}
+
+.pet-card {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	width: 120px;
+	height: 140px;
+	background-color: #2a1f14e0;
+	border: 2px solid #6b5a3a;
+	border-radius: 10px;
+	gap: 8px;
+	pointer-events: all;
+	cursor: pointer;
+}
+
+.pet-card:hover {
+	border-color: #c9a84c;
+}
+
+.pet-card.active {
+	border-color: #c9a84c;
+	background-color: #3a2c1ae0;
+}
+
+.pet-card-name {
+	font-size: 16px;
+	color: #f0e6d2;
+}
+
+.pet-card-badge {
+	font-size: 12px;
+	color: #2a1f14;
+	background-color: #c9a84c;
+	border-radius: 6px;
+	padding: 2px 8px;
+}
+
+.pet-disc {
+	width: 56px;
+	height: 56px;
+	border-radius: 28px;
+	border: 2px solid #1c140cff;
+}

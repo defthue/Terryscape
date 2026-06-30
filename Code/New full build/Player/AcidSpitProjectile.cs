@@ -100,7 +100,7 @@ public sealed class AcidSpitProjectile : Component
 		poolGo.WorldPosition = position;
 
 		var visual = poolGo.Components.Create<AcidPoolVisual>();
-		visual.Radius = radius;
+		visual.Radius = radius * 0.6f;
 		visual.LifeDuration = visualDuration;
 		visual.PoolColor = color;
 	}
@@ -111,7 +111,7 @@ public sealed class AcidPoolVisual : Component
 	public float Radius { get; set; } = 150f;
 	public float LifeDuration { get; set; } = 3f;
 	public Color PoolColor { get; set; } = new Color( 0.5f, 0.95f, 0.2f, 0.55f );
-	public int ParticleCount { get; set; } = 50;
+	public int ParticleCount { get; set; } = 25;
 	public float ParticleSizeMin { get; set; } = 40f;
 	public float ParticleSizeMax { get; set; } = 90f;
 	public float RiseSpeedMin { get; set; } = 8f;
@@ -120,12 +120,11 @@ public sealed class AcidPoolVisual : Component
 
 	float _elapsed;
 	int _spawnedSoFar;
-	Sprite _spriteAsset;
 	System.Collections.Generic.List<Particle> _particles = new();
 
 	class Particle
 	{
-		public SpriteRenderer Renderer;
+		public Vector3 LocalPosition;
 		public Vector3 Velocity;
 		public float BaseSize;
 		public Color BaseColor;
@@ -134,28 +133,13 @@ public sealed class AcidPoolVisual : Component
 		public float SpawnTime;
 	}
 
-	protected override void OnStart()
-	{
-		_spriteAsset = SpellVfx.GlowSprite;
-	}
-
 	void SpawnParticle()
 	{
 		float angle = Game.Random.Float( 0f, MathF.PI * 2f );
 		float dist = MathF.Sqrt( Game.Random.Float( 0f, 1f ) ) * Radius;
 		Vector3 offset = new Vector3( MathF.Cos( angle ) * dist, MathF.Sin( angle ) * dist, Game.Random.Float( 0f, 15f ) );
 
-		var go = new GameObject( true, $"PoisonPuff{_spawnedSoFar}" );
-		go.SetParent( GameObject );
-		go.LocalPosition = offset;
-
-		var sr = go.Components.Create<SpriteRenderer>();
-		if ( _spriteAsset != null )
-			sr.Sprite = _spriteAsset;
-		sr.Color = PoolColor;
-
 		float size = Game.Random.Float( ParticleSizeMin, ParticleSizeMax );
-		sr.Size = new Vector2( size, size );
 
 		float rise = Game.Random.Float( RiseSpeedMin, RiseSpeedMax );
 		float drift = Game.Random.Float( 2f, 8f );
@@ -163,7 +147,7 @@ public sealed class AcidPoolVisual : Component
 
 		_particles.Add( new Particle
 		{
-			Renderer = sr,
+			LocalPosition = offset,
 			Velocity = new Vector3( MathF.Cos( driftAngle ) * drift, MathF.Sin( driftAngle ) * drift, rise ),
 			BaseSize = size,
 			BaseColor = PoolColor,
@@ -194,22 +178,21 @@ public sealed class AcidPoolVisual : Component
 		for ( int i = _particles.Count - 1; i >= 0; i-- )
 		{
 			var p = _particles[i];
-			if ( p.Renderer == null || !p.Renderer.IsValid() ) continue;
 
 			float age = _elapsed - p.SpawnTime;
 			float ageNorm = MathF.Min( 1f, age / ( LifeDuration - p.SpawnTime ) );
 
-			p.Renderer.GameObject.LocalPosition += p.Velocity * Time.Delta;
+			p.LocalPosition += p.Velocity * Time.Delta;
 
 			float pulse = 1f + 0.25f * MathF.Sin( p.Phase + _elapsed * p.PulseSpeed );
 			float growth = 1f + ageNorm * 0.4f;
 			float size = p.BaseSize * pulse * growth;
-			p.Renderer.Size = new Vector2( size, size );
 
 			float fade = 1f - ageNorm;
 			var c = p.BaseColor;
-			c.a = p.BaseColor.a * fade;
-			p.Renderer.Color = c;
+			c.a = p.BaseColor.a * fade * 0.6f;
+
+			SpellGizmo.SoftSphere( WorldPosition + p.LocalPosition, size, c );
 		}
 	}
 }

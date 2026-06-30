@@ -21,12 +21,9 @@ public sealed class PoisonEffect : Component
 	float _orbitTime;
 
 	List<IndicatorParticle> _indicatorParticles = new();
-	GameObject _indicatorRoot;
 
 	class IndicatorParticle
 	{
-		public GameObject Go;
-		public SpriteRenderer Renderer;
 		public float OrbitOffset;
 		public float HeightOffset;
 		public float PulsePhase;
@@ -58,32 +55,10 @@ public sealed class PoisonEffect : Component
 
 	protected override void OnStart()
 	{
-		BuildIndicator();
-	}
-
-	void BuildIndicator()
-	{
-		Sprite spriteAsset = SpellVfx.GlowSprite;
-
-		_indicatorRoot = new GameObject( true, "PoisonIndicator" );
-		_indicatorRoot.SetParent( GameObject );
-		_indicatorRoot.LocalPosition = Vector3.Zero;
-
 		for ( int i = 0; i < IndicatorParticleCount; i++ )
 		{
-			var go = new GameObject( true, $"PoisonParticle{i}" );
-			go.SetParent( _indicatorRoot );
-
-			var sr = go.Components.Create<SpriteRenderer>();
-			if ( spriteAsset != null )
-				sr.Sprite = spriteAsset;
-			sr.Color = IndicatorColor;
-			sr.Size = new Vector2( IndicatorParticleSize, IndicatorParticleSize );
-
 			_indicatorParticles.Add( new IndicatorParticle
 			{
-				Go = go,
-				Renderer = sr,
 				OrbitOffset = ( (float)i / IndicatorParticleCount ) * MathF.PI * 2f,
 				HeightOffset = Game.Random.Float( 0f, IndicatorHeight ),
 				PulsePhase = Game.Random.Float( 0f, MathF.PI * 2f )
@@ -116,12 +91,10 @@ public sealed class PoisonEffect : Component
 
 		foreach ( var p in _indicatorParticles )
 		{
-			if ( p.Go == null || !p.Go.IsValid() ) continue;
-
 			float angle = p.OrbitOffset + _orbitTime * IndicatorOrbitSpeed;
 			float bob = MathF.Sin( _orbitTime * 2f + p.PulsePhase ) * 8f;
 
-			p.Go.LocalPosition = new Vector3(
+			Vector3 worldPos = WorldPosition + new Vector3(
 				MathF.Cos( angle ) * IndicatorOrbitRadius,
 				MathF.Sin( angle ) * IndicatorOrbitRadius,
 				p.HeightOffset + bob
@@ -129,18 +102,12 @@ public sealed class PoisonEffect : Component
 
 			float pulse = 1f + 0.2f * MathF.Sin( _orbitTime * 3f + p.PulsePhase );
 			float size = IndicatorParticleSize * pulse;
-			p.Renderer.Size = new Vector2( size, size );
 
 			var c = IndicatorColor;
 			c.a = IndicatorColor.a * globalFade;
-			p.Renderer.Color = c;
-		}
-	}
 
-	protected override void OnDestroy()
-	{
-		if ( _indicatorRoot != null && _indicatorRoot.IsValid() )
-			_indicatorRoot.Destroy();
+			SpellGizmo.SoftSphere( worldPos, size, c );
+		}
 	}
 
 	void ApplyTick()

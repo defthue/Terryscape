@@ -1,0 +1,91 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using System.Collections.Generic;
+@inherits PanelComponent
+
+<root>
+	@if ( IsOpen )
+	{
+		<div class="shop-backdrop" onclick="@(() => Close())"></div>
+		<div class="crafting-overlay">
+			<div class="crafting-popup" style="width: 720px; height: 520px;">
+				<div class="crafting-header">
+					<div class="crafting-title">Pets</div>
+					<div class="crafting-close" onclick="@(() => Close())">✕</div>
+				</div>
+
+				<div class="pet-body">
+					<div class="pet-slot-section">
+						<div class="pet-section-label">Active Pet</div>
+						@if ( ActivePet != PetKind.None )
+						{
+							var adef = PetDatabase.Get( ActivePet );
+							<div class="pet-slot filled" onclick="@(() => Unsummon())">
+								<div class="pet-disc" style="background-color: @adef.IconColor;"></div>
+								<div class="pet-slot-name">@adef.Name</div>
+								<div class="pet-slot-hint">Click to dismiss</div>
+							</div>
+						}
+						else
+						{
+							<div class="pet-slot empty">
+								<div class="pet-slot-name">No pet active</div>
+								<div class="pet-slot-hint">Pick one from your library</div>
+							</div>
+						}
+
+						<div class="pet-ride-hint">Walk up to your pet and press E to ride it.</div>
+					</div>
+
+					<div class="pet-library-section">
+						<div class="pet-section-label">Library</div>
+						<div class="pet-grid">
+							@foreach ( var kind in OwnedPets )
+							{
+								var def = PetDatabase.Get( kind );
+								bool active = ActivePet == kind;
+								<div class="pet-card @(active ? "active" : "")" onclick="@(() => Summon( kind ))">
+									<div class="pet-disc" style="background-color: @def.IconColor;"></div>
+									<div class="pet-card-name">@def.Name</div>
+									@if ( active )
+									{
+										<div class="pet-card-badge">Active</div>
+									}
+								</div>
+							}
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	bool IsOpen => PetsStation.IsOpen;
+
+	PetKind ActivePet => PetManager.Local != null ? PetManager.Local.ActiveSlot : PetKind.None;
+
+	List<PetKind> OwnedPets => PetManager.Local != null ? PetManager.Local.Library : new List<PetKind>();
+
+	void Summon( PetKind kind )
+	{
+		PetManager.Local?.Summon( kind );
+	}
+
+	void Unsummon()
+	{
+		PetManager.Local?.Unsummon();
+	}
+
+	void Close()
+	{
+		PetsStation.Close();
+	}
+
+	protected override int BuildHash()
+	{
+		return ( PetsStation.IsOpen, ActivePet, OwnedPets.Count ).GetHashCode();
+	}
+}

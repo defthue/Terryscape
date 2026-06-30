@@ -16,7 +16,7 @@ public sealed class StoneskinBuff : Component
 	[Property] public float IndicatorOrbitRadius { get; set; } = 35f;
 	[Property] public float IndicatorOrbitSpeed { get; set; } = 1.5f;
 	[Property] public float IndicatorHeight { get; set; } = 60f;
-	[Property] public float IndicatorParticleSize { get; set; } = 28f;
+	[Property] public float IndicatorParticleSize { get; set; } = 11f;
 	[Property] public Color IndicatorColor { get; set; } = new Color( 0.7f, 0.7f, 0.75f, 0.85f );
 
 	public bool VisualOnly { get; set; }
@@ -30,14 +30,11 @@ public sealed class StoneskinBuff : Component
 
 	SkinnedModelRenderer _bodyRenderer;
 
-	GameObject _indicatorRoot;
 	List<IndicatorParticle> _indicatorParticles = new();
 	float _orbitTime;
 
 	class IndicatorParticle
 	{
-		public GameObject Go;
-		public SpriteRenderer Renderer;
 		public float OrbitOffset;
 		public float HeightOffset;
 		public float PulsePhase;
@@ -74,33 +71,16 @@ public sealed class StoneskinBuff : Component
 
 		_tintRestored = false;
 
-		if ( _indicatorRoot == null || !_indicatorRoot.IsValid() )
+		if ( _indicatorParticles.Count == 0 )
 			BuildIndicator();
 	}
 
 	void BuildIndicator()
 	{
-		Sprite spriteAsset = SpellVfx.GlowSprite;
-
-		_indicatorRoot = new GameObject( true, "StoneskinIndicator" );
-		_indicatorRoot.SetParent( GameObject );
-		_indicatorRoot.LocalPosition = Vector3.Zero;
-
 		for ( int i = 0; i < IndicatorParticleCount; i++ )
 		{
-			var go = new GameObject( true, $"StoneskinParticle{i}" );
-			go.SetParent( _indicatorRoot );
-
-			var sr = go.Components.Create<SpriteRenderer>();
-			if ( spriteAsset != null )
-				sr.Sprite = spriteAsset;
-			sr.Color = IndicatorColor;
-			sr.Size = new Vector2( IndicatorParticleSize, IndicatorParticleSize );
-
 			_indicatorParticles.Add( new IndicatorParticle
 			{
-				Go = go,
-				Renderer = sr,
 				OrbitOffset = ( (float)i / IndicatorParticleCount ) * MathF.PI * 2f,
 				HeightOffset = Game.Random.Float( 0f, IndicatorHeight ),
 				PulsePhase = Game.Random.Float( 0f, MathF.PI * 2f )
@@ -117,12 +97,10 @@ public sealed class StoneskinBuff : Component
 
 		foreach ( var p in _indicatorParticles )
 		{
-			if ( p.Go == null || !p.Go.IsValid() ) continue;
-
 			float angle = p.OrbitOffset + _orbitTime * IndicatorOrbitSpeed;
 			float bob = MathF.Sin( _orbitTime * 2f + p.PulsePhase ) * 8f;
 
-			p.Go.LocalPosition = new Vector3(
+			Vector3 worldPos = WorldPosition + new Vector3(
 				MathF.Cos( angle ) * IndicatorOrbitRadius,
 				MathF.Sin( angle ) * IndicatorOrbitRadius,
 				p.HeightOffset + bob
@@ -130,11 +108,11 @@ public sealed class StoneskinBuff : Component
 
 			float pulse = 1f + 0.2f * MathF.Sin( _orbitTime * 3f + p.PulsePhase );
 			float size = IndicatorParticleSize * pulse;
-			p.Renderer.Size = new Vector2( size, size );
 
 			var c = IndicatorColor;
 			c.a = IndicatorColor.a * globalFade;
-			p.Renderer.Color = c;
+
+			SpellGizmo.SoftSphere( worldPos, size, c );
 		}
 	}
 
@@ -184,11 +162,6 @@ public sealed class StoneskinBuff : Component
 
 	void DestroyIndicator()
 	{
-		if ( _indicatorRoot != null && _indicatorRoot.IsValid() )
-		{
-			_indicatorRoot.Destroy();
-			_indicatorRoot = null;
-		}
 		_indicatorParticles.Clear();
 	}
 

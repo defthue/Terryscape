@@ -1,0 +1,94 @@
+@using Sandbox;
+@using Sandbox.UI;
+@inherits PanelComponent
+
+<root>
+	@if ( ShouldShow )
+	{
+		<div class="dq-card">
+			<div class="dq-title">@TitleText</div>
+			<div class="dq-sub">@SubText</div>
+			<div class="dq-leave" onclick="@(() => Leave())">Leave</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	DuelManager Manager => DuelManager.Instance;
+
+	ulong LocalSteamId => PlayerHelper.GetLocalPlayer()?.Network?.Owner?.SteamId ?? 0ul;
+
+	bool InPool => Manager?.Pool != null && LocalSteamId != 0ul && Manager.Pool.Contains( LocalSteamId );
+
+	int PairIndex
+	{
+		get
+		{
+			var dm = Manager;
+			if ( dm == null || LocalSteamId == 0ul ) return -1;
+
+			if ( dm.QueueA != null )
+				for ( int i = 0; i < dm.QueueA.Count; i++ )
+					if ( dm.QueueA[i] == LocalSteamId ) return i;
+
+			if ( dm.QueueB != null )
+				for ( int i = 0; i < dm.QueueB.Count; i++ )
+					if ( dm.QueueB[i] == LocalSteamId ) return i;
+
+			return -1;
+		}
+	}
+
+	bool InPair => PairIndex >= 0;
+	bool ShouldShow => InPool || InPair;
+
+	string TitleText => InPair ? "Duel Queued" : "Finding Opponent";
+
+	string SubText
+	{
+		get
+		{
+			var dm = Manager;
+
+			if ( InPair && dm != null )
+			{
+				int i = PairIndex;
+				ulong oppId = 0ul;
+
+				if ( dm.QueueA != null && i < dm.QueueA.Count && dm.QueueA[i] == LocalSteamId )
+					oppId = ( dm.QueueB != null && i < dm.QueueB.Count ) ? dm.QueueB[i] : 0ul;
+				else if ( dm.QueueB != null && i < dm.QueueB.Count && dm.QueueB[i] == LocalSteamId )
+					oppId = ( dm.QueueA != null && i < dm.QueueA.Count ) ? dm.QueueA[i] : 0ul;
+
+				return $"vs {NameOf( oppId )} · #{i + 1} in line";
+			}
+
+			int poolCount = dm?.Pool?.Count ?? 0;
+			return poolCount > 1 ? $"{poolCount} in queue" : "Waiting for another duelist…";
+		}
+	}
+
+	string NameOf( ulong steamId )
+	{
+		if ( steamId == 0ul || Manager == null ) return "opponent";
+		var go = Manager.FindDuelist( steamId );
+		return go?.Network?.Owner?.DisplayName ?? "opponent";
+	}
+
+	void Leave()
+	{
+		if ( LocalSteamId != 0ul )
+			Manager?.RequestLeaveQueue( LocalSteamId );
+	}
+
+	protected override void OnUpdate()
+	{
+		StateHasChanged();
+	}
+
+	protected override int BuildHash()
+	{
+		return ( ShouldShow, TitleText, SubText ).GetHashCode();
+	}
+}

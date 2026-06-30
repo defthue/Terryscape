@@ -44,6 +44,11 @@
 						<div class="ds-btn cancel" onclick="@(() => Cancel())">Cancel</div>
 						<div class="ds-btn send @(CanSend ? "" : "disabled")" onclick="@(() => Send())">Send Challenge</div>
 					</div>
+
+					<div class="ds-or">— or —</div>
+					<div class="ds-actions">
+						<div class="ds-btn queue @(InQueue ? "disabled" : "")" onclick="@(() => JoinQueue())">@(InQueue ? "In Queue…" : "Join Random Queue")</div>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -64,6 +69,33 @@
 
 	void SelectOpponent( GameObject p ) => SelectedOpponent = p;
 	void SetRounds( int r ) => SelectedRounds = r;
+
+	bool InQueue
+	{
+		get
+		{
+			var dm = DuelManager.Instance;
+			ulong local = PlayerHelper.GetLocalPlayer()?.Network?.Owner?.SteamId ?? 0ul;
+			return dm != null && local != 0ul && dm.IsInQueueSystem( local );
+		}
+	}
+
+	void JoinQueue()
+	{
+		var local = PlayerHelper.GetLocalPlayer();
+		var dm = DuelManager.Instance;
+		if ( local != null && dm != null )
+		{
+			ulong id = local.Network?.Owner?.SteamId ?? 0ul;
+			if ( id != 0ul )
+			{
+				dm.RequestJoinQueue( id );
+				GameLog.Add( "Joined the duel queue.", "#6db8f0" );
+			}
+		}
+
+		DuelMaster.Close();
+	}
 
 	void Cancel()
 	{

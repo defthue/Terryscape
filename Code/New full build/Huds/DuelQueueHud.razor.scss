@@ -1,0 +1,50 @@
+.dq-card {
+	position: absolute;
+	left: 24px;
+	top: 42%;
+	width: 230px;
+	flex-direction: column;
+	background-color: #1a1410ee;
+	border: 2px solid #c9a84c;
+	border-radius: 10px;
+	padding: 14px;
+	font-family: "Almendra";
+	pointer-events: none;
+	box-shadow: 0px 4px 18px #000000aa;
+
+	.dq-title {
+		color: #c9a84c;
+		font-size: 21px;
+		font-weight: bold;
+		justify-content: center;
+		align-items: center;
+		text-align: center;
+		margin-bottom: 6px;
+	}
+
+	.dq-sub {
+		color: #e8dcc0;
+		font-size: 15px;
+		justify-content: center;
+		align-items: center;
+		text-align: center;
+		margin-bottom: 12px;
+	}
+
+	.dq-leave {
+		height: 34px;
+		justify-content: center;
+		align-items: center;
+		background-color: #7a2b2b;
+		color: #f0e0d0;
+		font-size: 16px;
+		border-radius: 6px;
+		cursor: pointer;
+		pointer-events: all;
+		transition: background-color 0.1s ease;
+
+		&:hover {
+			background-color: #9a3535;
+		}
+	}
+}

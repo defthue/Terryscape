@@ -882,37 +882,10 @@ public sealed class SpellCaster : Component
 		var go = Scene.CreateObject();
 		go.Name = "LobbedAimReticle";
 
-		int segments = 32;
-		float thickness = 4f;
-		float boxUnit = 50f;
-		float angleStep = MathF.PI * 2f / segments;
-
-		for ( int i = 0; i < segments; i++ )
-		{
-			float a = i * angleStep;
-			float b = ( i + 1 ) * angleStep;
-
-			Vector3 p1 = new Vector3( MathF.Cos( a ) * radius, MathF.Sin( a ) * radius, 2f );
-			Vector3 p2 = new Vector3( MathF.Cos( b ) * radius, MathF.Sin( b ) * radius, 2f );
-
-			var segGo = new GameObject( true, $"ReticleSeg{i}" );
-			segGo.SetParent( go );
-
-			Vector3 mid = ( p1 + p2 ) * 0.5f;
-			segGo.LocalPosition = mid;
-
-			Vector3 diff = p2 - p1;
-			float length = diff.Length;
-			if ( length < 0.01f ) continue;
-
-			Vector3 dir = diff / length;
-			segGo.LocalRotation = Rotation.LookAt( dir );
-			segGo.LocalScale = new Vector3( length / boxUnit, thickness / boxUnit, thickness / boxUnit );
-
-			var seg = segGo.Components.Create<ModelRenderer>();
-			seg.Model = Model.Load( "models/dev/box.vmdl" );
-			seg.Tint = color;
-		}
+		var reticle = go.Components.Create<AimReticleVisual>();
+		reticle.Radius = radius;
+		reticle.Color = color;
+		reticle.Count = Math.Clamp( (int)( radius / 8f ), 24, 64 );
 
 		return go;
 	}

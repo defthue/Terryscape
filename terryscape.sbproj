@@ -25,7 +25,7 @@
     "CsProjName": "",
     "StartupScene": "scenes/tha gima2.scene",
     "ControlModes": {
-      "Keyboard": false,
+      "Keyboard": true,
       "VR": false,
       "Gamepad": false
     },

@@ -1,4 +1,5 @@
 using Sandbox;
+using System.Collections.Generic;
 
 public sealed class DuelManager : Component
 {
@@ -34,6 +35,27 @@ public sealed class DuelManager : Component
 	[Sync] public int LobbyRounds { get; set; }
 	[Sync] public bool LobbyChallengerLocked { get; set; }
 	[Sync] public bool LobbyTargetLocked { get; set; }
+
+	[Property] public int MatchmakingRounds { get; set; } = 3;
+	[Property] public bool MatchmakingNormalized { get; set; } = true;
+	[Property] public int MatchmakingPaceIndex { get; set; } = 1;
+
+	[Sync] public List<ulong> QueueA { get; set; } = new();
+	[Sync] public List<ulong> QueueB { get; set; } = new();
+	[Sync] public List<ulong> Pool { get; set; } = new();
+
+	struct PendingMatch
+	{
+		public ulong A;
+		public ulong B;
+		public int Rounds;
+		public bool Normalized;
+		public int Hp;
+		public bool FromMatchmaking;
+	}
+
+	readonly List<PendingMatch> _arenaQueue = new();
+	readonly List<ulong> _pool = new();
 
 	public enum Phase { Idle, Countdown, Live, RoundOver, MatchOver }
 	[Sync] public Phase CurrentPhase { get; set; } = Phase.Idle;
@@ -106,6 +128,10 @@ public sealed class DuelManager : Component
 			if ( lc == null || !lc.IsValid() || lt == null || !lt.IsValid() )
 				CloseLobby();
 		}
+
+		CleanQueues();
+		TryMatchmake();
+		TryStartNext();
 
 		if ( !MatchActive )
 			return;
@@ -203,7 +229,10 @@ public sealed class DuelManager : Component
 		if ( !Networking.IsHost )
 			return;
 
-		if ( MatchActive )
+		if ( LobbyActive )
+			return;
+
+		if ( _pendingTarget != null )
 			return;
 
 		if ( challenger == null || target == null || challenger == target )
@@ -212,6 +241,9 @@ public sealed class DuelManager : Component
 		var cs = challenger.Components.Get<PvpState>();
 		var ts = target.Components.Get<PvpState>();
 		if ( cs == null || ts == null || !cs.InArena || !ts.InArena )
+			return;
+
+		if ( IsBusyInDuelSystem( SteamIdOf( challenger ) ) || IsBusyInDuelSystem( SteamIdOf( target ) ) )
 			return;
 
 		_pendingChallenger = challenger;
@@ -348,18 +380,18 @@ public sealed class DuelManager : Component
 
 	void BeginMatchFromLobby()
 	{
-		var challenger = FindDuelist( LobbyChallengerSteamId );
-		var target = FindDuelist( LobbyTargetSteamId );
+		ulong challengerId = LobbyChallengerSteamId;
+		ulong targetId = LobbyTargetSteamId;
 		int rounds = LobbyRounds;
 		bool normalized = LobbyMode == 1;
 		int hp = PaceToHp( LobbyPaceIndex );
 
 		CloseLobby();
 
-		if ( challenger == null || !challenger.IsValid() || target == null || !target.IsValid() )
+		if ( challengerId == 0 || targetId == 0 )
 			return;
 
-		StartMatch( challenger, target, rounds, normalized, hp );
+		EnqueueMatch( challengerId, targetId, rounds, normalized, hp, false );
 	}
 
 	void CloseLobby()
@@ -369,6 +401,205 @@ public sealed class DuelManager : Component
 		LobbyTargetSteamId = 0ul;
 		LobbyChallengerLocked = false;
 		LobbyTargetLocked = false;
+	}
+
+	bool IsInArena( GameObject go )
+	{
+		var s = go?.Components.Get<PvpState>();
+		return s != null && s.InArena;
+	}
+
+	bool IsBusyInDuelSystem( ulong steamId )
+	{
+		if ( steamId == 0 ) return true;
+		if ( steamId == DuelistASteamId || steamId == DuelistBSteamId ) return true;
+		if ( steamId == LobbyChallengerSteamId || steamId == LobbyTargetSteamId ) return true;
+		if ( _pool.Contains( steamId ) ) return true;
+		foreach ( var m in _arenaQueue )
+			if ( m.A == steamId || m.B == steamId ) return true;
+		return false;
+	}
+
+	public bool IsInQueueSystem( ulong steamId )
+	{
+		if ( steamId == 0 ) return false;
+		if ( Pool != null && Pool.Contains( steamId ) ) return true;
+		if ( QueueA != null && QueueA.Contains( steamId ) ) return true;
+		if ( QueueB != null && QueueB.Contains( steamId ) ) return true;
+		return false;
+	}
+
+	void EnqueueMatch( ulong a, ulong b, int rounds, bool normalized, int hp, bool fromMatchmaking )
+	{
+		_arenaQueue.Add( new PendingMatch
+		{
+			A = a,
+			B = b,
+			Rounds = rounds,
+			Normalized = normalized,
+			Hp = hp,
+			FromMatchmaking = fromMatchmaking
+		} );
+
+		SyncQueueState();
+		TryStartNext();
+	}
+
+	[Rpc.Broadcast]
+	public void RequestJoinQueue( ulong actor )
+	{
+		if ( !Networking.IsHost ) return;
+
+		var go = FindDuelist( actor );
+		if ( go == null || !go.IsValid() || !IsInArena( go ) ) return;
+		if ( IsBusyInDuelSystem( actor ) ) return;
+
+		_pool.Add( actor );
+		SyncQueueState();
+		TryMatchmake();
+		TryStartNext();
+	}
+
+	[Rpc.Broadcast]
+	public void RequestLeaveQueue( ulong actor )
+	{
+		if ( !Networking.IsHost ) return;
+		if ( actor == 0 ) return;
+
+		bool changed = _pool.Remove( actor );
+
+		for ( int i = _arenaQueue.Count - 1; i >= 0; i-- )
+		{
+			var m = _arenaQueue[i];
+			if ( m.A != actor && m.B != actor ) continue;
+
+			ulong partner = m.A == actor ? m.B : m.A;
+			_arenaQueue.RemoveAt( i );
+			changed = true;
+
+			if ( m.FromMatchmaking && partner != 0 && !IsBusyInDuelSystem( partner ) && IsInArena( FindDuelist( partner ) ) )
+				_pool.Insert( 0, partner );
+		}
+
+		if ( changed )
+		{
+			SyncQueueState();
+			TryMatchmake();
+			TryStartNext();
+		}
+	}
+
+	void TryMatchmake()
+	{
+		bool changed = false;
+
+		while ( _pool.Count >= 2 )
+		{
+			ulong a = _pool[0];
+			ulong b = _pool[1];
+			_pool.RemoveRange( 0, 2 );
+
+			_arenaQueue.Add( new PendingMatch
+			{
+				A = a,
+				B = b,
+				Rounds = MatchmakingRounds,
+				Normalized = MatchmakingNormalized,
+				Hp = PaceToHp( MatchmakingPaceIndex ),
+				FromMatchmaking = true
+			} );
+			changed = true;
+		}
+
+		if ( changed )
+			SyncQueueState();
+	}
+
+	void TryStartNext()
+	{
+		if ( !Networking.IsHost ) return;
+		if ( MatchActive ) return;
+
+		while ( _arenaQueue.Count > 0 )
+		{
+			var m = _arenaQueue[0];
+			_arenaQueue.RemoveAt( 0 );
+
+			var a = FindDuelist( m.A );
+			var b = FindDuelist( m.B );
+			bool aOk = a != null && a.IsValid() && IsInArena( a );
+			bool bOk = b != null && b.IsValid() && IsInArena( b );
+
+			if ( aOk && bOk )
+			{
+				SyncQueueState();
+				StartMatch( a, b, m.Rounds, m.Normalized, m.Hp );
+				return;
+			}
+
+			if ( m.FromMatchmaking )
+			{
+				ulong survivor = aOk ? m.A : ( bOk ? m.B : 0 );
+				if ( survivor != 0 && !IsBusyInDuelSystem( survivor ) )
+					_pool.Insert( 0, survivor );
+			}
+		}
+
+		SyncQueueState();
+	}
+
+	void CleanQueues()
+	{
+		bool changed = false;
+
+		for ( int i = _pool.Count - 1; i >= 0; i-- )
+		{
+			var go = FindDuelist( _pool[i] );
+			if ( go == null || !go.IsValid() || !IsInArena( go ) )
+			{
+				_pool.RemoveAt( i );
+				changed = true;
+			}
+		}
+
+		for ( int i = _arenaQueue.Count - 1; i >= 0; i-- )
+		{
+			var m = _arenaQueue[i];
+			var a = FindDuelist( m.A );
+			var b = FindDuelist( m.B );
+			bool aOk = a != null && a.IsValid() && IsInArena( a );
+			bool bOk = b != null && b.IsValid() && IsInArena( b );
+
+			if ( aOk && bOk )
+				continue;
+
+			_arenaQueue.RemoveAt( i );
+			changed = true;
+
+			if ( m.FromMatchmaking )
+			{
+				ulong survivor = aOk ? m.A : ( bOk ? m.B : 0 );
+				if ( survivor != 0 && !IsBusyInDuelSystem( survivor ) )
+					_pool.Insert( 0, survivor );
+			}
+		}
+
+		if ( changed )
+			SyncQueueState();
+	}
+
+	void SyncQueueState()
+	{
+		var a = new List<ulong>();
+		var b = new List<ulong>();
+		foreach ( var m in _arenaQueue )
+		{
+			a.Add( m.A );
+			b.Add( m.B );
+		}
+		QueueA = a;
+		QueueB = b;
+		Pool = new List<ulong>( _pool );
 	}
 
 	static int PaceToHp( int paceIndex )
@@ -532,6 +763,8 @@ public sealed class DuelManager : Component
 		ScoreA = 0;
 		ScoreB = 0;
 		CurrentPhase = Phase.Idle;
+
+		TryStartNext();
 	}
 
 	bool IsDead( GameObject duelist )

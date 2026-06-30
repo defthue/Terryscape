@@ -16,12 +16,17 @@
 			<div class="sidebar-icon">🏆</div>
 			<div class="sidebar-tooltip">Leaderboard</div>
 		</div>
+		<div class="sidebar-button" onclick="@(() => OpenPets())">
+			<div class="sidebar-icon">🐾</div>
+			<div class="sidebar-tooltip">Pets</div>
+		</div>
 	</div>
 </root>
 
 @code
 {
 	bool _warnedMissingBinding = false;
+	bool _warnedMissingPets = false;
 
 	protected override void OnUpdate()
 	{
@@ -40,6 +45,14 @@
 			else
 				OpenSpellbook();
 		}
+
+		if ( TryReadPetsInput() )
+		{
+			if ( PetsStation.IsOpen )
+				PetsStation.Close();
+			else
+				OpenPets();
+		}
 	}
 
 	bool TryReadSpellbookInput()
@@ -54,6 +67,23 @@
 			{
 				Log.Info( "[SidebarButtons] No 'Spellbook' input binding found. Add it in project settings (suggested key: B)." );
 				_warnedMissingBinding = true;
+			}
+			return false;
+		}
+	}
+
+	bool TryReadPetsInput()
+	{
+		try
+		{
+			return Input.Pressed( "Pets" );
+		}
+		catch
+		{
+			if ( !_warnedMissingPets )
+			{
+				Log.Info( "[SidebarButtons] No 'Pets' input binding found. Add it in project settings (suggested key: P)." );
+				_warnedMissingPets = true;
 			}
 			return false;
 		}
@@ -75,6 +105,12 @@
 	{
 		CloseAllOtherHuds();
 		SpellbookStation.Open();
+	}
+
+	void OpenPets()
+	{
+		CloseAllOtherHuds();
+		PetsStation.Open();
 	}
 
 	void CloseAllOtherHuds()
@@ -100,10 +136,11 @@
 		JournalStation.Close();
 		LeaderboardStation.Close();
 		SpellbookStation.Close();
+		PetsStation.Close();
 	}
 
 	protected override int BuildHash()
 	{
-		return ( JournalStation.IsOpen, LeaderboardStation.IsOpen, SpellbookStation.IsOpen, InventoryHud.GearTabExpanded ).GetHashCode();
+		return ( JournalStation.IsOpen, LeaderboardStation.IsOpen, SpellbookStation.IsOpen, PetsStation.IsOpen, InventoryHud.GearTabExpanded ).GetHashCode();
 	}
 }
