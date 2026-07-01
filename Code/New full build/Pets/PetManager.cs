@@ -13,6 +13,10 @@ public sealed class PetManager : Component
 
 	GameObject _slime;
 	bool _spawned;
+	bool _pendingDespawn;
+	bool _suppressedForArena;
+	bool _wasInArena;
+	int _colorIndex = -1;
 
 	protected override void OnStart()
 	{
@@ -28,7 +32,7 @@ public sealed class PetManager : Component
 		if ( Local == this )
 			Local = null;
 
-		DespawnSlime();
+		ForceDestroySlime();
 	}
 
 	protected override void OnUpdate()
@@ -40,6 +44,49 @@ public sealed class PetManager : Component
 		{
 			_spawned = true;
 			RefreshSlime();
+		}
+
+		UpdateArenaState();
+		UpdatePendingDespawn();
+	}
+
+	void UpdateArenaState()
+	{
+		var player = PlayerHelper.GetLocalPlayer();
+		var state = player?.Components.Get<PvpState>();
+		bool inArena = state != null && state.InArena;
+
+		if ( inArena && !_wasInArena )
+		{
+			_suppressedForArena = true;
+			DespawnSlime();
+		}
+		else if ( !inArena && _wasInArena )
+		{
+			_suppressedForArena = false;
+			RefreshSlime();
+		}
+
+		_wasInArena = inArena;
+	}
+
+	void UpdatePendingDespawn()
+	{
+		if ( !_pendingDespawn )
+			return;
+
+		if ( _slime == null || !_slime.IsValid() )
+		{
+			_pendingDespawn = false;
+			return;
+		}
+
+		var chair = _slime.Components.Get<BaseChair>();
+		if ( chair == null || !chair.IsOccupied )
+		{
+			_slime.Destroy();
+			_slime = null;
+			_pendingDespawn = false;
 		}
 	}
 
@@ -63,6 +110,12 @@ public sealed class PetManager : Component
 	{
 		DespawnSlime();
 
+		if ( _pendingDespawn )
+			return;
+
+		if ( _suppressedForArena )
+			return;
+
 		if ( ActiveSlot == PetKind.None )
 			return;
 
@@ -72,6 +125,9 @@ public sealed class PetManager : Component
 			return;
 		}
 
+		if ( _colorIndex < 0 )
+			_colorIndex = Game.Random.Int( 0, PetDatabase.SlimeColorCount - 1 );
+
 		var go = PetSlimePrefab.Clone( WorldPosition + Vector3.Up * 10f );
 		go.Name = $"Pet_{ActiveSlot}";
 
@@ -80,6 +136,7 @@ public sealed class PetManager : Component
 		{
 			slime.OwnerSteamId = Network.Owner?.SteamId ?? 0ul;
 			slime.Kind = ActiveSlot;
+			slime.ColorIndex = _colorIndex;
 		}
 
 		if ( Networking.IsActive )
@@ -90,8 +147,34 @@ public sealed class PetManager : Component
 
 	void DespawnSlime()
 	{
+		if ( _slime == null || !_slime.IsValid() )
+		{
+			_slime = null;
+			_pendingDespawn = false;
+			return;
+		}
+
+		var chair = _slime.Components.Get<BaseChair>();
+		if ( chair != null && chair.IsOccupied )
+		{
+			var occ = chair.GetOccupant();
+			if ( occ != null && occ.IsValid() )
+				chair.AskToLeave( occ );
+
+			_pendingDespawn = true;
+			return;
+		}
+
+		_slime.Destroy();
+		_slime = null;
+		_pendingDespawn = false;
+	}
+
+	void ForceDestroySlime()
+	{
 		if ( _slime != null && _slime.IsValid() )
 			_slime.Destroy();
 		_slime = null;
+		_pendingDespawn = false;
 	}
 }

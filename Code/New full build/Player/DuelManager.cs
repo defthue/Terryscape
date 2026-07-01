@@ -305,6 +305,10 @@ public sealed class DuelManager : Component
 		NormalizedHP = normalizedHp;
 		MatchActive = true;
 
+		string an = a?.Network?.Owner?.DisplayName ?? "Someone";
+		string bn = b?.Network?.Owner?.DisplayName ?? "Someone";
+		GameManager.Instance?.BroadcastServerNotice( $"A duel has begun between {an} and {bn} in the Colosseum!" );
+
 		GameLog.Add( "Duel accepted! Get ready...", "#6db8f0" );
 		BeginRound();
 	}
@@ -638,6 +642,11 @@ public sealed class DuelManager : Component
 	[Rpc.Broadcast]
 	void BroadcastCountdownSound()
 	{
+		var local = PlayerHelper.GetLocalPlayer();
+		var state = local?.Components.Get<PvpState>();
+		if ( state == null || !state.InArena )
+			return;
+
 		SoundLibrary.PlayCountdown();
 	}
 

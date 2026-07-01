@@ -5,6 +5,7 @@ public sealed class PetSlime : Component
 {
 	[Sync] public ulong OwnerSteamId { get; set; }
 	[Sync] public PetKind Kind { get; set; } = PetKind.Slime;
+	[Sync] public int ColorIndex { get; set; }
 
 	Vector3 _targetPos;
 	float _orbitTimer;
@@ -27,14 +28,8 @@ public sealed class PetSlime : Component
 	bool _driving;
 	float _mountYaw;
 	bool _jumpQueued;
-
-	float _mHopPhase;
-	bool _mInAir;
-	bool _mBigHop;
 	float _mIdle;
-
-	float _groundSmooth;
-	bool _groundInit;
+	bool _wasGroundedMounted;
 
 	bool _localMounted;
 	float _camSmoothZ;
@@ -46,18 +41,14 @@ public sealed class PetSlime : Component
 	GameObject _ownerCache;
 	GameObject _visual;
 	GameObject _seat;
-	GameObject _shadow;
 	ModelRenderer _visualRenderer;
 	BaseChair _chair;
 	CharacterController _cc;
 
-	const float StepCap = 16f;
 	const float SeatLift = -3f;
 
-	// Slime hop tuning (from Sketchy Wizard PetWorldEntity)
 	const float HopSpeed = 4f;
 	const float HopArc = 30f;
-	const float JumpArc = 60f;
 	const float HopLandSquash = -0.6f;
 	const float HopPrepSquash = -0.3f;
 	const float HopPeakStretch = 0.35f;
@@ -67,12 +58,17 @@ public sealed class PetSlime : Component
 	const float IdleMinRest = 1.5f;
 	const float IdleMaxRest = 4f;
 
-	// Jelly wobble on landing
 	const float WobbleFreq = 16f;
 	const float WobbleDecay = 6f;
 
-	// How smooth the camera is while riding (lower = smoother / more lag)
 	const float CamSmoothRate = 18f;
+
+	const float MountGravity = 800f;
+	const float MountJumpVel = 350f;
+	const float MountHopVel = 250f;
+	const float MountGroundPauseMin = 0.12f;
+	const float MountGroundPauseMax = 0.30f;
+	const float MountAirControl = 4f;
 
 	protected override void OnStart()
 	{
@@ -134,7 +130,6 @@ public sealed class PetSlime : Component
 		}
 
 		ApplyVisual();
-		UpdateShadow();
 		DrawBubbles();
 	}
 
@@ -252,10 +247,8 @@ public sealed class PetSlime : Component
 			_driving = true;
 			_mountYaw = WorldRotation.Yaw();
 			_jumpQueued = false;
-			_mInAir = false;
-			_mBigHop = false;
-			_mHopPhase = 0f;
-			_mIdle = 0f;
+			_mIdle = Game.Random.Float( MountGroundPauseMin, MountGroundPauseMax );
+			_wasGroundedMounted = true;
 		}
 
 		_mountYaw += Input.AnalogLook.yaw;
@@ -273,95 +266,72 @@ public sealed class PetSlime : Component
 		bool moving = wish.Length > 0.1f;
 		if ( moving ) wish = wish.Normal;
 
-		if ( Input.Pressed( "Jump" ) )
+		var cc = GetCC();
+		if ( cc == null )
+		{
+			UpdateSeat();
+			return;
+		}
+
+		bool grounded = cc.IsOnGround;
+
+		if ( grounded && Input.Pressed( "Jump" ) )
 			_jumpQueued = true;
 
-		var preXY = WorldPosition;
-		float gBefore = GroundZAt( preXY );
+		Vector3 wishVel = wish * def.MoveSpeed;
 
-		var cc = GetCC();
-		if ( cc != null )
+		if ( grounded )
 		{
-			cc.Velocity = new Vector3( wish.x * def.MoveSpeed, wish.y * def.MoveSpeed, 0f );
-			cc.Move();
-		}
-		else if ( moving )
-		{
-			var step = WorldPosition + wish * def.MoveSpeed * dt;
-			WorldPosition = new Vector3( step.x, step.y, WorldPosition.z );
-		}
-
-		var p = WorldPosition;
-		float gAfter = GroundZAt( p );
-
-		if ( gAfter - gBefore > StepCap )
-		{
-			p = new Vector3( preXY.x, preXY.y, p.z );
-			gAfter = gBefore;
-		}
-
-		if ( !_groundInit )
-		{
-			_groundSmooth = gAfter;
-			_groundInit = true;
-		}
-		else
-		{
-			_groundSmooth = MathX.Lerp( _groundSmooth, gAfter, dt * 12f );
-		}
-		float ground = _groundSmooth;
-
-		float nz;
-		if ( _mInAir )
-		{
-			_mHopPhase += dt * HopSpeed;
-			if ( _mHopPhase >= MathF.PI )
-			{
-				_mInAir = false;
-				_mBigHop = false;
-				_mHopPhase = 0f;
-				_squash = HopLandSquash;
-				StartWobble();
-				_mIdle = moving
-					? Game.Random.Float( IdleMinMoving, IdleMaxMoving )
-					: Game.Random.Float( IdleMinRest, IdleMaxRest );
-				nz = ground;
-			}
-			else
-			{
-				float arc = MathF.Sin( _mHopPhase ) * ( _mBigHop ? JumpArc : HopArc );
-				nz = ground + arc;
-				_squash = MathF.Sin( _mHopPhase ) * HopPeakStretch;
-			}
-		}
-		else
-		{
-			nz = ground;
-			_mIdle -= dt;
+			float impulse = 0f;
 
 			if ( _jumpQueued )
 			{
-				_mInAir = true;
-				_mBigHop = true;
-				_mHopPhase = 0f;
-				_squash = HopPrepSquash;
+				impulse = MountJumpVel;
 				_jumpQueued = false;
+				SoundLibrary.PlaySlimeSquish( WorldPosition );
 			}
-			else if ( _mIdle <= 0f && moving )
+			else if ( moving && _mIdle <= 0f )
 			{
-				_mInAir = true;
-				_mBigHop = false;
-				_mHopPhase = 0f;
-				_squash = HopPrepSquash;
+				impulse = MountHopVel;
 			}
 			else
 			{
-				_squash = GroundSquash( moving );
+				_mIdle -= dt;
 			}
+
+			cc.Velocity = wishVel.WithZ( 0f );
+
+			if ( impulse > 0f )
+				cc.Punch( Vector3.Up * impulse );
+		}
+		else
+		{
+			float vz = cc.Velocity.z - MountGravity * dt;
+			var h = Vector3.Lerp( cc.Velocity.WithZ( 0f ), wishVel.WithZ( 0f ), dt * MountAirControl );
+			cc.Velocity = new Vector3( h.x, h.y, vz );
 		}
 
-		p.z = nz;
-		WorldPosition = p;
+		cc.Move();
+
+		bool nowGrounded = cc.IsOnGround;
+
+		if ( nowGrounded && !_wasGroundedMounted )
+		{
+			_squash = HopLandSquash;
+			StartWobble();
+			SoundLibrary.PlaySlimeSquish( WorldPosition );
+			_mIdle = Game.Random.Float( MountGroundPauseMin, MountGroundPauseMax );
+		}
+		else if ( nowGrounded )
+		{
+			_squash = GroundSquash( moving );
+		}
+		else
+		{
+			_squash = MathX.Clamp( cc.Velocity.z / 500f, -0.15f, HopPeakStretch );
+		}
+
+		_wasGroundedMounted = nowGrounded;
 
 		UpdateSeat();
 	}
@@ -442,6 +412,7 @@ public sealed class PetSlime : Component
 				_jumpPhase = 0f;
 				_squash = HopLandSquash;
 				StartWobble();
+				SoundLibrary.PlaySlimeSquish( WorldPosition );
 				_idleTimer = isMoving
 					? Game.Random.Float( IdleMinMoving, IdleMaxMoving )
 					: Game.Random.Float( IdleMinRest, IdleMaxRest );
@@ -494,35 +465,12 @@ public sealed class PetSlime : Component
 		_visual.LocalPosition = new Vector3( 0f, 0f, _modelHalf * _curScale * sy );
 	}
 
-	void UpdateShadow()
-	{
-		if ( _shadow == null || !_shadow.IsValid() )
-			return;
-
-		_shadow.Enabled = true;
-
-		float groundZ = GroundZAt( WorldPosition );
-		float height = MathF.Max( 0f, WorldPosition.z - groundZ );
-		float fade = MathF.Min( height / 40f, 1f );
-
-		float footprint = _curScale * 0.9f * ( 1f - 0.35f * fade );
-		float alpha = 0.35f * ( 1f - 0.55f * fade );
-
-		_shadow.WorldPosition = new Vector3( WorldPosition.x, WorldPosition.y, groundZ + 1f );
-		_shadow.WorldRotation = Rotation.Identity;
-		_shadow.WorldScale = new Vector3( footprint, footprint, 0.04f );
-
-		var sr = _shadow.Components.Get<ModelRenderer>();
-		if ( sr != null )
-			sr.Tint = new Color( 0f, 0f, 0f, alpha );
-	}
-
 	void DrawBubbles()
 	{
 		float time = Time.Now;
 		var pos = WorldPosition;
 		float centerZ = pos.z + _modelHalf * _curScale;
-		var color = PetDatabase.SlimeColor( 1f );
+		var color = PetDatabase.SlimeColorByIndex( ColorIndex, 1f );
 		bool moving = _velSmooth.WithZ( 0 ).Length > 20f;
 
 		for ( int i = 0; i < 6; i++ )
@@ -554,7 +502,7 @@ public sealed class PetSlime : Component
 			float bz = centerZ + ( 2f + MathF.Sin( time * 3f + seed * 2f ) * 5f ) * _curScale;
 			float alpha = MathF.Sin( cycle * MathF.PI ) * 0.5f;
 			float size = ( 0.6f + MathF.Sin( time * 4f + seed ) * 0.3f ) * _curScale;
-			Gizmo.Draw.Color = new Color( 0.2f, 1f, 0.35f, alpha );
+			Gizmo.Draw.Color = new Color( MathF.Min( color.r + 0.05f, 1f ), MathF.Min( color.g + 0.15f, 1f ), MathF.Min( color.b + 0.1f, 1f ), alpha );
 			Gizmo.Draw.SolidSphere( new Vector3( bx, by, bz ), size );
 		}
 	}
@@ -563,13 +511,14 @@ public sealed class PetSlime : Component
 	{
 		ResolveVisual();
 		ResolveSeat();
+		RemoveShadow();
 		if ( _visual == null )
 			return;
 
 		_visualRenderer = _visual.Components.Get<ModelRenderer>();
 		if ( _visualRenderer != null )
 		{
-			_visualRenderer.Tint = PetDatabase.SlimeColor( 0.55f );
+			_visualRenderer.Tint = PetDatabase.SlimeColorByIndex( ColorIndex, 0.55f );
 			if ( _visualRenderer.Model != null )
 			{
 				float h = _visualRenderer.Model.Bounds.Size.z * 0.5f;
@@ -579,7 +528,15 @@ public sealed class PetSlime : Component
 		}
 
 		EnsureBubbles();
-		EnsureShadow();
+	}
+
+	void RemoveShadow()
+	{
+		foreach ( var c in GameObject.Children )
+		{
+			if ( c.IsValid() && c.Name == "PetShadow" )
+				c.Destroy();
+		}
 	}
 
 	void ResolveVisual()
@@ -629,7 +586,7 @@ public sealed class PetSlime : Component
 				return;
 		}
 
-		var color = PetDatabase.SlimeColor( 0.55f );
+		var color = PetDatabase.SlimeColorByIndex( ColorIndex, 0.55f );
 		float[] bx = { 6f, -5f, 3f, -4f };
 		float[] by = { 4f, 5f, -2f, 3f };
 		float[] bz = { 3f, -3f, 4f, -2f };
@@ -644,25 +601,5 @@ public sealed class PetSlime : Component
 			br.Model = Model.Load( "models/dev/sphere.vmdl" );
 			br.Tint = new Color( color.r + 0.1f, color.g + 0.1f, color.b + 0.1f, 0.3f );
 		}
-	}
-
-	void EnsureShadow()
-	{
-		foreach ( var c in GameObject.Children )
-		{
-			if ( c.Name == "PetShadow" )
-			{
-				_shadow = c;
-				return;
-			}
-		}
-
-		var shadow = new GameObject();
-		shadow.Name = "PetShadow";
-		shadow.Parent = GameObject;
-		var sr = shadow.Components.Create<ModelRenderer>();
-		sr.Model = Model.Load( "models/dev/sphere.vmdl" );
-		sr.Tint = new Color( 0f, 0f, 0f, 0.35f );
-		_shadow = shadow;
 	}
 }

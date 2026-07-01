@@ -155,6 +155,29 @@ public sealed class GameManager : Component, Component.INetworkListener
 			ChatMessages.RemoveAt( 0 );
 	}
 
+	public void BroadcastServerNotice( string text )
+	{
+		DoBroadcastServerNotice( text );
+	}
+
+	[Rpc.Broadcast]
+	void DoBroadcastServerNotice( string text )
+	{
+		if ( string.IsNullOrWhiteSpace( text ) )
+			return;
+
+		ChatMessages.Add( new ChatMessage
+		{
+			Sender = "Server",
+			Text = text,
+			Created = 0,
+			Sequence = _nextChatSequence++
+		} );
+
+		if ( ChatMessages.Count > MaxChatMessages )
+			ChatMessages.RemoveAt( 0 );
+	}
+
 	PlayerSpeechBubble FindBubbleForSteamId( ulong steamId )
 	{
 		foreach ( var bubble in Scene.GetAllComponents<PlayerSpeechBubble>() )
