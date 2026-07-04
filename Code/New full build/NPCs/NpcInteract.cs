@@ -433,6 +433,7 @@ public sealed class NpcInteract : Component
 		if ( !string.IsNullOrEmpty( QuestId ) )
 		{
 			inventory.CompleteQuest( QuestId );
+			AchievementTracker.OnQuestCompleted();
 			GameLog.Add( $"Quest complete!", "#f0c040" );
 		}
 

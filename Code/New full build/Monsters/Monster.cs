@@ -1008,6 +1008,7 @@ public sealed class Monster : Component
 		if ( inventory != null )
 		{
 			inventory.AddKill( monsterType );
+			AchievementTracker.OnMonsterKilled();
 
 			if ( loot1 != ItemId.None && amount1 > 0 )
 			{

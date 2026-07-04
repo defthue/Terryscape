@@ -607,6 +607,7 @@ public sealed class PlayerGatherResource : Component
 			}
 
 			inventory.AddNodeMined();
+			AchievementTracker.OnNodeGathered();
 
 			var def = ItemDatabase.Get( node.ResourceItem );
 			string itemName = def != null ? def.Name : node.ResourceItem.ToString();

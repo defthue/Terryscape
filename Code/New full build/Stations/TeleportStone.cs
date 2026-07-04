@@ -146,6 +146,7 @@ public sealed class TeleportStone : Component
 
 		SoundLibrary.PlayTeleport( fromPos );
 		SoundLibrary.PlayTeleport( target.WorldPosition );
+		AchievementTracker.OnWarp();
 
 		Close();
 		return true;

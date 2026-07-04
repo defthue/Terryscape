@@ -47,27 +47,28 @@ public sealed class PetSlime : Component
 
 	const float SeatLift = -3f;
 
-	const float HopSpeed = 4f;
+	const float HopSpeed = 3f;
 	const float HopArc = 30f;
 	const float HopLandSquash = -0.6f;
 	const float HopPrepSquash = -0.3f;
 	const float HopPeakStretch = 0.35f;
-	const float RestSquash = -0.12f;
+	const float RestSquash = -0.25f;
+	const float GroundSink = 0.3f;
 	const float IdleMinMoving = 0.3f;
 	const float IdleMaxMoving = 0.7f;
 	const float IdleMinRest = 1.5f;
 	const float IdleMaxRest = 4f;
 
-	const float WobbleFreq = 16f;
-	const float WobbleDecay = 6f;
+	const float WobbleFreq = 11f;
+	const float WobbleDecay = 5f;
 
 	const float CamSmoothRate = 18f;
 
-	const float MountGravity = 800f;
-	const float MountJumpVel = 350f;
-	const float MountHopVel = 250f;
-	const float MountGroundPauseMin = 0.12f;
-	const float MountGroundPauseMax = 0.30f;
+	const float MountGravity = 620f;
+	const float MountJumpVel = 300f;
+	const float MountHopVel = 215f;
+	const float MountGroundPauseMin = 0.18f;
+	const float MountGroundPauseMax = 0.40f;
 	const float MountAirControl = 4f;
 
 	protected override void OnStart()
@@ -249,6 +250,7 @@ public sealed class PetSlime : Component
 			_jumpQueued = false;
 			_mIdle = Game.Random.Float( MountGroundPauseMin, MountGroundPauseMax );
 			_wasGroundedMounted = true;
+			AchievementTracker.OnPetMounted();
 		}
 
 		_mountYaw += Input.AnalogLook.yaw;
@@ -460,9 +462,10 @@ public sealed class PetSlime : Component
 
 		float sq = IsProxy ? 0f : _squash;
 		float sy = 1f + sq;
-		float sxz = 1f - sq * 0.5f;
+		float sxz = 1f - sq * 0.7f;
+		float radius = _modelHalf * _curScale * sy;
 		_visual.LocalScale = new Vector3( sxz, sxz, sy ) * _curScale;
-		_visual.LocalPosition = new Vector3( 0f, 0f, _modelHalf * _curScale * sy );
+		_visual.LocalPosition = new Vector3( 0f, 0f, radius * ( 1f - GroundSink ) );
 	}
 
 	void DrawBubbles()
@@ -518,7 +521,7 @@ public sealed class PetSlime : Component
 		_visualRenderer = _visual.Components.Get<ModelRenderer>();
 		if ( _visualRenderer != null )
 		{
-			_visualRenderer.Tint = PetDatabase.SlimeColorByIndex( ColorIndex, 0.55f );
+			_visualRenderer.Tint = PetDatabase.SlimeColorByIndex( ColorIndex, 0.66f );
 			if ( _visualRenderer.Model != null )
 			{
 				float h = _visualRenderer.Model.Bounds.Size.z * 0.5f;

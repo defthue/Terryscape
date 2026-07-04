@@ -180,6 +180,10 @@ public sealed class PlayerPersistence : Component
 		}
 
 		_loadComplete = true;
+
+		if ( skills != null )
+			AchievementTracker.SyncSkillFirsts( skills );
+
 		RefreshAllNpcQuestState();
 	}
 

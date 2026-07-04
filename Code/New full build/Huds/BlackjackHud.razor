@@ -311,6 +311,7 @@
 			inv.AddItem( ItemId.GoldCoin, -delta );
 		}
 
+		AchievementTracker.OnBlackjackPlayed();
 		Log.Info( $"[BlackjackHud] PlaceBet clicked. PendingBet={PendingBet}, delta={delta}" );
 		Table.RpcPlaceBet( SeatIndex, PendingBet );
 		SoundLibrary.PlaySellBuy();

@@ -79,7 +79,11 @@ public sealed class Skills : Component
 		if ( !_skills.TryGetValue( skill, out var data ) )
 			return;
 
+		bool firstXp = data.Xp == 0 && data.Level == 1;
 		data.Xp += amount;
+
+		if ( firstXp )
+			AchievementTracker.OnSkillFirstTrained( skill );
 
 		int required = GetXpRequired( data.Level );
 

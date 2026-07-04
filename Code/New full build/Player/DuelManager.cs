@@ -710,6 +710,10 @@ public sealed class DuelManager : Component
 			string name = winner?.Network?.Owner?.DisplayName ?? "Someone";
 			GameLog.Add( $"{name} wins the duel!", "#e0c060" );
 
+			ulong winnerSteamId = winner?.Network?.Owner?.SteamId ?? 0ul;
+			if ( winnerSteamId != 0ul )
+				BroadcastDuelWin( winnerSteamId );
+
 			ResetDuelist( DuelistA, ReturnPoint != null ? ReturnPoint : PadA, 0 );
 			ResetDuelist( DuelistB, ReturnPoint != null ? ReturnPoint : PadB, 0 );
 			return;
@@ -749,10 +753,22 @@ public sealed class DuelManager : Component
 		{
 			string name = winner.Network?.Owner?.DisplayName ?? "Someone";
 			GameLog.Add( $"{name} wins by forfeit.", "#e0c060" );
+			ulong winnerSteamId = winner.Network?.Owner?.SteamId ?? 0ul;
+			if ( winnerSteamId != 0ul )
+				BroadcastDuelWin( winnerSteamId );
 			ResetDuelist( winner, ReturnPoint != null ? ReturnPoint : PadA, 0 );
 		}
 
 		EndMatch();
+	}
+
+	[Rpc.Broadcast]
+	void BroadcastDuelWin( ulong winnerSteamId )
+	{
+		if ( Connection.Local == null || Connection.Local.SteamId != winnerSteamId )
+			return;
+
+		AchievementTracker.OnDuelWon();
 	}
 
 	void EndMatch()

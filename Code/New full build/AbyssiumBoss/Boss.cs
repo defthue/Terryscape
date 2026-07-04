@@ -1361,6 +1361,8 @@ public sealed class Boss : Component
 		if ( inventory == null )
 			return;
 
+		AchievementTracker.OnBossKilled();
+
 		bool gainedAny = false;
 
 		if ( gold > 0 )
