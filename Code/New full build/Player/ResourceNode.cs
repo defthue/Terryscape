@@ -124,6 +124,9 @@ public sealed class ResourceNode : Component
 	{
 		ResolveReferences();
 
+		if ( GatherSkill == GatherType.Foraging && _resolvedCollider != null )
+			_resolvedCollider.IsTrigger = true;
+
 		CurrentHealth = MaxHealth;
 		_originalScale = GameObject.LocalScale;
 

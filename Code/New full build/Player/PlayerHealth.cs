@@ -20,6 +20,10 @@ public sealed class PlayerHealth : Component
 	float _regenTimer = 0f;
 	bool _wasHit = false;
 
+	bool _respawnPending;
+	Vector3 _respawnPos;
+	float _respawnPendingTime;
+
 	protected override void OnStart()
 	{
 		UpdateMaxHealth();
@@ -30,6 +34,16 @@ public sealed class PlayerHealth : Component
 	{
 		if ( IsProxy )
 			return;
+
+		if ( _respawnPending )
+		{
+			_respawnPendingTime += Time.Delta;
+			if ( !IsSeatedInChair() || _respawnPendingTime > 1f )
+			{
+				GameObject.WorldPosition = _respawnPos;
+				_respawnPending = false;
+			}
+		}
 
 		UpdateMaxHealth();
 
@@ -173,6 +187,8 @@ public sealed class PlayerHealth : Component
 
 	void RespawnInArena()
 	{
+		LeaveOccupiedChairs();
+
 		CurrentHealth = MaxHealth;
 		IsDead = false;
 		_wasHit = false;
@@ -181,7 +197,7 @@ public sealed class PlayerHealth : Component
 
 		var arena = PvpArena.Active;
 		if ( arena != null )
-			GameObject.WorldPosition = arena.GetRespawnPosition();
+			SetRespawnPosition( arena.GetRespawnPosition() );
 
 		GameLog.Add( $"You respawned at the arena. ({CurrentHealth}/{MaxHealth} HP)", "#6db8f0" );
 	}
@@ -233,6 +249,8 @@ public sealed class PlayerHealth : Component
 
 	void Respawn()
 	{
+		LeaveOccupiedChairs();
+
 		CurrentHealth = MaxHealth;
 		IsDead = false;
 		_wasHit = false;
@@ -241,12 +259,51 @@ public sealed class PlayerHealth : Component
 
 		var gm = Scene.GetAllComponents<GameManager>().FirstOrDefault();
 		if ( gm != null )
-			GameObject.WorldPosition = gm.SpawnPoint;
+			SetRespawnPosition( gm.SpawnPoint );
 		else if ( RespawnPoint != null )
-			GameObject.WorldPosition = RespawnPoint.WorldPosition;
+			SetRespawnPosition( RespawnPoint.WorldPosition );
 
 		GameLog.Add( $"You respawned with full health. ({CurrentHealth}/{MaxHealth} HP)", "#6db8f0" );
 
 		PlayerPersistence.Local?.SaveNow( SaveSection.Inventory | SaveSection.Stats );
+	}
+
+	void SetRespawnPosition( Vector3 pos )
+	{
+		GameObject.WorldPosition = pos;
+		_respawnPos = pos;
+		_respawnPending = true;
+		_respawnPendingTime = 0f;
+	}
+
+	void LeaveOccupiedChairs()
+	{
+		var pc = Components.Get<PlayerController>();
+		if ( pc == null )
+			return;
+
+		foreach ( var chair in Scene.GetAllComponents<BaseChair>() )
+		{
+			if ( chair == null || !chair.IsOccupied )
+				continue;
+
+			if ( chair.GetOccupant() == pc )
+				chair.AskToLeave( pc );
+		}
+	}
+
+	bool IsSeatedInChair()
+	{
+		var pc = Components.Get<PlayerController>();
+		if ( pc == null )
+			return false;
+
+		foreach ( var chair in Scene.GetAllComponents<BaseChair>() )
+		{
+			if ( chair != null && chair.IsOccupied && chair.GetOccupant() == pc )
+				return true;
+		}
+
+		return false;
 	}
 }

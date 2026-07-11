@@ -76,9 +76,10 @@
 		}
 	</div>
 
-	<div class="side-panel @(IsUIOpen ? "ui-open" : "") @(ActiveTab == 0 ? "gear-expanded" : "")">
+	<div class="side-panel @(IsUIOpen ? "ui-open" : "") @(ActiveTab == 0 ? "gear-expanded" : "") @(HudState.InventoryCollapsed ? "collapsed" : "")">
 
 		<div class="health-section">
+			<div class="health-bars">
 			<div class="health-bar-container">
 				<div class="health-bar-fill" style="width: @HealthPercent%;"></div>
 				<div class="health-bar-text">@CurrentHealth / @MaxHealth HP</div>
@@ -107,6 +108,10 @@
 				<div class="mana-bar-fill" style="width: @ManaPercent%;"></div>
 				<div class="mana-bar-text">@CurrentMana / @MaxMana MP @(IsDrinking ? "— Drinking..." : "")</div>
 			</div>
+			</div>
+			<div class="collapse-lane">
+				<div class="collapse-arrow" onclick="@(() => ToggleCollapse())">@(HudState.InventoryCollapsed ? "▲" : "▼")</div>
+			</div>
 			@if ( IsHealTicking )
 			{
 				<div class="healing-indicator">Healing...</div>
@@ -114,9 +119,9 @@
 		</div>
 
 		<div class="tabs">
-			<div class="tab @(ActiveTab == 0 ? "active" : "")" onclick="@(() => ActiveTab = 0)">Gear</div>
-			<div class="tab @(ActiveTab == 1 ? "active" : "")" onclick="@(() => ActiveTab = 1)">Items</div>
-			<div class="tab @(ActiveTab == 2 ? "active" : "")" onclick="@(() => ActiveTab = 2)">Skills</div>
+			<div class="tab @(ActiveTab == 0 ? "active" : "")" onclick="@(() => SelectTab( 0 ))">Gear</div>
+			<div class="tab @(ActiveTab == 1 ? "active" : "")" onclick="@(() => SelectTab( 1 ))">Items</div>
+			<div class="tab @(ActiveTab == 2 ? "active" : "")" onclick="@(() => SelectTab( 2 ))">Skills</div>
 		</div>
 
 		<div class="panel-content">
@@ -128,7 +133,7 @@
 					{
 						var slotIndex = i;
 						var slotData = GetSlotData( slotIndex );
-						bool isHotbar = slotIndex < HotbarSize;
+						bool isHotbar = slotIndex < Inventory.HotbarSize;
 						bool isPickedFrom = PickedUpSlotIndex == slotIndex;
 
 						@if ( slotData != null && slotData.IsUnique )
@@ -443,12 +448,23 @@
 
 @code
 {
-	const int HotbarSize = 5;
-
 	static readonly EquipSlot[] LeftColumn = { EquipSlot.Head, EquipSlot.Amulet, EquipSlot.Weapon, EquipSlot.Legs };
 	static readonly EquipSlot[] RightColumn = { EquipSlot.Chest, EquipSlot.Ammo, EquipSlot.Shield, EquipSlot.Ring };
 
 	int ActiveTab { get; set; } = 1;
+
+	void SelectTab( int tab )
+	{
+		ActiveTab = tab;
+		HudState.InventoryCollapsed = false;
+	}
+
+	void ToggleCollapse()
+	{
+		HudState.InventoryCollapsed = !HudState.InventoryCollapsed;
+		if ( HudState.InventoryCollapsed )
+			ActiveTab = 1;
+	}
 	int LogTab { get; set; } = 0;
 
 	public static bool GearTabExpanded { get; private set; }
@@ -1470,7 +1486,8 @@
 			ActiveTab,
 			ShowUnequipConfirm,
 			(int)CursorXPercent,
-			(int)CursorYPercent
+			(int)CursorYPercent,
+			HudState.InventoryCollapsed
 		).GetHashCode();
 	}
 }

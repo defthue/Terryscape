@@ -1,4 +1,5 @@
 using Sandbox;
+using System;
 using System.Collections.Generic;
 
 public sealed class DuelManager : Component
@@ -36,6 +37,17 @@ public sealed class DuelManager : Component
 	[Sync] public bool LobbyChallengerLocked { get; set; }
 	[Sync] public bool LobbyTargetLocked { get; set; }
 
+	[Sync] public int LobbyStakeGoldA { get; set; }
+	[Sync] public int LobbyStakeGoldB { get; set; }
+	[Sync] public List<int> LobbyStakeItemsA { get; set; } = new();
+	[Sync] public List<int> LobbyStakeAmountsA { get; set; } = new();
+	[Sync] public List<int> LobbyStakeItemsB { get; set; } = new();
+	[Sync] public List<int> LobbyStakeAmountsB { get; set; } = new();
+	[Sync] public bool EscrowPending { get; set; }
+
+	const int MaxStakeItems = 8;
+	const float EscrowTimeoutSeconds = 5f;
+
 	[Property] public int MatchmakingRounds { get; set; } = 3;
 	[Property] public bool MatchmakingNormalized { get; set; } = true;
 	[Property] public int MatchmakingPaceIndex { get; set; } = 1;
@@ -52,10 +64,40 @@ public sealed class DuelManager : Component
 		public bool Normalized;
 		public int Hp;
 		public bool FromMatchmaking;
+		public int StakeGoldA;
+		public int StakeGoldB;
+		public int[] StakeItemsA;
+		public int[] StakeAmountsA;
+		public int[] StakeItemsB;
+		public int[] StakeAmountsB;
 	}
 
 	readonly List<PendingMatch> _arenaQueue = new();
 	readonly List<ulong> _pool = new();
+
+	bool _escrowChallengerNeeded;
+	bool _escrowTargetNeeded;
+	bool _escrowChallengerDone;
+	bool _escrowTargetDone;
+	float _escrowExpire;
+	ulong _escrowChallengerId;
+	ulong _escrowTargetId;
+	int _escrowRounds;
+	bool _escrowNormalized;
+	int _escrowHp;
+	int _escrowGoldA;
+	int _escrowGoldB;
+	List<int> _escrowItemsA = new();
+	List<int> _escrowAmountsA = new();
+	List<int> _escrowItemsB = new();
+	List<int> _escrowAmountsB = new();
+
+	int _matchStakeGoldA;
+	int _matchStakeGoldB;
+	int[] _matchStakeItemsA = Array.Empty<int>();
+	int[] _matchStakeAmountsA = Array.Empty<int>();
+	int[] _matchStakeItemsB = Array.Empty<int>();
+	int[] _matchStakeAmountsB = Array.Empty<int>();
 
 	public enum Phase { Idle, Countdown, Live, RoundOver, MatchOver }
 	[Sync] public Phase CurrentPhase { get; set; } = Phase.Idle;
@@ -126,8 +168,15 @@ public sealed class DuelManager : Component
 			var lc = FindDuelist( LobbyChallengerSteamId );
 			var lt = FindDuelist( LobbyTargetSteamId );
 			if ( lc == null || !lc.IsValid() || lt == null || !lt.IsValid() )
+			{
+				if ( EscrowPending )
+					AbortEscrow();
 				CloseLobby();
+			}
 		}
+
+		if ( EscrowPending && Time.Now >= _escrowExpire )
+			AbortEscrow();
 
 		CleanQueues();
 		TryMatchmake();
@@ -322,7 +371,24 @@ public sealed class DuelManager : Component
 		LobbyRounds = ( rounds == 1 || rounds == 3 || rounds == 5 ) ? rounds : 1;
 		LobbyChallengerLocked = false;
 		LobbyTargetLocked = false;
+		ResetStakes();
 		LobbyActive = true;
+	}
+
+	void ResetStakes()
+	{
+		LobbyStakeGoldA = 0;
+		LobbyStakeGoldB = 0;
+		LobbyStakeItemsA = new List<int>();
+		LobbyStakeAmountsA = new List<int>();
+		LobbyStakeItemsB = new List<int>();
+		LobbyStakeAmountsB = new List<int>();
+	}
+
+	void ResetLocks()
+	{
+		LobbyChallengerLocked = false;
+		LobbyTargetLocked = false;
 	}
 
 	[Rpc.Broadcast]
@@ -357,10 +423,101 @@ public sealed class DuelManager : Component
 	}
 
 	[Rpc.Broadcast]
+	public void RequestSetStakeGold( ulong actor, int amount )
+	{
+		if ( !Networking.IsHost ) return;
+		if ( !LobbyActive || EscrowPending ) return;
+		if ( amount < 0 ) amount = 0;
+
+		if ( actor == LobbyChallengerSteamId )
+			LobbyStakeGoldA = amount;
+		else if ( actor == LobbyTargetSteamId )
+			LobbyStakeGoldB = amount;
+		else
+			return;
+
+		ResetLocks();
+	}
+
+	[Rpc.Broadcast]
+	public void RequestAddStakeItem( ulong actor, int itemId, int amount )
+	{
+		if ( !Networking.IsHost ) return;
+		if ( !LobbyActive || EscrowPending ) return;
+		if ( itemId == 0 || amount <= 0 ) return;
+
+		bool isChallenger = actor == LobbyChallengerSteamId;
+		bool isTarget = actor == LobbyTargetSteamId;
+		if ( !isChallenger && !isTarget ) return;
+
+		var items = new List<int>( isChallenger ? LobbyStakeItemsA : LobbyStakeItemsB );
+		var amounts = new List<int>( isChallenger ? LobbyStakeAmountsA : LobbyStakeAmountsB );
+
+		int existing = items.IndexOf( itemId );
+		if ( existing >= 0 )
+		{
+			amounts[existing] += amount;
+		}
+		else
+		{
+			if ( items.Count >= MaxStakeItems ) return;
+			items.Add( itemId );
+			amounts.Add( amount );
+		}
+
+		if ( isChallenger )
+		{
+			LobbyStakeItemsA = items;
+			LobbyStakeAmountsA = amounts;
+		}
+		else
+		{
+			LobbyStakeItemsB = items;
+			LobbyStakeAmountsB = amounts;
+		}
+
+		ResetLocks();
+	}
+
+	[Rpc.Broadcast]
+	public void RequestRemoveStakeItem( ulong actor, int itemId )
+	{
+		if ( !Networking.IsHost ) return;
+		if ( !LobbyActive || EscrowPending ) return;
+
+		bool isChallenger = actor == LobbyChallengerSteamId;
+		bool isTarget = actor == LobbyTargetSteamId;
+		if ( !isChallenger && !isTarget ) return;
+
+		var items = new List<int>( isChallenger ? LobbyStakeItemsA : LobbyStakeItemsB );
+		var amounts = new List<int>( isChallenger ? LobbyStakeAmountsA : LobbyStakeAmountsB );
+
+		int idx = items.IndexOf( itemId );
+		if ( idx < 0 ) return;
+
+		items.RemoveAt( idx );
+		amounts.RemoveAt( idx );
+
+		if ( isChallenger )
+		{
+			LobbyStakeItemsA = items;
+			LobbyStakeAmountsA = amounts;
+		}
+		else
+		{
+			LobbyStakeItemsB = items;
+			LobbyStakeAmountsB = amounts;
+		}
+
+		ResetLocks();
+	}
+
+	[Rpc.Broadcast]
 	public void RequestSetLobbyLock( ulong actor, bool locked )
 	{
 		if ( !Networking.IsHost ) return;
 		if ( !LobbyActive ) return;
+		if ( EscrowPending ) return;
 
 		if ( actor == LobbyChallengerSteamId )
 			LobbyChallengerLocked = locked;
@@ -370,7 +527,19 @@ public sealed class DuelManager : Component
 			return;
 
 		if ( LobbyChallengerLocked && LobbyTargetLocked )
-			BeginMatchFromLobby();
+		{
+			if ( LobbyHasAnyStake() )
+				StartEscrow();
+			else
+				BeginMatchFromLobby();
+		}
+	}
+
+	bool LobbyHasAnyStake()
+	{
+		return LobbyStakeGoldA > 0 || LobbyStakeGoldB > 0
+			|| ( LobbyStakeItemsA != null && LobbyStakeItemsA.Count > 0 )
+			|| ( LobbyStakeItemsB != null && LobbyStakeItemsB.Count > 0 );
 	}
 
 	[Rpc.Broadcast]
@@ -379,6 +548,8 @@ public sealed class DuelManager : Component
 		if ( !Networking.IsHost ) return;
 		if ( !LobbyActive ) return;
 		if ( actor != LobbyChallengerSteamId && actor != LobbyTargetSteamId ) return;
+		if ( EscrowPending )
+			AbortEscrow();
 		CloseLobby();
 	}
 
@@ -398,6 +569,264 @@ public sealed class DuelManager : Component
 		EnqueueMatch( challengerId, targetId, rounds, normalized, hp, false );
 	}
 
+	void StartEscrow()
+	{
+		_escrowChallengerId = LobbyChallengerSteamId;
+		_escrowTargetId = LobbyTargetSteamId;
+		_escrowRounds = LobbyRounds;
+		_escrowNormalized = LobbyMode == 1;
+		_escrowHp = PaceToHp( LobbyPaceIndex );
+
+		_escrowGoldA = LobbyStakeGoldA;
+		_escrowGoldB = LobbyStakeGoldB;
+		_escrowItemsA = new List<int>( LobbyStakeItemsA );
+		_escrowAmountsA = new List<int>( LobbyStakeAmountsA );
+		_escrowItemsB = new List<int>( LobbyStakeItemsB );
+		_escrowAmountsB = new List<int>( LobbyStakeAmountsB );
+
+		_escrowChallengerNeeded = _escrowGoldA > 0 || _escrowItemsA.Count > 0;
+		_escrowTargetNeeded = _escrowGoldB > 0 || _escrowItemsB.Count > 0;
+		_escrowChallengerDone = !_escrowChallengerNeeded;
+		_escrowTargetDone = !_escrowTargetNeeded;
+
+		EscrowPending = true;
+		_escrowExpire = Time.Now + EscrowTimeoutSeconds;
+
+		if ( _escrowChallengerNeeded )
+			BroadcastEscrowRequest( _escrowChallengerId, _escrowGoldA, _escrowItemsA.ToArray(), _escrowAmountsA.ToArray() );
+		if ( _escrowTargetNeeded )
+			BroadcastEscrowRequest( _escrowTargetId, _escrowGoldB, _escrowItemsB.ToArray(), _escrowAmountsB.ToArray() );
+	}
+
+	[Rpc.Broadcast]
+	void BroadcastEscrowRequest( ulong steamId, int gold, int[] items, int[] amounts )
+	{
+		if ( Connection.Local == null || Connection.Local.SteamId != steamId )
+			return;
+
+		var inventory = PlayerHelper.GetLocalInventory();
+		if ( inventory == null )
+		{
+			ReportEscrowResult( steamId, false );
+			return;
+		}
+
+		if ( gold > 0 && inventory.GetItemCount( ItemId.GoldCoin ) < gold )
+		{
+			ReportEscrowResult( steamId, false );
+			return;
+		}
+
+		int len = Math.Min( items.Length, amounts.Length );
+		for ( int i = 0; i < len; i++ )
+		{
+			if ( inventory.GetItemCount( (ItemId)items[i] ) < amounts[i] )
+			{
+				ReportEscrowResult( steamId, false );
+				return;
+			}
+		}
+
+		if ( gold > 0 )
+			inventory.RemoveItem( ItemId.GoldCoin, gold );
+
+		int totalItems = 0;
+		for ( int i = 0; i < len; i++ )
+		{
+			inventory.RemoveItem( (ItemId)items[i], amounts[i] );
+			totalItems += amounts[i];
+		}
+
+		GameLog.Add( $"Staked {gold} gold and {totalItems} items on the duel.", "#e0c060" );
+		ReportEscrowResult( steamId, true );
+	}
+
+	[Rpc.Broadcast]
+	void ReportEscrowResult( ulong actor, bool success )
+	{
+		if ( !Networking.IsHost ) return;
+		if ( !EscrowPending ) return;
+
+		bool isChallenger = actor == _escrowChallengerId;
+		bool isTarget = actor == _escrowTargetId;
+		if ( !isChallenger && !isTarget ) return;
+
+		if ( !success )
+		{
+			AbortEscrow();
+			return;
+		}
+
+		if ( isChallenger )
+			_escrowChallengerDone = true;
+		else
+			_escrowTargetDone = true;
+
+		if ( _escrowChallengerDone && _escrowTargetDone )
+			CompleteEscrow();
+	}
+
+	void CompleteEscrow()
+	{
+		ulong a = _escrowChallengerId;
+		ulong b = _escrowTargetId;
+		int rounds = _escrowRounds;
+		bool normalized = _escrowNormalized;
+		int hp = _escrowHp;
+
+		int goldA = _escrowGoldA;
+		int goldB = _escrowGoldB;
+		int[] itemsA = _escrowItemsA.ToArray();
+		int[] amountsA = _escrowAmountsA.ToArray();
+		int[] itemsB = _escrowItemsB.ToArray();
+		int[] amountsB = _escrowAmountsB.ToArray();
+
+		ClearEscrowState();
+		CloseLobby();
+
+		if ( a == 0 || b == 0 )
+		{
+			if ( goldA > 0 || itemsA.Length > 0 )
+				BroadcastStakeRefund( a, goldA, itemsA, amountsA );
+			if ( goldB > 0 || itemsB.Length > 0 )
+				BroadcastStakeRefund( b, goldB, itemsB, amountsB );
+			return;
+		}
+
+		_arenaQueue.Add( new PendingMatch
+		{
+			A = a,
+			B = b,
+			Rounds = rounds,
+			Normalized = normalized,
+			Hp = hp,
+			FromMatchmaking = false,
+			StakeGoldA = goldA,
+			StakeGoldB = goldB,
+			StakeItemsA = itemsA,
+			StakeAmountsA = amountsA,
+			StakeItemsB = itemsB,
+			StakeAmountsB = amountsB
+		} );
+
+		SyncQueueState();
+		TryStartNext();
+	}
+
+	void AbortEscrow()
+	{
+		RefundEscrowedStakes();
+
+		BroadcastStakeMessage( _escrowChallengerId, "Stake escrow failed — duel cancelled.", "#c86464" );
+		BroadcastStakeMessage( _escrowTargetId, "Stake escrow failed — duel cancelled.", "#c86464" );
+
+		ClearEscrowState();
+		ResetLocks();
+	}
+
+	void RefundEscrowedStakes()
+	{
+		if ( _escrowChallengerNeeded && _escrowChallengerDone )
+			BroadcastStakeRefund( _escrowChallengerId, _escrowGoldA, _escrowItemsA.ToArray(), _escrowAmountsA.ToArray() );
+		if ( _escrowTargetNeeded && _escrowTargetDone )
+			BroadcastStakeRefund( _escrowTargetId, _escrowGoldB, _escrowItemsB.ToArray(), _escrowAmountsB.ToArray() );
+	}
+
+	void ClearEscrowState()
+	{
+		EscrowPending = false;
+		_escrowChallengerId = 0;
+		_escrowTargetId = 0;
+		_escrowChallengerNeeded = false;
+		_escrowTargetNeeded = false;
+		_escrowChallengerDone = false;
+		_escrowTargetDone = false;
+		_escrowGoldA = 0;
+		_escrowGoldB = 0;
+		_escrowItemsA = new List<int>();
+		_escrowAmountsA = new List<int>();
+		_escrowItemsB = new List<int>();
+		_escrowAmountsB = new List<int>();
+		_escrowExpire = 0f;
+	}
+
+	[Rpc.Broadcast]
+	void BroadcastStakeRefund( ulong steamId, int gold, int[] items, int[] amounts )
+	{
+		if ( Connection.Local == null || Connection.Local.SteamId != steamId )
+			return;
+
+		var inventory = PlayerHelper.GetLocalInventory();
+		if ( inventory == null )
+			return;
+
+		if ( gold > 0 )
+			inventory.AddItemOrBank( ItemId.GoldCoin, gold );
+
+		int len = Math.Min( items.Length, amounts.Length );
+		for ( int i = 0; i < len; i++ )
+		{
+			var id = (ItemId)items[i];
+			if ( id == ItemId.None || amounts[i] <= 0 )
+				continue;
+			inventory.AddItemOrBank( id, amounts[i] );
+		}
+
+		GameLog.Add( "Your stake was returned.", "#e0c060" );
+	}
+
+	[Rpc.Broadcast]
+	void BroadcastStakePayout( ulong winnerSteamId, int gold, int[] items, int[] amounts )
+	{
+		if ( Connection.Local == null || Connection.Local.SteamId != winnerSteamId )
+			return;
+
+		var inventory = PlayerHelper.GetLocalInventory();
+		if ( inventory == null )
+			return;
+
+		if ( gold > 0 )
+			inventory.AddItemOrBank( ItemId.GoldCoin, gold );
+
+		int totalItems = 0;
+		int len = Math.Min( items.Length, amounts.Length );
+		for ( int i = 0; i < len; i++ )
+		{
+			var id = (ItemId)items[i];
+			if ( id == ItemId.None || amounts[i] <= 0 )
+				continue;
+			inventory.AddItemOrBank( id, amounts[i] );
+			totalItems += amounts[i];
+		}
+
+		SoundLibrary.PlayReceiveItem();
+		GameLog.Add( $"You won the stake: {gold} gold and {totalItems} items!", "#f0c040" );
+	}
+
+	[Rpc.Broadcast]
+	void BroadcastStakeMessage( ulong steamId, string text, string color )
+	{
+		if ( Connection.Local == null || Connection.Local.SteamId != steamId )
+			return;
+
+		GameLog.Add( text, color );
+	}
+
+	static bool HasStake( PendingMatch m )
+	{
+		return m.StakeGoldA > 0 || m.StakeGoldB > 0
+			|| ( m.StakeItemsA != null && m.StakeItemsA.Length > 0 )
+			|| ( m.StakeItemsB != null && m.StakeItemsB.Length > 0 );
+	}
+
+	void RefundPendingMatchStake( PendingMatch m )
+	{
+		if ( m.StakeGoldA > 0 || ( m.StakeItemsA != null && m.StakeItemsA.Length > 0 ) )
+			BroadcastStakeRefund( m.A, m.StakeGoldA, m.StakeItemsA ?? Array.Empty<int>(), m.StakeAmountsA ?? Array.Empty<int>() );
+		if ( m.StakeGoldB > 0 || ( m.StakeItemsB != null && m.StakeItemsB.Length > 0 ) )
+			BroadcastStakeRefund( m.B, m.StakeGoldB, m.StakeItemsB ?? Array.Empty<int>(), m.StakeAmountsB ?? Array.Empty<int>() );
+	}
+
 	void CloseLobby()
 	{
 		LobbyActive = false;
@@ -405,6 +834,7 @@ public sealed class DuelManager : Component
 		LobbyTargetSteamId = 0ul;
 		LobbyChallengerLocked = false;
 		LobbyTargetLocked = false;
+		ResetStakes();
 	}
 
 	bool IsInArena( GameObject go )
@@ -483,6 +913,8 @@ public sealed class DuelManager : Component
 
 			if ( m.FromMatchmaking && partner != 0 && !IsBusyInDuelSystem( partner ) && IsInArena( FindDuelist( partner ) ) )
 				_pool.Insert( 0, partner );
+			else if ( HasStake( m ) )
+				RefundPendingMatchStake( m );
 		}
 
 		if ( changed )
@@ -536,6 +968,7 @@ public sealed class DuelManager : Component
 
 			if ( aOk && bOk )
 			{
+				SetMatchStakeFrom( m );
 				SyncQueueState();
 				StartMatch( a, b, m.Rounds, m.Normalized, m.Hp );
 				return;
@@ -547,9 +980,72 @@ public sealed class DuelManager : Component
 				if ( survivor != 0 && !IsBusyInDuelSystem( survivor ) )
 					_pool.Insert( 0, survivor );
 			}
+			else if ( HasStake( m ) )
+			{
+				RefundPendingMatchStake( m );
+			}
 		}
 
 		SyncQueueState();
+	}
+
+	void SetMatchStakeFrom( PendingMatch m )
+	{
+		_matchStakeGoldA = m.StakeGoldA;
+		_matchStakeGoldB = m.StakeGoldB;
+		_matchStakeItemsA = m.StakeItemsA ?? Array.Empty<int>();
+		_matchStakeAmountsA = m.StakeAmountsA ?? Array.Empty<int>();
+		_matchStakeItemsB = m.StakeItemsB ?? Array.Empty<int>();
+		_matchStakeAmountsB = m.StakeAmountsB ?? Array.Empty<int>();
+	}
+
+	bool MatchHasStake()
+	{
+		return _matchStakeGoldA > 0 || _matchStakeGoldB > 0
+			|| _matchStakeItemsA.Length > 0 || _matchStakeItemsB.Length > 0;
+	}
+
+	void ClearMatchStake()
+	{
+		_matchStakeGoldA = 0;
+		_matchStakeGoldB = 0;
+		_matchStakeItemsA = Array.Empty<int>();
+		_matchStakeAmountsA = Array.Empty<int>();
+		_matchStakeItemsB = Array.Empty<int>();
+		_matchStakeAmountsB = Array.Empty<int>();
+	}
+
+	void PayoutStakeToWinner( ulong winnerSteamId, ulong loserSteamId )
+	{
+		if ( !MatchHasStake() )
+			return;
+
+		int totalGold = _matchStakeGoldA + _matchStakeGoldB;
+		var items = new List<int>();
+		var amounts = new List<int>();
+		items.AddRange( _matchStakeItemsA );
+		amounts.AddRange( _matchStakeAmountsA );
+		items.AddRange( _matchStakeItemsB );
+		amounts.AddRange( _matchStakeAmountsB );
+
+		BroadcastStakePayout( winnerSteamId, totalGold, items.ToArray(), amounts.ToArray() );
+		if ( loserSteamId != 0ul )
+			BroadcastStakeMessage( loserSteamId, "You lost your stake.", "#c86464" );
+
+		ClearMatchStake();
+	}
+
+	void RefundMatchStakeBothSides()
+	{
+		if ( !MatchHasStake() )
+			return;
+
+		if ( _matchStakeGoldA > 0 || _matchStakeItemsA.Length > 0 )
+			BroadcastStakeRefund( DuelistASteamId, _matchStakeGoldA, _matchStakeItemsA, _matchStakeAmountsA );
+		if ( _matchStakeGoldB > 0 || _matchStakeItemsB.Length > 0 )
+			BroadcastStakeRefund( DuelistBSteamId, _matchStakeGoldB, _matchStakeItemsB, _matchStakeAmountsB );
+
+		ClearMatchStake();
 	}
 
 	void CleanQueues()
@@ -585,6 +1081,10 @@ public sealed class DuelManager : Component
 				ulong survivor = aOk ? m.A : ( bOk ? m.B : 0 );
 				if ( survivor != 0 && !IsBusyInDuelSystem( survivor ) )
 					_pool.Insert( 0, survivor );
+			}
+			else if ( HasStake( m ) )
+			{
+				RefundPendingMatchStake( m );
 			}
 		}
 
@@ -712,7 +1212,11 @@ public sealed class DuelManager : Component
 
 			ulong winnerSteamId = winner?.Network?.Owner?.SteamId ?? 0ul;
 			if ( winnerSteamId != 0ul )
+			{
 				BroadcastDuelWin( winnerSteamId );
+				ulong loserSteamId = winnerSteamId == DuelistASteamId ? DuelistBSteamId : DuelistASteamId;
+				PayoutStakeToWinner( winnerSteamId, loserSteamId );
+			}
 
 			ResetDuelist( DuelistA, ReturnPoint != null ? ReturnPoint : PadA, 0 );
 			ResetDuelist( DuelistB, ReturnPoint != null ? ReturnPoint : PadB, 0 );
@@ -755,8 +1259,16 @@ public sealed class DuelManager : Component
 			GameLog.Add( $"{name} wins by forfeit.", "#e0c060" );
 			ulong winnerSteamId = winner.Network?.Owner?.SteamId ?? 0ul;
 			if ( winnerSteamId != 0ul )
+			{
 				BroadcastDuelWin( winnerSteamId );
+				ulong loserSteamId = winnerSteamId == DuelistASteamId ? DuelistBSteamId : DuelistASteamId;
+				PayoutStakeToWinner( winnerSteamId, loserSteamId );
+			}
 			ResetDuelist( winner, ReturnPoint != null ? ReturnPoint : PadA, 0 );
+		}
+		else
+		{
+			RefundMatchStakeBothSides();
 		}
 
 		EndMatch();
@@ -773,6 +1285,8 @@ public sealed class DuelManager : Component
 
 	void EndMatch()
 	{
+		RefundMatchStakeBothSides();
+
 		if ( DuelistA != null && DuelistA.IsValid() )
 			DuelistA.Components.Get<PlayerHealth>()?.EndNormalizedMode();
 		if ( DuelistB != null && DuelistB.IsValid() )

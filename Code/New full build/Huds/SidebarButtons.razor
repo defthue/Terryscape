@@ -1,9 +1,10 @@
 @using Sandbox;
 @using Sandbox.UI;
+@using System;
 @inherits PanelComponent
 
 <root>
-	<div class="sidebar-buttons @(InventoryHud.GearTabExpanded ? "gear-shift" : "")">
+	<div class="sidebar-buttons @(InventoryHud.GearTabExpanded ? "gear-shift" : "") @(HudState.InventoryCollapsed ? "collapsed" : "")">
 		<div class="sidebar-button" onclick="@(() => OpenJournal())">
 			<div class="sidebar-icon">📜</div>
 			<div class="sidebar-tooltip">Quest Journal</div>
@@ -20,6 +21,10 @@
 			<div class="sidebar-icon">🐾</div>
 			<div class="sidebar-tooltip">Pets</div>
 		</div>
+		<div class="sidebar-button @RecallButtonClass()" onclick="@(() => DoRecall())">
+			<div class="sidebar-icon">@RecallIcon()</div>
+			<div class="sidebar-tooltip">Recall to Spawn</div>
+		</div>
 	</div>
 </root>
 
@@ -27,9 +32,12 @@
 {
 	bool _warnedMissingBinding = false;
 	bool _warnedMissingPets = false;
+	bool _warnedMissingRecall = false;
 
 	protected override void OnUpdate()
 	{
+		EnsureRecallSystem();
+
 		if ( Input.Pressed( "Journal" ) )
 		{
 			if ( JournalStation.IsOpen )
@@ -53,6 +61,9 @@
 			else
 				OpenPets();
 		}
+
+		if ( TryReadRecallInput() )
+			DoRecall();
 	}
 
 	bool TryReadSpellbookInput()
@@ -87,6 +98,60 @@
 			}
 			return false;
 		}
+	}
+
+	bool TryReadRecallInput()
+	{
+		try
+		{
+			return Input.Pressed( "Recall" );
+		}
+		catch
+		{
+			if ( !_warnedMissingRecall )
+			{
+				Log.Info( "[SidebarButtons] No 'Recall' input binding found. Add it in project settings (suggested key: H)." );
+				_warnedMissingRecall = true;
+			}
+			return false;
+		}
+	}
+
+	void EnsureRecallSystem()
+	{
+		PlayerHelper.GetLocalPlayer()?.Components.GetOrCreate<RecallSystem>();
+	}
+
+	void DoRecall()
+	{
+		var player = PlayerHelper.GetLocalPlayer();
+		if ( player == null )
+			return;
+
+		var recall = player.Components.GetOrCreate<RecallSystem>();
+		if ( RecallSystem.IsChanneling )
+			recall.CancelChannel();
+		else
+			recall.StartRecall();
+	}
+
+	string RecallIcon()
+	{
+		if ( RecallSystem.CooldownRemaining > 0f )
+			return MathF.Ceiling( RecallSystem.CooldownRemaining ).ToString( "0" );
+
+		return "🌀";
+	}
+
+	string RecallButtonClass()
+	{
+		if ( RecallSystem.IsChanneling )
+			return "recall-channeling";
+
+		if ( RecallSystem.CooldownRemaining > 0f )
+			return "recall-cooldown";
+
+		return "";
 	}
 
 	void OpenJournal()
@@ -141,6 +206,7 @@
 
 	protected override int BuildHash()
 	{
-		return ( JournalStation.IsOpen, LeaderboardStation.IsOpen, SpellbookStation.IsOpen, PetsStation.IsOpen, InventoryHud.GearTabExpanded ).GetHashCode();
+		int recallSeconds = (int)MathF.Ceiling( RecallSystem.CooldownRemaining );
+		return ( JournalStation.IsOpen, LeaderboardStation.IsOpen, SpellbookStation.IsOpen, PetsStation.IsOpen, InventoryHud.GearTabExpanded, recallSeconds, RecallSystem.IsChanneling, HudState.InventoryCollapsed ).GetHashCode();
 	}
 }

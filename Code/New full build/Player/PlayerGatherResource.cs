@@ -341,6 +341,9 @@ public sealed class PlayerGatherResource : Component
 
 		if ( !trace.Hit )
 		{
+			if ( TryForageFallback( forward ) )
+				return;
+
 			var combatMiss = GameObject.Components.Get<PlayerCombat>();
 			var arcTarget = combatMiss?.FindArcPvpTarget();
 			if ( arcTarget != null )
@@ -383,6 +386,9 @@ public sealed class PlayerGatherResource : Component
 
 			if ( node == null && monster == null && boss == null && pvpTarget == null )
 			{
+				if ( TryForageFallback( forward ) )
+					return;
+
 				var combatMiss = GameObject.Components.Get<PlayerCombat>();
 				var arcTarget = combatMiss?.FindArcPvpTarget();
 				if ( arcTarget != null )
@@ -441,6 +447,63 @@ public sealed class PlayerGatherResource : Component
 			TriggerSwingAnimation( node.GatherSkill == GatherType.Foraging );
 			HandleResourceHit( node, inventory, skills );
 		}
+	}
+
+	bool TryForageFallback( Vector3 forward )
+	{
+		var inventory = GameObject.Components.Get<Inventory>();
+		if ( inventory == null )
+			return false;
+
+		if ( inventory.GetEquipped( EquipSlot.Weapon ) != ItemId.None )
+			return false;
+
+		var node = FindForagableInReach( forward );
+		if ( node == null )
+			return false;
+
+		var skills = GameObject.Components.Get<Skills>();
+		if ( skills == null )
+			return false;
+
+		TriggerSwingAnimation( true );
+		HandleResourceHit( node, inventory, skills );
+		return true;
+	}
+
+	ResourceNode FindForagableInReach( Vector3 forward )
+	{
+		var playerPos = GameObject.WorldPosition;
+		Vector3 flatForward = forward.WithZ( 0f ).Normal;
+		float reach = ForwardOffset + TraceDistance + TraceRadius + 10f;
+
+		ResourceNode best = null;
+		float bestDist = float.MaxValue;
+
+		foreach ( var candidate in Scene.GetAllComponents<ResourceNode>() )
+		{
+			if ( candidate == null || !candidate.IsValid() )
+				continue;
+
+			if ( candidate.GatherSkill != GatherType.Foraging || candidate.IsBroken )
+				continue;
+
+			Vector3 toNode = ( candidate.WorldPosition - playerPos ).WithZ( 0f );
+			float flatDist = toNode.Length;
+			if ( flatDist > reach )
+				continue;
+
+			if ( flatDist > 40f && Vector3.Dot( toNode.Normal, flatForward ) < 0.3f )
+				continue;
+
+			if ( flatDist < bestDist )
+			{
+				bestDist = flatDist;
+				best = candidate;
+			}
+		}
+
+		return best;
 	}
 
 	void HandleResourceHit( ResourceNode node, Inventory inventory, Skills skills )

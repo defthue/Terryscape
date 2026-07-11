@@ -6,7 +6,13 @@
 	@if ( ShouldShow() )
 	{
 		<div class="nameplate">
-			<div class="nameplate-text">@GetPlayerName()</div>
+			<div class="nameplate-text">
+				@if ( GetTotalLevel() > 0 )
+				{
+					<span class="nameplate-level">@GetTotalLevel()</span>
+				}
+				<span class="nameplate-name">@GetPlayerName()</span>
+			</div>
 		</div>
 	}
 </root>
@@ -49,6 +55,14 @@
 		return PlayerController?.Network.Owner?.DisplayName ?? "";
 	}
 
+	int GetTotalLevel()
+	{
+		if ( PlayerController == null )
+			return 0;
+
+		return PlayerController.Components.Get<Skills>()?.TotalLevel ?? 0;
+	}
+
 	protected override void OnUpdate()
 	{
 		StateHasChanged();
@@ -56,6 +70,6 @@
 
 	protected override int BuildHash()
 	{
-		return ( ShouldShow(), GetPlayerName() ).GetHashCode();
+		return ( ShouldShow(), GetPlayerName(), GetTotalLevel() ).GetHashCode();
 	}
 }

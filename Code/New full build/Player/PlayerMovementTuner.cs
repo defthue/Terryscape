@@ -8,6 +8,8 @@ public sealed class PlayerMovementTuner : Component
 	PlayerController _pc;
 	float _baseWalkSpeed;
 	float _baseRunSpeed;
+	float _rawWalkSpeed;
+	float _rawRunSpeed;
 	bool _initialized;
 
 	protected override void OnStart()
@@ -16,6 +18,8 @@ public sealed class PlayerMovementTuner : Component
 		if ( _pc == null )
 			return;
 
+		_rawWalkSpeed = _pc.WalkSpeed;
+		_rawRunSpeed = _pc.RunSpeed;
 		_baseWalkSpeed = _pc.WalkSpeed * WalkSpeedMultiplier;
 		_baseRunSpeed = _pc.RunSpeed * RunSpeedMultiplier;
 		_initialized = true;
@@ -29,11 +33,21 @@ public sealed class PlayerMovementTuner : Component
 		float speedMult = GetSpeedMultiplier();
 		bool forceWalk = ShouldForceWalk();
 
-		float walk = _baseWalkSpeed * speedMult;
-		float run = forceWalk ? walk : _baseRunSpeed * speedMult;
+		bool dueling = IsActiveDuelist();
+		float baseWalk = dueling ? _rawWalkSpeed : _baseWalkSpeed;
+		float baseRun = dueling ? _rawRunSpeed : _baseRunSpeed;
+
+		float walk = baseWalk * speedMult;
+		float run = forceWalk ? walk : baseRun * speedMult;
 
 		_pc.WalkSpeed = walk;
 		_pc.RunSpeed = run;
+	}
+
+	bool IsActiveDuelist()
+	{
+		var dm = DuelManager.Instance;
+		return dm != null && dm.MatchActive && dm.IsDuelist( GameObject );
 	}
 
 	float GetSpeedMultiplier()

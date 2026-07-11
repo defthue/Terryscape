@@ -637,30 +637,12 @@ public sealed class SpellCaster : Component
 			aimForward * forwardOff +
 			aimRight * lateralOff;
 
-		Vector3 launchDir = aimForward;
+		var aim = AimResolver.Resolve( GameObject, AimTraceDistance );
+		Vector3 launchDir = aim.LaunchDirectionFrom( spawnPos );
 		GameObject homingTarget = null;
 
-		var camera = Scene.Camera;
-		if ( camera != null )
-		{
-			var camPos = camera.WorldPosition;
-			var camForward = camera.WorldRotation.Forward;
-			var camEnd = camPos + camForward * AimTraceDistance;
-
-			var aimTrace = Scene.Trace
-				.Ray( camPos, camEnd )
-				.UseHitboxes( true )
-				.IgnoreGameObjectHierarchy( GameObject )
-				.Run();
-
-			var aimTarget = aimTrace.Hit ? aimTrace.HitPosition : camEnd;
-			var toTarget = aimTarget - spawnPos;
-			if ( toTarget.LengthSquared > 0.01f )
-				launchDir = toTarget.Normal;
-
-			if ( spell.Type == SpellType.Homing )
-				homingTarget = FindHomingTarget( camPos, camForward );
-		}
+		if ( spell.Type == SpellType.Homing )
+			homingTarget = FindHomingTarget( aim.CameraPos, aim.CameraForward );
 
 		var projectile = prefab.Clone( spawnPos );
 		if ( projectile == null )
@@ -908,12 +890,10 @@ public sealed class SpellCaster : Component
 
 	Vector3 GetCursorWorldPoint( float maxDistance )
 	{
-		var camera = Scene.Camera;
-		if ( camera == null )
+		if ( !AimResolver.TryGetCamera( out var camPos, out var camRot ) )
 			return GameObject.WorldPosition + GameObject.WorldRotation.Forward * 500f;
 
-		Vector3 camPos = camera.WorldPosition;
-		Vector3 camForward = camera.WorldRotation.Forward;
+		Vector3 camForward = camRot.Forward;
 		Vector3 camEnd = camPos + camForward * maxDistance;
 
 		var aimTrace = Scene.Trace

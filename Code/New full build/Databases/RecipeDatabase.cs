@@ -313,27 +313,27 @@ public static class RecipeDatabase
 
 		Add( Define( "coppite_arrows", "Coppite Arrows", StationType.Workbench,
 			new[] { new RecipeIngredient( ItemId.CoppiteBar, 6 ), new RecipeIngredient( ItemId.AshwoodLog, 3 ) },
-			ItemId.CoppiteArrow, 15, SkillType.Crafting, 1, SkillType.Crafting, 8 ) );
+			ItemId.CoppiteArrow, 15, SkillType.Crafting, 1, SkillType.Crafting, 10 ) );
 
 		Add( Define( "ashsteel_arrows", "Ashsteel Arrows", StationType.Workbench,
 			new[] { new RecipeIngredient( ItemId.AshsteelBar, 6 ), new RecipeIngredient( ItemId.ElmheartLog, 3 ) },
-			ItemId.AshsteelArrow, 15, SkillType.Crafting, 10, SkillType.Crafting, 20 ) );
+			ItemId.AshsteelArrow, 15, SkillType.Crafting, 10, SkillType.Crafting, 25 ) );
 
 		Add( Define( "coldvein_arrows", "Coldvein Arrows", StationType.Workbench,
 			new[] { new RecipeIngredient( ItemId.ColdveinBar, 6 ), new RecipeIngredient( ItemId.IronbarkLog, 3 ) },
-			ItemId.ColdveinArrow, 15, SkillType.Crafting, 20, SkillType.Crafting, 40 ) );
+			ItemId.ColdveinArrow, 15, SkillType.Crafting, 20, SkillType.Crafting, 50 ) );
 
 		Add( Define( "solarium_arrows", "Solarium Arrows", StationType.Workbench,
 			new[] { new RecipeIngredient( ItemId.SolariumBar, 6 ), new RecipeIngredient( ItemId.GhostwoodLog, 3 ) },
-			ItemId.SolariumArrow, 15, SkillType.Crafting, 30, SkillType.Crafting, 65 ) );
+			ItemId.SolariumArrow, 15, SkillType.Crafting, 30, SkillType.Crafting, 81 ) );
 
 		Add( Define( "lunarite_arrows", "Lunarite Arrows", StationType.Workbench,
 			new[] { new RecipeIngredient( ItemId.LunariteBar, 6 ), new RecipeIngredient( ItemId.DuskoakLog, 3 ) },
-			ItemId.LunariteArrow, 15, SkillType.Crafting, 40, SkillType.Crafting, 100 ) );
+			ItemId.LunariteArrow, 15, SkillType.Crafting, 40, SkillType.Crafting, 125 ) );
 
 		Add( Define( "abyssium_arrows", "Abyssium Arrows", StationType.Workbench,
 			new[] { new RecipeIngredient( ItemId.AbyssiumBar, 6 ), new RecipeIngredient( ItemId.WorldrootLog, 3 ) },
-			ItemId.AbyssiumArrow, 15, SkillType.Crafting, 50, SkillType.Crafting, 150 ) );
+			ItemId.AbyssiumArrow, 15, SkillType.Crafting, 50, SkillType.Crafting, 188 ) );
 
 		Add( Define( "ashwood_staff", "Ashwood Staff", StationType.Workbench,
 			new[] { new RecipeIngredient( ItemId.AshwoodLog, 24 ), new RecipeIngredient( ItemId.CoppiteBar, 12 ) },

@@ -11,6 +11,8 @@ public sealed class PetManager : Component
 	public List<PetKind> Library { get; private set; } = new();
 	public PetKind ActiveSlot { get; private set; } = PetKind.Slime;
 
+	public GameObject ActiveSlime => _slime != null && _slime.IsValid() ? _slime : null;
+
 	GameObject _slime;
 	bool _spawned;
 	bool _pendingDespawn;

@@ -207,26 +207,8 @@ public sealed class ProjectileShooter : Component
 			aimForward * forwardOff +
 			aimRight * lateralOff;
 
-		Vector3 launchDir = aimForward;
-
-		var camera = Scene.Camera;
-		if ( camera != null )
-		{
-			var camPos = camera.WorldPosition;
-			var camForward = camera.WorldRotation.Forward;
-			var camEnd = camPos + camForward * AimTraceDistance;
-
-			var aimTrace = Scene.Trace
-				.Ray( camPos, camEnd )
-				.UseHitboxes( true )
-				.IgnoreGameObjectHierarchy( GameObject )
-				.Run();
-
-			var aimTarget = aimTrace.Hit ? aimTrace.HitPosition : camEnd;
-			var toTarget = aimTarget - spawnPos;
-			if ( toTarget.LengthSquared > 0.01f )
-				launchDir = toTarget.Normal;
-		}
+		var aim = AimResolver.Resolve( GameObject, AimTraceDistance );
+		Vector3 launchDir = aim.LaunchDirectionFrom( spawnPos );
 
 		var arrow = ArrowPrefab.Clone( spawnPos );
 

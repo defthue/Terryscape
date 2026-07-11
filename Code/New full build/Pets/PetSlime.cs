@@ -96,6 +96,8 @@ public sealed class PetSlime : Component
 
 		TrackVelocity();
 
+		bool wasLocalMounted = _localMounted;
+
 		var chair = GetChair();
 		bool occupied = chair != null && chair.IsOccupied;
 		var def = PetDatabase.Get( Kind );
@@ -124,14 +126,42 @@ public sealed class PetSlime : Component
 				var owner = ResolveOwner();
 				if ( owner != null )
 				{
+					if ( wasLocalMounted && WorldPosition.z - owner.WorldPosition.z > 150f )
+					{
+						WorldPosition = WorldPosition.WithZ( owner.WorldPosition.z );
+						_inAir = false;
+						_jumpPhase = 0f;
+					}
+
 					TickFollow( owner );
-					FollowHop();
+					FollowHop( owner );
 				}
 			}
 		}
 
+		if ( wasLocalMounted && !_localMounted )
+			CarryMountLookToPlayer();
+
 		ApplyVisual();
 		DrawBubbles();
+	}
+
+	void CarryMountLookToPlayer()
+	{
+		var cam = Scene.Camera;
+		if ( cam == null )
+			return;
+
+		var owner = ResolveOwner();
+		if ( owner == null )
+			return;
+
+		var pc = owner.Components.Get<PlayerController>();
+		if ( pc == null )
+			return;
+
+		var ang = cam.WorldRotation.Angles();
+		pc.EyeAngles = new Angles( ang.pitch, ang.yaw, pc.EyeAngles.roll );
 	}
 
 	protected override void OnPreRender()
@@ -375,10 +405,13 @@ public sealed class PetSlime : Component
 		var cur = WorldPosition;
 		float dPlayer = ( playerPos - cur ).WithZ( 0 ).Length;
 		float dTarget = ( _targetPos - cur ).WithZ( 0 ).Length;
+		float dz = MathF.Abs( cur.z - playerPos.z );
 
-		if ( dPlayer > 500f )
+		if ( dPlayer > 500f || dz > 300f )
 		{
-			WorldPosition = new Vector3( _targetPos.x, _targetPos.y, cur.z );
+			WorldPosition = new Vector3( _targetPos.x, _targetPos.y, playerPos.z );
+			_inAir = false;
+			_jumpPhase = 0f;
 			return;
 		}
 
@@ -395,7 +428,7 @@ public sealed class PetSlime : Component
 		}
 	}
 
-	void FollowHop()
+	void FollowHop( GameObject owner )
 	{
 		float dt = Time.Delta;
 
@@ -403,7 +436,7 @@ public sealed class PetSlime : Component
 		bool isMoving = moveSpeed > 20f;
 
 		var pos = WorldPosition;
-		float groundZ = GroundZAt( pos );
+		float groundZ = GroundZAt( pos, owner.WorldPosition.z );
 
 		if ( _inAir )
 		{
@@ -445,14 +478,14 @@ public sealed class PetSlime : Component
 		WorldPosition = pos;
 	}
 
-	float GroundZAt( Vector3 p )
+	float GroundZAt( Vector3 p, float fallbackZ )
 	{
 		var tr = Scene.Trace
-			.Ray( p + Vector3.Up * 40f, p - Vector3.Up * 200f )
+			.Ray( p + Vector3.Up * 50f, p - Vector3.Up * 2000f )
 			.Size( 2f )
 			.IgnoreGameObjectHierarchy( GameObject )
 			.Run();
-		return tr.Hit ? tr.HitPosition.z : p.z;
+		return tr.Hit ? tr.HitPosition.z : fallbackZ;
 	}
 
 	void ApplyVisual()

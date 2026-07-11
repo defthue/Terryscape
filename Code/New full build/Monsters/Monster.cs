@@ -596,6 +596,7 @@ public sealed class Monster : Component
 	{
 		ModelRenderer?.Set( "is_moving", moving );
 		ModelRenderer?.Set( "is_running", running );
+		ApplyMovePlaybackRate( moving );
 
 		if ( moving != _lastBroadcastMoving || running != _lastBroadcastRunning )
 		{
@@ -610,6 +611,13 @@ public sealed class Monster : Component
 	{
 		ModelRenderer?.Set( "is_moving", moving );
 		ModelRenderer?.Set( "is_running", running );
+		ApplyMovePlaybackRate( moving );
+	}
+
+	void ApplyMovePlaybackRate( bool moving )
+	{
+		if ( ModelRenderer != null )
+			ModelRenderer.PlaybackRate = moving ? GlobalSpeedScale : 1f;
 	}
 
 	[Rpc.Host]
@@ -666,11 +674,13 @@ public sealed class Monster : Component
 		}
 	}
 
+	const float GlobalSpeedScale = 1.4f;
+
 	public float GetSpeedMultiplier()
 	{
 		if ( SlowTimeRemaining > 0f )
-			return SlowMultiplier;
-		return 1f;
+			return SlowMultiplier * GlobalSpeedScale;
+		return GlobalSpeedScale;
 	}
 
 	bool HasLineOfSightRanged( GameObject target )
@@ -1094,6 +1104,7 @@ public sealed class Monster : Component
 		ModelRenderer?.Set( "is_moving", false );
 		ModelRenderer?.Set( "is_running", false );
 		ModelRenderer?.Set( "b_death", true );
+		ApplyMovePlaybackRate( false );
 
 		SoundLibrary.PlayMonsterDeath( WorldPosition );
 
@@ -1147,6 +1158,7 @@ public sealed class Monster : Component
 		ModelRenderer?.Set( "b_attack", false );
 		ModelRenderer?.Set( "is_moving", false );
 		ModelRenderer?.Set( "is_running", false );
+		ApplyMovePlaybackRate( false );
 
 		if ( MonsterCollider != null )
 			MonsterCollider.Enabled = false;

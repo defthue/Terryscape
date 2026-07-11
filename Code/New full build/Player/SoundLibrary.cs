@@ -45,6 +45,8 @@ public sealed class SoundLibrary : Component
 	const string LEVEL_UP = "Sounds/LevelUp.sound";
 	const string SEND_TO_BANK = "Sounds/SendToBank.sound";
 
+	const float FireballVolume = 0.5f;
+
 	static SoundLibrary _instance;
 	static SoundHandle _furnaceLoopHandle;
 	static List<SoundHandle> _listenerLockedSounds = new();
@@ -178,7 +180,15 @@ public sealed class SoundLibrary : Component
 
 	public static void PlayFireball( Vector3 position )
 	{
-		PlayPlayerActionSound( FIREBALL, position );
+		var instance = GetInstance();
+		if ( instance == null )
+			return;
+
+		var handle = PlayLockedReturning( FIREBALL );
+		if ( handle.IsValid() )
+			handle.Volume = FireballVolume;
+
+		instance.BroadcastFireballForOthers( position );
 	}
 
 	public static void PlayIceShard( Vector3 position )
@@ -425,6 +435,17 @@ public sealed class SoundLibrary : Component
 			return;
 
 		Sound.Play( soundPath, position );
+	}
+
+	[Rpc.Broadcast]
+	void BroadcastFireballForOthers( Vector3 position )
+	{
+		if ( Rpc.Caller != null && Connection.Local != null && Rpc.Caller.Id == Connection.Local.Id )
+			return;
+
+		var handle = Sound.Play( FIREBALL, position );
+		if ( handle.IsValid() )
+			handle.Volume = FireballVolume;
 	}
 
 	[Rpc.Broadcast]

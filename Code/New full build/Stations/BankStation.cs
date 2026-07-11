@@ -161,7 +161,7 @@ public sealed class BankStation : Component
 
 		var preview = bankedUnique[bankIndex];
 
-		if ( !inventory.HasEmptySlot() )
+		if ( !inventory.HasNonHotbarEmptySlot() )
 		{
 			GameLog.Add( $"Inventory full — cannot withdraw {preview.GetDisplayName()}.", "#c86464" );
 			return;

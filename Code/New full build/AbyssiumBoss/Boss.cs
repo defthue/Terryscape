@@ -71,6 +71,7 @@ public sealed class Boss : Component
 	}
 
 	const int AnimFrameRate = 30;
+	const float GlobalSpeedScale = 1.3f;
 
 	[Property, Group( "Identity" )] public string BossName { get; set; } = "Boss";
 	[Property, Group( "Identity" )] public CombatStyle CombatStyle { get; set; } = CombatStyle.Melee;
@@ -80,6 +81,7 @@ public sealed class Boss : Component
 	[Property, Group( "Stats" )] public float ArmorValue { get; set; } = 40f;
 	[Property, Group( "Stats" )] public int DefenceLevel { get; set; } = 60;
 	[Property, Group( "Stats" )] public float LeashHealPercentPerSecond { get; set; } = 10f;
+	[Property, Group( "Stats" )] public int CombatXpReward { get; set; } = 750;
 
 	[Property, Group( "Ranges" )] public float AggroRange { get; set; } = 800f;
 	[Property, Group( "Ranges" )] public float DeaggroRange { get; set; } = 1600f;
@@ -211,7 +213,7 @@ public sealed class Boss : Component
 	[Property, Group( "Victory" )] public float VictoryDuration { get; set; } = 3f;
 
 	[Property, Group( "Loot" )] public LootTable LootTable { get; set; }
-	[Property, Group( "Loot" ), Range( 0f, 1f )] public float GroupLootRetention { get; set; } = 0.5f;
+	[Property, Group( "Loot" ), Range( 0f, 1f )] public float GroupLootRetention { get; set; } = 0.9f;
 
 	[Property, Group( "References" )] public ModelRenderer ModelRenderer { get; set; }
 	[Property, Group( "References" )] public SkinnedModelRenderer SkinnedRenderer { get; set; }
@@ -250,7 +252,7 @@ public sealed class Boss : Component
 	bool _deathAnimFinished;
 	int _deathGeneration;
 
-	HashSet<ulong> _contributorSteamIds = new();
+	Dictionary<ulong, SkillType> _contributors = new();
 
 	List<ActiveBeam> _activeBeams = new();
 	List<ActiveBeamVisual> _activeBeamVisuals = new();
@@ -437,7 +439,7 @@ public sealed class Boss : Component
 			return;
 		}
 
-		MoveTowards( targetPos, RunSpeed );
+		MoveTowards( targetPos, RunSpeed * GlobalSpeedScale );
 	}
 
 	bool TryStartAttack( float distanceToTarget )
@@ -941,7 +943,7 @@ public sealed class Boss : Component
 
 		FaceTarget( _spawnPosition );
 		SetMoving( true, true );
-		MoveTowards( _spawnPosition, RunSpeed );
+		MoveTowards( _spawnPosition, RunSpeed * GlobalSpeedScale );
 	}
 
 	void ApplyLeashHeal()
@@ -1190,7 +1192,7 @@ public sealed class Boss : Component
 		_deathAnimFinished = false;
 		_deathAnimTimer = 0f;
 		_state = BossState.Idle;
-		_contributorSteamIds.Clear();
+		_contributors.Clear();
 		BroadcastAnimBool( "b_death", false );
 		BroadcastRespawn();
 	}
@@ -1221,7 +1223,7 @@ public sealed class Boss : Component
 		{
 			var ownerConnection = attacker.Network.Owner;
 			if ( ownerConnection != null && ownerConnection.SteamId != 0L )
-				_contributorSteamIds.Add( ownerConnection.SteamId );
+				_contributors[ownerConnection.SteamId] = GetAttackerSkill( attacker );
 		}
 
 		CurrentHealth -= damage;
@@ -1296,18 +1298,18 @@ public sealed class Boss : Component
 
 	void AwardLootToContributors()
 	{
-		if ( _contributorSteamIds.Count == 0 )
+		if ( _contributors.Count == 0 )
 			return;
 
 		if ( LootTable == null )
 		{
-			_contributorSteamIds.Clear();
+			_contributors.Clear();
 			return;
 		}
 
 		var rng = new Random();
 
-		int contributorCount = _contributorSteamIds.Count;
+		int contributorCount = _contributors.Count;
 
 		int goldPool = LootTable.RollGoldPool( rng );
 		int goldPerPlayer = contributorCount > 0
@@ -1318,8 +1320,11 @@ public sealed class Boss : Component
 
 		var entries = LootTable.Entries ?? new List<LootEntry>();
 
-		foreach ( var steamId in _contributorSteamIds )
+		foreach ( var contributor in _contributors )
 		{
+			ulong steamId = contributor.Key;
+			SkillType skill = contributor.Value;
+
 			var rolledItems = new List<ItemId>();
 			var rolledAmounts = new List<int>();
 
@@ -1340,15 +1345,14 @@ public sealed class Boss : Component
 				rolledAmounts.Add( amount );
 			}
 
-			if ( goldPerPlayer > 0 || rolledItems.Count > 0 )
-				BroadcastLootReward( steamId, goldPerPlayer, rolledItems.ToArray(), rolledAmounts.ToArray() );
+			BroadcastLootReward( steamId, goldPerPlayer, rolledItems.ToArray(), rolledAmounts.ToArray(), skill, CombatXpReward );
 		}
 
-		_contributorSteamIds.Clear();
+		_contributors.Clear();
 	}
 
 	[Rpc.Broadcast]
-	void BroadcastLootReward( ulong recipientSteamId, int gold, ItemId[] items, int[] amounts )
+	void BroadcastLootReward( ulong recipientSteamId, int gold, ItemId[] items, int[] amounts, SkillType skill, int combatXp )
 	{
 		if ( Connection.Local == null || Connection.Local.SteamId != recipientSteamId )
 			return;
@@ -1403,8 +1407,35 @@ public sealed class Boss : Component
 			gainedAny = true;
 		}
 
+		var skills = localPlayer.Components.Get<Skills>();
+		if ( skills != null && combatXp > 0 )
+		{
+			skills.AddXp( skill, combatXp );
+			GameLog.Add( $"You gained {combatXp} {skill} XP for defeating {BossName}.", "#8fd18f" );
+		}
+
 		if ( gainedAny )
 			SoundLibrary.PlayReceiveItem();
+	}
+
+	SkillType GetAttackerSkill( GameObject attacker )
+	{
+		if ( attacker == null || !attacker.IsValid() )
+			return SkillType.Attack;
+
+		var inventory = attacker.Components.Get<Inventory>();
+		var weaponDef = inventory?.GetEquippedWeaponDef();
+
+		if ( weaponDef == null )
+			return SkillType.Attack;
+
+		if ( weaponDef.Type == ItemType.RangedWeapon )
+			return SkillType.Archery;
+
+		if ( weaponDef.Type == ItemType.MagicWeapon )
+			return SkillType.Magic;
+
+		return SkillType.Attack;
 	}
 
 	GameObject FindLocalPlayerForLoot()

@@ -29,7 +29,7 @@
       "VR": false,
       "Gamepad": false
     },
-    "LaunchMode": "DedicatedServerOnly",
+    "LaunchMode": "Normal",
     "ParentPackage": null,
     "DedicatedServerStartupScene": "scenes/tha gima2.scene"
   }

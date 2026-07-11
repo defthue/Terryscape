@@ -186,7 +186,7 @@
 		if ( best == null && Scene.Camera != null )
 		{
 			var localConn = player.Network.Owner;
-			ulong localSteam = localConn != null ? localConn.SteamId : 0;
+			ulong localSteam = localConn != null ? (ulong)localConn.SteamId : 0ul;
 
 			var aimOrigin = playerPos + Vector3.Up * 30f;
 			var aimDir = Scene.Camera.WorldRotation.Forward;

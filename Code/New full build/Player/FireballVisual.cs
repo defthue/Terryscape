@@ -7,6 +7,7 @@ public sealed class FireballVisual : Component
 
 	[Property] public Color LightColor { get; set; } = new Color( 1f, 0.45f, 0.12f );
 	[Property] public float LightRadius { get; set; } = 220f;
+	[Property] public Color Tint { get; set; } = Color.White;
 
 	[Property] public float SpawnInterval { get; set; } = 0.012f;
 	[Property] public int CoreFlashes { get; set; } = 2;
@@ -99,7 +100,7 @@ public sealed class FireballVisual : Component
 		for ( int c = 0; c < CoreFlashes; c++ )
 		{
 			Vector3 p = WorldPosition + Vector3.Random.Normal * ( 4f * Scale );
-			Gizmo.Draw.Color = new Color( 1f, 0.92f, 0.55f, 0.5f );
+			Gizmo.Draw.Color = new Color( 1f * Tint.r, 0.92f * Tint.g, 0.55f * Tint.b, 0.5f );
 			Gizmo.Draw.SolidSphere( p, 5.5f * Scale );
 		}
 
@@ -108,7 +109,7 @@ public sealed class FireballVisual : Component
 			float t = 1f - ( _trail[i].Life / _trail[i].MaxLife );
 			float alpha = ( 1f - t ) * 0.7f;
 
-			Gizmo.Draw.Color = new Color( 1f, 0.3f + t * 0.6f, 0.05f + t * 0.1f, alpha );
+			Gizmo.Draw.Color = new Color( 1f * Tint.r, ( 0.3f + t * 0.6f ) * Tint.g, ( 0.05f + t * 0.1f ) * Tint.b, alpha );
 			Gizmo.Draw.SolidSphere( _trail[i].Position, _trail[i].Size * ( 1f - t * 0.5f ) );
 		}
 	}

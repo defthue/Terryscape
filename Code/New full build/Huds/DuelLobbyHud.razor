@@ -1,5 +1,7 @@
 @using Sandbox;
 @using Sandbox.UI;
+@using System;
+@using System.Collections.Generic;
 @inherits PanelComponent
 
 <root>
@@ -42,6 +44,99 @@
 						<div class="dl-opt @(Rounds == 5 ? "selected" : "") @(CanEdit ? "" : "readonly")" onclick="@(() => SetRounds( 5 ))">Best of 5</div>
 					</div>
 
+					<div class="dl-label">Stakes</div>
+					<div class="dl-stakes">
+						<div class="dl-stake-col">
+							<div class="dl-stake-head">Your Stake</div>
+							<div class="dl-stake-gold">@MyStakeGold g</div>
+							@{
+								var myItems = MyStakeItems;
+								var myAmts = MyStakeAmounts;
+							}
+							@if ( myItems != null )
+							{
+								@for ( int i = 0; i < myItems.Count; i++ )
+								{
+									var mid = (ItemId)myItems[i];
+									int mamt = i < myAmts.Count ? myAmts[i] : 0;
+									<div class="dl-stake-item">
+										<div class="dl-stake-item-name">@NameOfItem( mid )</div>
+										<div class="dl-stake-item-amt">x@( mamt )</div>
+										@if ( CanEditStake )
+										{
+											<div class="dl-stake-x" onclick="@(() => RemoveStake( mid ))">✕</div>
+										}
+									</div>
+								}
+							}
+							@if ( CanEditStake )
+							{
+								<div class="dl-stake-goldbtns">
+									<div class="dl-stake-btn" onclick="@(() => AddGold( 10 ))">+10</div>
+									<div class="dl-stake-btn" onclick="@(() => AddGold( 100 ))">+100</div>
+									<div class="dl-stake-btn" onclick="@(() => AddGold( 1000 ))">+1k</div>
+									<div class="dl-stake-btn clear" onclick="@(() => ClearGold())">Clear</div>
+								</div>
+								<div class="dl-stake-add" onclick="@(() => TogglePicker())">@(ShowPicker ? "Close" : "＋ Add Item")</div>
+							}
+						</div>
+						<div class="dl-stake-col their">
+							<div class="dl-stake-head">Their Stake</div>
+							<div class="dl-stake-gold">@TheirStakeGold g</div>
+							@{
+								var theirItems = TheirStakeItems;
+								var theirAmts = TheirStakeAmounts;
+							}
+							@if ( theirItems != null )
+							{
+								@for ( int i = 0; i < theirItems.Count; i++ )
+								{
+									var tid = (ItemId)theirItems[i];
+									int tamt = i < theirAmts.Count ? theirAmts[i] : 0;
+									<div class="dl-stake-item">
+										<div class="dl-stake-item-name">@NameOfItem( tid )</div>
+										<div class="dl-stake-item-amt">x@( tamt )</div>
+									</div>
+								}
+							}
+						</div>
+					</div>
+
+					@if ( ShowPicker && CanEditStake )
+					{
+						<div class="dl-picker">
+							@if ( _qtyPickId != 0 )
+							{
+								var pid = (ItemId)_qtyPickId;
+								<div class="dl-picker-qty">
+									<div class="dl-picker-qtylabel">Add @NameOfItem( pid )</div>
+									<div class="dl-stake-btn" onclick="@(() => StakeStackable( pid, 1 ))">1</div>
+									<div class="dl-stake-btn" onclick="@(() => StakeStackable( pid, 10 ))">10</div>
+									<div class="dl-stake-btn" onclick="@(() => StakeStackable( pid, 100 ))">100</div>
+									<div class="dl-stake-btn clear" onclick="@(() => CancelQty())">Cancel</div>
+								</div>
+							}
+							else
+							{
+								@foreach ( var opt in BuildStakeOptions() )
+								{
+									var o = opt;
+									<div class="dl-picker-row" onclick="@(() => PickOption( o ))">
+										<div class="dl-picker-name">@o.Name</div>
+										<div class="dl-picker-count">@o.Available</div>
+									</div>
+								}
+								@foreach ( var uname in BuildUnstakeableNames() )
+								{
+									<div class="dl-picker-row disabled">
+										<div class="dl-picker-name">@uname</div>
+										<div class="dl-picker-tip">Can't be staked</div>
+									</div>
+								}
+							}
+						</div>
+					}
+
 					<div class="dl-note">@RulesNote</div>
 
 					<div class="dl-status">
@@ -49,9 +144,14 @@
 						<div class="dl-lock @(OpponentLocked ? "on" : "")">Opponent: @(OpponentLocked ? "Locked in" : "Not ready")</div>
 					</div>
 
+					@if ( Escrowing )
+					{
+						<div class="dl-escrow">Securing stakes…</div>
+					}
+
 					<div class="dl-actions">
 						<div class="dl-btn cancel" onclick="@(() => Leave())">Leave</div>
-						<div class="dl-btn lock @(LocalLocked ? "unlock" : "")" onclick="@(() => ToggleLock())">@(LocalLocked ? "Unlock" : "Lock In")</div>
+						<div class="dl-btn lock @(LocalLocked ? "unlock" : "") @(Escrowing ? "disabled" : "")" onclick="@(() => TryToggleLock())">@(LocalLocked ? "Unlock" : "Lock In")</div>
 					</div>
 				</div>
 			</div>
@@ -120,6 +220,224 @@
 		Manager?.RequestCancelLobby( LocalSteamId );
 	}
 
+	bool Escrowing => Manager?.EscrowPending ?? false;
+	bool CanEditStake => Manager != null && !Manager.EscrowPending;
+
+	bool _showPicker;
+	int _qtyPickId;
+
+	bool ShowPicker => _showPicker;
+
+	List<int> MyStakeItems => IsChallenger ? Manager?.LobbyStakeItemsA : Manager?.LobbyStakeItemsB;
+	List<int> MyStakeAmounts => IsChallenger ? Manager?.LobbyStakeAmountsA : Manager?.LobbyStakeAmountsB;
+	int MyStakeGold => IsChallenger ? ( Manager?.LobbyStakeGoldA ?? 0 ) : ( Manager?.LobbyStakeGoldB ?? 0 );
+
+	List<int> TheirStakeItems => IsChallenger ? Manager?.LobbyStakeItemsB : Manager?.LobbyStakeItemsA;
+	List<int> TheirStakeAmounts => IsChallenger ? Manager?.LobbyStakeAmountsB : Manager?.LobbyStakeAmountsA;
+	int TheirStakeGold => IsChallenger ? ( Manager?.LobbyStakeGoldB ?? 0 ) : ( Manager?.LobbyStakeGoldA ?? 0 );
+
+	int MyGold => PlayerHelper.GetLocalInventory()?.GetItemCount( ItemId.GoldCoin ) ?? 0;
+
+	class StakeOption
+	{
+		public ItemId Id;
+		public string Name;
+		public int Available;
+		public bool IsStackable;
+	}
+
+	string NameOfItem( ItemId id )
+	{
+		var def = ItemDatabase.Get( id );
+		return def != null ? def.Name : id.ToString();
+	}
+
+	int MyStakedAmount( ItemId id )
+	{
+		var items = MyStakeItems;
+		var amounts = MyStakeAmounts;
+		if ( items == null || amounts == null )
+			return 0;
+
+		int idx = items.IndexOf( (int)id );
+		return idx >= 0 && idx < amounts.Count ? amounts[idx] : 0;
+	}
+
+	int AvailableFor( ItemId id )
+	{
+		var inv = PlayerHelper.GetLocalInventory();
+		if ( inv == null )
+			return 0;
+
+		return inv.GetItemCount( id ) - MyStakedAmount( id );
+	}
+
+	List<StakeOption> BuildStakeOptions()
+	{
+		var result = new List<StakeOption>();
+		var inv = PlayerHelper.GetLocalInventory();
+		if ( inv == null )
+			return result;
+
+		var stackTotals = new Dictionary<ItemId, int>();
+		var equipTotals = new Dictionary<ItemId, int>();
+
+		foreach ( var slot in inv.GetSlots() )
+		{
+			if ( slot.IsStack )
+			{
+				if ( slot.ItemId == ItemId.GoldCoin )
+					continue;
+
+				stackTotals.TryGetValue( slot.ItemId, out var st );
+				stackTotals[slot.ItemId] = st + slot.Count;
+			}
+			else if ( slot.IsUnique )
+			{
+				var u = slot.Unique;
+				if ( u.IsEnchanted || u.SocketsUsed > 0 )
+					continue;
+
+				equipTotals.TryGetValue( u.ItemId, out var et );
+				equipTotals[u.ItemId] = et + 1;
+			}
+		}
+
+		foreach ( var kv in stackTotals )
+		{
+			int avail = kv.Value - MyStakedAmount( kv.Key );
+			if ( avail <= 0 )
+				continue;
+			result.Add( new StakeOption { Id = kv.Key, Name = NameOfItem( kv.Key ), Available = avail, IsStackable = true } );
+		}
+
+		foreach ( var kv in equipTotals )
+		{
+			int avail = kv.Value - MyStakedAmount( kv.Key );
+			if ( avail <= 0 )
+				continue;
+			result.Add( new StakeOption { Id = kv.Key, Name = NameOfItem( kv.Key ), Available = avail, IsStackable = false } );
+		}
+
+		return result;
+	}
+
+	List<string> BuildUnstakeableNames()
+	{
+		var result = new List<string>();
+		var inv = PlayerHelper.GetLocalInventory();
+		if ( inv == null )
+			return result;
+
+		foreach ( var slot in inv.GetSlots() )
+		{
+			if ( !slot.IsUnique )
+				continue;
+
+			var u = slot.Unique;
+			if ( u.IsEnchanted || u.SocketsUsed > 0 )
+				result.Add( u.GetDisplayName() );
+		}
+
+		return result;
+	}
+
+	void TogglePicker()
+	{
+		_showPicker = !_showPicker;
+		_qtyPickId = 0;
+	}
+
+	void CancelQty()
+	{
+		_qtyPickId = 0;
+	}
+
+	void PickOption( StakeOption o )
+	{
+		if ( o == null || !CanEditStake )
+			return;
+
+		if ( o.IsStackable )
+			_qtyPickId = (int)o.Id;
+		else
+			StakeItem( o.Id, 1 );
+	}
+
+	void StakeStackable( ItemId id, int qty )
+	{
+		int amt = Math.Min( qty, AvailableFor( id ) );
+		_qtyPickId = 0;
+		if ( amt > 0 )
+			StakeItem( id, amt );
+	}
+
+	void StakeItem( ItemId id, int amount )
+	{
+		if ( !CanEditStake || amount <= 0 )
+			return;
+
+		Manager?.RequestAddStakeItem( LocalSteamId, (int)id, amount );
+	}
+
+	void RemoveStake( ItemId id )
+	{
+		if ( !CanEditStake )
+			return;
+
+		Manager?.RequestRemoveStakeItem( LocalSteamId, (int)id );
+	}
+
+	void AddGold( int delta )
+	{
+		if ( !CanEditStake )
+			return;
+
+		int target = MyStakeGold + delta;
+		if ( target < 0 ) target = 0;
+		if ( target > MyGold ) target = MyGold;
+		Manager?.RequestSetStakeGold( LocalSteamId, target );
+	}
+
+	void ClearGold()
+	{
+		if ( !CanEditStake )
+			return;
+
+		Manager?.RequestSetStakeGold( LocalSteamId, 0 );
+	}
+
+	void TryToggleLock()
+	{
+		if ( Escrowing )
+			return;
+
+		ToggleLock();
+	}
+
+	int StakeStateHash()
+	{
+		int h = MyStakeGold * 31 + TheirStakeGold;
+
+		var mi = MyStakeItems;
+		var ma = MyStakeAmounts;
+		if ( mi != null )
+		{
+			for ( int i = 0; i < mi.Count; i++ )
+				h = h * 31 + mi[i] * 7 + ( ma != null && i < ma.Count ? ma[i] : 0 );
+		}
+
+		var ti = TheirStakeItems;
+		var ta = TheirStakeAmounts;
+		if ( ti != null )
+		{
+			for ( int i = 0; i < ti.Count; i++ )
+				h = h * 31 + ti[i] * 7 + ( ta != null && i < ta.Count ? ta[i] : 0 );
+		}
+
+		return h;
+	}
+
 	protected override void OnUpdate()
 	{
 		if ( ShouldShow )
@@ -128,6 +446,6 @@
 
 	protected override int BuildHash()
 	{
-		return ( ShouldShow, Mode, Pace, Rounds, LocalLocked, OpponentLocked, IsChallenger, LocalSteamId ).GetHashCode();
+		return ( ShouldShow, Mode, Pace, Rounds, LocalLocked, OpponentLocked, IsChallenger, StakeStateHash(), Escrowing, _showPicker, _qtyPickId ).GetHashCode();
 	}
 }

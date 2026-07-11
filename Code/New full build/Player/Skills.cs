@@ -9,6 +9,8 @@ public class SkillData
 
 public sealed class Skills : Component
 {
+	[Sync] public int TotalLevel { get; set; }
+
 	Dictionary<SkillType, SkillData> _skills = new();
 
 	static readonly int[] XpTable = new int[]
@@ -40,6 +42,20 @@ public sealed class Skills : Component
 
 			_skills[skill] = new SkillData();
 		}
+
+		RecomputeTotalLevel();
+	}
+
+	void RecomputeTotalLevel()
+	{
+		if ( IsProxy )
+			return;
+
+		int total = 0;
+		foreach ( var kv in _skills )
+			total += kv.Value.Level;
+
+		TotalLevel = total;
 	}
 
 	public int GetLevel( SkillType skill )
@@ -118,6 +134,8 @@ public sealed class Skills : Component
 
 			required = GetXpRequired( data.Level );
 		}
+
+		RecomputeTotalLevel();
 
 		if ( leveledUp )
 			PlayerPersistence.Local?.SaveNow( SaveSection.Skills | SaveSection.Stats );
@@ -208,5 +226,7 @@ public sealed class Skills : Component
 			_skills[skill].Level = kv.Value.Level;
 			_skills[skill].Xp = kv.Value.Xp;
 		}
+
+		RecomputeTotalLevel();
 	}
 }

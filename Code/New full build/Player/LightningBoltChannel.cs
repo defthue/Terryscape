@@ -400,25 +400,11 @@ public sealed class LightningBoltChannel : Component
 		if ( VisualOnly )
 			return GetRawForward();
 
-		var camera = Scene.Camera;
-		if ( camera != null )
-		{
-			Vector3 camPos = camera.WorldPosition;
-			Vector3 camForward = camera.WorldRotation.Forward;
-			Vector3 camEnd = camPos + camForward * AimTraceDistance;
-
-			var aimTrace = Scene.Trace
-				.Ray( camPos, camEnd )
-				.UseHitboxes( true )
-				.IgnoreGameObjectHierarchy( _caster != null && _caster.IsValid() ? _caster : GameObject )
-				.Run();
-
-			Vector3 aimPoint = aimTrace.Hit ? aimTrace.HitPosition : camEnd;
-			Vector3 origin = GetOrigin();
-			Vector3 dir = aimPoint - origin;
-			if ( dir.LengthSquared > 0.01f )
-				return dir.Normal;
-		}
+		var shooter = _caster != null && _caster.IsValid() ? _caster : GameObject;
+		var aim = AimResolver.Resolve( shooter, AimTraceDistance );
+		Vector3 dir = aim.AimPoint - GetOrigin();
+		if ( dir.LengthSquared > 0.01f )
+			return dir.Normal;
 
 		return GetRawForward();
 	}

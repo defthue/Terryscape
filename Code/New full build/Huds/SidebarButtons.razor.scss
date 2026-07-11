@@ -18,10 +18,15 @@ root {
 	font-family: Almendra;
 	font-smooth: auto;
 	pointer-events: all;
-	transition: right 0.18s ease;
+	transition: right 0.18s ease, transform 0.18s ease;
 
 	&.gear-shift {
 		right: 824px;
+	}
+
+	&.collapsed {
+		transform: translateY( 420px );
+		pointer-events: none;
 	}
 }
 
@@ -50,6 +55,25 @@ root {
 
 	&:active {
 		transform: translateY( 1px );
+	}
+
+	&.recall-cooldown {
+		opacity: 0.45;
+		border-color: #4a4038;
+
+		.sidebar-icon {
+			color: #8a8f9a;
+			font-size: 28px;
+		}
+	}
+
+	&.recall-channeling {
+		border-color: #a080d0;
+		box-shadow: 0 0 16px #a080d088;
+
+		.sidebar-icon {
+			color: #c0a0f0;
+		}
 	}
 }
 

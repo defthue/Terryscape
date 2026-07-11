@@ -165,12 +165,28 @@ public sealed class Inventory : Component
 		return count;
 	}
 
+	int CountEmptySlotsFrom( int startIndex )
+	{
+		int count = 0;
+		for ( int i = startIndex; i < MaxSlots; i++ )
+		{
+			if ( _slots[i].IsEmpty )
+				count++;
+		}
+		return count;
+	}
+
 	public bool HasEmptySlot()
 	{
 		return FindFirstEmptySlot() >= 0;
 	}
 
-	public bool CanFitStackable( ItemId id, int amount )
+	public bool HasNonHotbarEmptySlot()
+	{
+		return FindFirstEmptySlotFrom( HotbarSize ) >= 0;
+	}
+
+	public bool CanFitStackable( ItemId id, int amount, bool hotbarProtected = true )
 	{
 		if ( id == ItemId.None || amount <= 0 )
 			return true;
@@ -191,7 +207,7 @@ public sealed class Inventory : Component
 		if ( remaining <= 0 )
 			return true;
 
-		int empties = CountEmptySlots();
+		int empties = hotbarProtected ? CountEmptySlotsFrom( HotbarSize ) : CountEmptySlots();
 		remaining -= empties * maxStack;
 
 		return remaining <= 0;
@@ -280,7 +296,7 @@ public sealed class Inventory : Component
 		if ( instance == null )
 			return false;
 
-		int slotIndex = FindFirstEmptySlot();
+		int slotIndex = FindFirstEmptySlotFrom( HotbarSize );
 		if ( slotIndex >= 0 )
 		{
 			_slots[slotIndex].Unique = instance;
@@ -299,14 +315,14 @@ public sealed class Inventory : Component
 		return false;
 	}
 
-	int TryPlaceItem( ItemId id, int amount )
+	int TryPlaceItem( ItemId id, int amount, bool hotbarProtected = true )
 	{
 		if ( IsEquipmentItem( id ) )
 		{
 			int placed = 0;
 			while ( placed < amount )
 			{
-				int slotIndex = FindFirstEmptySlot();
+				int slotIndex = hotbarProtected ? FindFirstEmptySlotFrom( HotbarSize ) : FindFirstEmptySlot();
 				if ( slotIndex < 0 )
 					break;
 
@@ -338,7 +354,7 @@ public sealed class Inventory : Component
 
 		while ( remaining > 0 )
 		{
-			int slotIndex = FindFirstEmptySlot();
+			int slotIndex = hotbarProtected ? FindFirstEmptySlotFrom( HotbarSize ) : FindFirstEmptySlot();
 			if ( slotIndex < 0 )
 				break;
 
@@ -354,6 +370,16 @@ public sealed class Inventory : Component
 	int FindFirstEmptySlot()
 	{
 		for ( int i = 0; i < MaxSlots; i++ )
+		{
+			if ( _slots[i].IsEmpty )
+				return i;
+		}
+		return -1;
+	}
+
+	int FindFirstEmptySlotFrom( int startIndex )
+	{
+		for ( int i = startIndex; i < MaxSlots; i++ )
 		{
 			if ( _slots[i].IsEmpty )
 				return i;
@@ -649,7 +675,7 @@ public sealed class Inventory : Component
 		_equippedAmmoCount = newAmmoCount;
 
 		if ( oldAmmoId != ItemId.None && oldAmmoCount > 0 )
-			TryPlaceItem( oldAmmoId, oldAmmoCount );
+			TryPlaceItem( oldAmmoId, oldAmmoCount, false );
 
 		GameLog.Add( $"Equipped {newAmmoCount}x {def.Name}.", "#c9a84c" );
 		SoundLibrary.PlayEquip();
@@ -662,7 +688,7 @@ public sealed class Inventory : Component
 		if ( _equippedAmmoId == ItemId.None )
 			return true;
 
-		return CanFitStackable( _equippedAmmoId, _equippedAmmoCount );
+		return CanFitStackable( _equippedAmmoId, _equippedAmmoCount, false );
 	}
 
 	public bool UnequipAmmo()
@@ -670,13 +696,13 @@ public sealed class Inventory : Component
 		if ( _equippedAmmoId == ItemId.None )
 			return true;
 
-		if ( !CanFitStackable( _equippedAmmoId, _equippedAmmoCount ) )
+		if ( !CanFitStackable( _equippedAmmoId, _equippedAmmoCount, false ) )
 			return false;
 
 		var def = ItemDatabase.Get( _equippedAmmoId );
 		string name = def != null ? def.Name : "ammo";
 
-		TryPlaceItem( _equippedAmmoId, _equippedAmmoCount );
+		TryPlaceItem( _equippedAmmoId, _equippedAmmoCount, false );
 
 		_equippedAmmoId = ItemId.None;
 		_equippedAmmoCount = 0;
@@ -1537,7 +1563,7 @@ public sealed class Inventory : Component
 				if ( id == ItemId.None )
 					continue;
 
-				TryPlaceItem( id, kv.Value );
+				TryPlaceItem( id, kv.Value, false );
 			}
 
 			foreach ( var entry in data.UniqueItems )

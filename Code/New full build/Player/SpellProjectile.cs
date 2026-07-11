@@ -16,8 +16,37 @@ public sealed class SpellProjectile : Component
 	public float FrozenBonusDamage { get; set; } = 1.5f;
 	public bool IsCrit { get; set; }
 
+	const float HomingImpactRadius = 35f;
+
 	float _distanceTraveled;
 	float _lifetime;
+
+	protected override void OnStart()
+	{
+		if ( Components.Get<HomingProjectile>() == null )
+			return;
+
+		bool hasLegacyVfx = false;
+		foreach ( var effect in Components.GetAll<ParticleEffect>( FindMode.EverythingInSelfAndDescendants ) )
+		{
+			effect.Enabled = false;
+			hasLegacyVfx = true;
+		}
+
+		if ( !hasLegacyVfx )
+			return;
+
+		foreach ( var emitter in Components.GetAll<ParticleSphereEmitter>( FindMode.EverythingInSelfAndDescendants ) )
+			emitter.Enabled = false;
+		foreach ( var sprite in Components.GetAll<ParticleSpriteRenderer>( FindMode.EverythingInSelfAndDescendants ) )
+			sprite.Enabled = false;
+		foreach ( var trail in Components.GetAll<TrailRenderer>( FindMode.EverythingInSelfAndDescendants ) )
+			trail.Enabled = false;
+
+		var visual = Components.GetOrCreate<FireballVisual>();
+		visual.Tint = new Color( 1f, 0.55f, 0.45f );
+		visual.LightColor = new Color( 1f, 0.35f, 0.15f );
+	}
 
 	protected override void OnUpdate()
 	{
@@ -52,6 +81,17 @@ public sealed class SpellProjectile : Component
 			GameObject.WorldRotation = Rotation.From( pitch, yaw, 0f );
 		}
 
+		var homing = Components.Get<HomingProjectile>();
+		if ( homing != null && homing.Target != null && homing.Target.IsValid() )
+		{
+			Vector3 targetPoint = homing.Target.WorldPosition + Vector3.Up * homing.TargetHeightOffset;
+			if ( ( targetPoint - currentPos ).Length <= HomingImpactRadius )
+			{
+				ApplyImpact( homing.Target, currentPos );
+				return;
+			}
+		}
+
 		var trace = Scene.Trace
 			.Ray( previousPos, currentPos )
 			.Radius( TraceRadius )
@@ -62,7 +102,12 @@ public sealed class SpellProjectile : Component
 		if ( !trace.Hit )
 			return;
 
-		var pvpTarget = PvpCombat.ResolveTarget( trace.GameObject, Shooter );
+		ApplyImpact( trace.GameObject, trace.HitPosition );
+	}
+
+	void ApplyImpact( GameObject hitObject, Vector3 hitPos )
+	{
+		var pvpTarget = PvpCombat.ResolveTarget( hitObject, Shooter );
 		if ( pvpTarget != null )
 		{
 			int finalDamage = PvpCombat.ResolveDamage( Damage, CombatStyle.Magic, pvpTarget, IsCrit );
@@ -72,12 +117,12 @@ public sealed class SpellProjectile : Component
 				targetHealth.TakeDamage( finalDamage );
 				Shooter?.Components.Get<PlayerCombat>()?.NotifyPvpHit( pvpTarget, finalDamage, IsCrit, true );
 			}
-			PlayImpactSound( trace.HitPosition );
+			PlayImpactSound( hitPos );
 			GameObject.Destroy();
 			return;
 		}
 
-		var monster = trace.GameObject.Components.Get<Monster>();
+		var monster = hitObject.Components.Get<Monster>();
 
 		if ( monster != null )
 		{
@@ -98,15 +143,15 @@ public sealed class SpellProjectile : Component
 			if ( SlowDuration > 0f )
 				monster.ApplySlow( SlowDuration, SlowMultiplier );
 
-			DamagePopupBroadcaster.Broadcast( trace.HitPosition, finalDamage, monster.MaxHealth, IsCrit );
+			DamagePopupBroadcaster.Broadcast( hitPos, finalDamage, monster.MaxHealth, IsCrit );
 
-			PlayImpactSound( trace.HitPosition );
+			PlayImpactSound( hitPos );
 
 			GameObject.Destroy();
 			return;
 		}
 
-		var boss = trace.GameObject.Components.Get<Boss>();
+		var boss = hitObject.Components.Get<Boss>();
 		if ( boss != null )
 		{
 			float triangleMult = CombatTriangle.GetDealMultiplier( CombatStyle.Magic, boss.CombatStyle );
@@ -114,13 +159,13 @@ public sealed class SpellProjectile : Component
 			if ( finalDamage < 1 ) finalDamage = 1;
 
 			boss.TakeDamage( finalDamage, Shooter );
-			DamagePopupBroadcaster.Broadcast( trace.HitPosition, finalDamage, boss.MaxHealth, IsCrit );
-			PlayImpactSound( trace.HitPosition );
+			DamagePopupBroadcaster.Broadcast( hitPos, finalDamage, boss.MaxHealth, IsCrit );
+			PlayImpactSound( hitPos );
 			GameObject.Destroy();
 			return;
 		}
 
-		PlayImpactSound( trace.HitPosition );
+		PlayImpactSound( hitPos );
 		GameObject.Destroy();
 	}
 

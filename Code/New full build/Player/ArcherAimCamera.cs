@@ -24,6 +24,10 @@ public sealed class ArcherAimCamera : Component
 
 	public static ArcherAimCamera Local { get; private set; }
 
+	public static Vector3 RenderedCamPos { get; private set; }
+	public static Rotation RenderedCamRot { get; private set; }
+	public static bool HasRenderedCamera { get; private set; }
+
 	float _lastAimActivityTime = -100f;
 	float _currentRight = 0f;
 	float _currentForward = 0f;
@@ -104,6 +108,7 @@ public sealed class ArcherAimCamera : Component
 			_currentYawOffset = 0f;
 			_currentPitchOffset = 0f;
 			_currentRollOffset = 0f;
+			HasRenderedCamera = false;
 			return;
 		}
 
@@ -150,5 +155,9 @@ public sealed class ArcherAimCamera : Component
 		PlayerCamera.WorldRotation = angles.ToRotation();
 
 		PlayerCamera.FieldOfView = _currentFov;
+
+		RenderedCamPos = PlayerCamera.WorldPosition;
+		RenderedCamRot = PlayerCamera.WorldRotation;
+		HasRenderedCamera = true;
 	}
 }

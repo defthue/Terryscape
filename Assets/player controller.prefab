@@ -37,6 +37,7 @@
         "BodyMass": 500,
         "BodyRadius": 16,
         "BrakePower": 1,
+        "CameraCollisionIgnore": "",
         "CameraOffset": "250,0,0",
         "ColliderObject": {
           "_type": "gameobject",
@@ -1173,7 +1174,7 @@
             "OnComponentFixedUpdate": null,
             "OnComponentStart": null,
             "OnComponentUpdate": null,
-            "PanelSize": "1200,1200",
+            "PanelSize": "1500,1200",
             "RenderOptions": {
               "GameLayer": true,
               "OverlayLayer": false,
@@ -1234,7 +1235,7 @@
             "OnComponentFixedUpdate": null,
             "OnComponentStart": null,
             "OnComponentUpdate": null,
-            "PanelSize": "400,200",
+            "PanelSize": "1500,200",
             "RenderOptions": {
               "GameLayer": true,
               "OverlayLayer": false,
