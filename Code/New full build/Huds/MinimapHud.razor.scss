@@ -197,6 +197,23 @@ root {
 	background: #3a98b0;
 }
 
+.marker-tracked {
+	width: 20px;
+	height: 20px;
+	margin-top: -10px;
+	margin-left: -10px;
+	background: #f0c040;
+	border: 2px solid #1a150e;
+	box-shadow: 0 0 10px #f0c040ee, 0 0 18px #f0c04099;
+
+	.marker-glyph {
+		color: #1a150e;
+		text-shadow: none;
+		font-size: 14px;
+		line-height: 14px;
+	}
+}
+
 .marker-monster {
 	width: 12px;
 	height: 12px;

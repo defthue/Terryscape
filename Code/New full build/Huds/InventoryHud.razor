@@ -11,11 +11,12 @@
 		<div class="ui-backdrop" onclick="@OnBackdropClick"></div>
 	}
 
-	<div class="log-panel @(IsUIOpen ? "ui-open" : "") @(IsChatOpen ? "chat-open" : "")">
+	<div class="log-panel @(IsUIOpen ? "ui-open" : "") @(IsChatOpen ? "chat-open" : "") @(HudState.ChatCollapsed ? "collapsed" : "")">
 		<div class="log-tabs">
 			<div class="log-tab @(LogTab == 0 ? "active" : "")" onclick="@(() => LogTab = 0)">All</div>
 			<div class="log-tab @(LogTab == 1 ? "active" : "")" onclick="@(() => LogTab = 1)">Log</div>
 			<div class="log-tab @(LogTab == 2 ? "active" : "")" onclick="@(() => LogTab = 2)">Chat</div>
+			<div class="log-collapse" onclick="@(() => ToggleChatCollapse())">@(HudState.ChatCollapsed ? "▲" : "▼")</div>
 		</div>
 
 		@if ( LogTab == 0 )
@@ -152,6 +153,13 @@
 								<div class="item-icon" style="background: @color;">
 									<img class="item-icon-img" src="@GetIconPath( inst.ItemId )" />
 								</div>
+								@if ( def != null && def.Type == ItemType.RangedWeapon )
+								{
+									<div class="ammo-badge @(EquippedAmmoCount > 0 ? "" : "empty")">
+										<span class="ammo-glyph">🏹</span>
+										<span class="ammo-num">@FmtAmmo( EquippedAmmoCount )</span>
+									</div>
+								}
 								@if ( inst.IsEnchanted || ( inst.IsSocketable && inst.SocketsUsed > 0 ) )
 								{
 									<div class="item-enchant">@inst.GetShortStat()</div>
@@ -224,7 +232,7 @@
 				<div class="skills-list">
 					@foreach ( var skill in SkillEntries )
 					{
-						<div class="skill-row @(skill.Level >= 50 ? "maxed" : "")">
+						<div class="skill-row @(skill.Level >= 50 ? "maxed" : "")" onclick="@(() => JournalStation.OpenToSkill( skill.Skill ))">
 							<div class="skill-level">@skill.Level</div>
 							<div class="skill-icon-box">@skill.Icon</div>
 							<div class="skill-name">@skill.Name</div>
@@ -465,6 +473,18 @@
 		if ( HudState.InventoryCollapsed )
 			ActiveTab = 1;
 	}
+
+	void ToggleChatCollapse()
+	{
+		HudState.ChatCollapsed = !HudState.ChatCollapsed;
+	}
+
+	string FmtAmmo( int n )
+	{
+		if ( n >= 1000000 ) return $"{n / 1000000}m";
+		if ( n >= 10000 ) return $"{n / 1000}k";
+		return n.ToString();
+	}
 	int LogTab { get; set; } = 0;
 
 	public static bool GearTabExpanded { get; private set; }
@@ -624,6 +644,8 @@
 
 	int TotalSlots { get; set; } = 30;
 
+	int EquippedAmmoCount { get; set; } = 0;
+
 	public class SlotData
 	{
 		public bool IsStack;
@@ -644,6 +666,7 @@
 
 	public class SkillDisplay
 	{
+		public SkillType Skill;
 		public string Name;
 		public string Icon;
 		public string CssClass;
@@ -1087,6 +1110,7 @@
 		if ( inventory != null )
 		{
 			TotalSlots = inventory.MaxSlots;
+			EquippedAmmoCount = inventory.GetEquippedAmmoCount();
 
 			var rawSlots = inventory.GetSlots();
 			for ( int i = 0; i < inventory.MaxSlots; i++ )
@@ -1224,6 +1248,7 @@
 
 				SkillEntries.Add( new SkillDisplay
 				{
+					Skill = skill,
 					Name = skill.ToString(),
 					Icon = GetSkillIcon( skill ),
 					CssClass = GetSkillCss( skill ),
@@ -1384,8 +1409,12 @@
 		if ( GameLog.FocusAllTabRequested )
 		{
 			LogTab = 0;
+			HudState.ChatCollapsed = false;
 			GameLog.ConsumeFocusAllTabRequest();
 		}
+
+		if ( IsChatOpen )
+			HudState.ChatCollapsed = false;
 
 		StateHasChanged();
 
@@ -1487,7 +1516,9 @@
 			ShowUnequipConfirm,
 			(int)CursorXPercent,
 			(int)CursorYPercent,
-			HudState.InventoryCollapsed
+			HudState.InventoryCollapsed,
+			HudState.ChatCollapsed,
+			EquippedAmmoCount
 		).GetHashCode();
 	}
 }

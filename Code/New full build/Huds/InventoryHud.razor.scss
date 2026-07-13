@@ -35,6 +35,7 @@ root {
 	flex-direction: column;
 	pointer-events: none;
 	z-index: 10;
+	transition: height 0.18s ease;
 
 	&.ui-open {
 		pointer-events: all;
@@ -49,11 +50,51 @@ root {
 	}
 }
 
+.log-panel.collapsed {
+	height: 48px;
+	overflow: hidden;
+}
+
+.log-panel.collapsed .chat-entries {
+	display: none;
+}
+
+.log-panel.collapsed .chat-input-row {
+	display: none;
+}
+
 .log-tabs {
 	display: flex;
 	flex-direction: row;
+	align-items: center;
 	border-bottom: 1px solid #5a4a3066;
 	flex-shrink: 0;
+}
+
+.log-collapse {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	margin-left: auto;
+	margin-right: 8px;
+	background: #1a150ecc;
+	border: 1px solid #c9a84c66;
+	border-radius: 4px;
+	color: #c9a84c;
+	font-size: 16px;
+	cursor: pointer;
+	pointer-events: all;
+	flex-shrink: 0;
+	transition: all 0.15s ease;
+
+	&:hover {
+		border-color: #c9a84c;
+		background: #c9a84c;
+		color: #1a150e;
+		box-shadow: 0 0 8px #c9a84c66;
+	}
 }
 
 .log-tab {
@@ -656,6 +697,45 @@ root {
 		-1px  0   0 #000;
 	white-space: nowrap;
 	overflow: hidden;
+}
+
+.ammo-badge {
+	position: absolute;
+	bottom: 2px;
+	left: 2px;
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	gap: 2px;
+	padding: 1px 4px;
+	background: #1a150e;
+	border: 1px solid #c9a84c66;
+	border-radius: 6px;
+	z-index: 6;
+	pointer-events: none;
+
+	&.empty {
+		.ammo-num {
+			color: #c86464;
+		}
+	}
+}
+
+.ammo-glyph {
+	font-size: 10px;
+	line-height: 1;
+}
+
+.ammo-num {
+	font-size: 12px;
+	font-weight: 700;
+	color: #c9a84c;
+	line-height: 1;
+	text-shadow:
+		-1px -1px 0 #000,
+		 1px -1px 0 #000,
+		 1px  1px 0 #000,
+		-1px  1px 0 #000;
 }
 
 .item-tooltip {

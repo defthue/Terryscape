@@ -1,5 +1,6 @@
 @using Sandbox;
 @using Sandbox.UI;
+@using System;
 @using System.Collections.Generic;
 @inherits PanelComponent
 
@@ -164,6 +165,8 @@
 		MinimapMarkers.Clear();
 		FullmapMarkers.Clear();
 
+		QuestTracker.ValidateTracked( Scene );
+
 		var player = PlayerHelper.GetLocalPlayer();
 		if ( player == null )
 			return;
@@ -279,6 +282,22 @@
 			AddMarker( FullmapMarkers, fx * 100f, fy * 100f, "marker-player", null, playerZ );
 			playerZ++;
 		}
+
+		// Tracked quest pin. Drawn above everything and always shown (regardless of
+		// discovery or ShouldShowMarker) so players can navigate to a quest NPC they
+		// haven't found yet. On the minimap it clamps to the edge as a directional hint.
+		var trackedTarget = QuestTracker.ResolveTarget( Scene );
+		if ( trackedTarget != null )
+		{
+			var trackedPos = trackedTarget.WorldPosition;
+			var (tu, tv) = WorldToUV( trackedPos );
+			FullmapMarkers.Add( new Marker { X = tu * 100f, Y = tv * 100f, CssClass = "marker-tracked", Glyph = "★", ZIndex = 5000 } );
+
+			var (tmx, tmy) = MinimapMarkerPosition( trackedPos, playerU, playerV );
+			tmx = Math.Clamp( tmx, 5f, 95f );
+			tmy = Math.Clamp( tmy, 5f, 95f );
+			MinimapMarkers.Add( new Marker { X = tmx, Y = tmy, CssClass = "marker-tracked", Glyph = "★", ZIndex = 5000 } );
+		}
 	}
 
 	protected override int BuildHash()
@@ -294,6 +313,6 @@
 
 		RebuildMarkers();
 
-		return ((int)(u * 10000f), (int)(v * 10000f), IsFullMapOpen, MinimapMarkers.Count, FullmapMarkers.Count).GetHashCode();
+		return ((int)(u * 10000f), (int)(v * 10000f), IsFullMapOpen, MinimapMarkers.Count, FullmapMarkers.Count, QuestTracker.TrackedQuestId ?? "").GetHashCode();
 	}
 }

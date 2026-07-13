@@ -95,6 +95,29 @@
 						}
 					</div>
 				</div>
+
+				@if ( ShowCraftAllConfirm && SelectedRecipe != null )
+				{
+					<div class="craft-confirm-overlay">
+						<div class="craft-confirm-modal">
+							<div class="craft-confirm-title">Craft All?</div>
+							<div class="craft-confirm-line">Craft @(CraftAllCount * SelectedRecipe.OutputAmount)x @OutputName( SelectedRecipe )</div>
+							<div class="craft-confirm-cost-label">Cost</div>
+							<div class="craft-confirm-cost-list">
+								@foreach ( var ing in SelectedRecipe.Ingredients )
+								{
+									var cdef = ItemDatabase.Get( ing.Item );
+									string cname = cdef != null ? cdef.Name : ing.Item.ToString();
+									<div class="craft-confirm-cost-row">@(ing.Amount * CraftAllCount)x @cname</div>
+								}
+							</div>
+							<div class="craft-confirm-buttons">
+								<div class="craft-confirm-btn confirm" onclick="@(() => ConfirmCraftAll())">Confirm</div>
+								<div class="craft-confirm-btn cancel" onclick="@(() => CancelCraftAll())">Cancel</div>
+							</div>
+						</div>
+					</div>
+				}
 			</div>
 		</div>
 	}
@@ -109,6 +132,9 @@
 	RecipeDefinition SelectedRecipe { get; set; }
 	Inventory PlayerInventory { get; set; }
 	Skills PlayerSkills { get; set; }
+
+	bool ShowCraftAllConfirm { get; set; }
+	int CraftAllCount { get; set; }
 
 	bool MeetsSkillReq
 	{
@@ -150,6 +176,33 @@
 	void SelectRecipe( RecipeDefinition recipe )
 	{
 		SelectedRecipe = recipe;
+		ShowCraftAllConfirm = false;
+	}
+
+	string OutputName( RecipeDefinition recipe )
+	{
+		var def = ItemDatabase.Get( recipe.OutputItem );
+		return def != null ? def.Name : recipe.OutputItem.ToString();
+	}
+
+	int ComputeCraftAllCount( RecipeDefinition recipe )
+	{
+		if ( recipe == null || PlayerInventory == null )
+			return 0;
+
+		int min = int.MaxValue;
+		foreach ( var ing in recipe.Ingredients )
+		{
+			if ( ing.Amount <= 0 )
+				continue;
+
+			int have = PlayerInventory.GetItemCount( ing.Item );
+			int possible = have / ing.Amount;
+			if ( possible < min )
+				min = possible;
+		}
+
+		return min == int.MaxValue ? 0 : min;
 	}
 
 	void DoCraft()
@@ -177,12 +230,39 @@
 		if ( !CanCraft( SelectedRecipe ) )
 			return;
 
+		int count = ComputeCraftAllCount( SelectedRecipe );
+		if ( count <= 0 )
+		{
+			CraftingStation.ActiveStation.TryCraftAll( SelectedRecipe.Id );
+			return;
+		}
+
+		CraftAllCount = count;
+		ShowCraftAllConfirm = true;
+	}
+
+	void ConfirmCraftAll()
+	{
+		ShowCraftAllConfirm = false;
+
+		if ( CraftingStation.ActiveStation == null || SelectedRecipe == null )
+			return;
+
+		if ( !CanCraft( SelectedRecipe ) )
+			return;
+
 		CraftingStation.ActiveStation.TryCraftAll( SelectedRecipe.Id );
+	}
+
+	void CancelCraftAll()
+	{
+		ShowCraftAllConfirm = false;
 	}
 
 	void CloseCrafting()
 	{
 		SelectedRecipe = null;
+		ShowCraftAllConfirm = false;
 		CraftingStation.Close();
 	}
 
@@ -229,7 +309,10 @@
 			PlayerSkills = PlayerHelper.GetSkills( PlayerHelper.GetLocalPlayer() );
 
 			if ( SelectedRecipe != null && !Recipes.Contains( SelectedRecipe ) )
+			{
 				SelectedRecipe = null;
+				ShowCraftAllConfirm = false;
+			}
 		}
 		else
 		{
@@ -237,6 +320,7 @@
 				Recipes.Clear();
 
 			SelectedRecipe = null;
+			ShowCraftAllConfirm = false;
 		}
 
 		int ingredientHash = 0;
@@ -252,7 +336,9 @@
 			Recipes.Count,
 			SelectedRecipe?.Id ?? "",
 			ingredientHash,
-			MeetsSkillReq
+			MeetsSkillReq,
+			ShowCraftAllConfirm,
+			CraftAllCount
 		).GetHashCode();
 	}
 }

@@ -1,5 +1,6 @@
 @using Sandbox;
 @using Sandbox.UI;
+@using System;
 @using System.Linq;
 @using System.Collections.Generic;
 @inherits PanelComponent
@@ -9,149 +10,251 @@
 	{
 		<div class="shop-backdrop" onclick="@(() => CloseJournal())"></div>
 		<div class="crafting-overlay">
-			<div class="crafting-popup" style="width: 700px; height: 600px;">
+			<div class="guide-popup">
 				<div class="crafting-header">
-					<div class="crafting-title">Quest Journal</div>
+					<div class="crafting-title">Guidebook</div>
 					<div class="crafting-close" onclick="@(() => CloseJournal())">✕</div>
 				</div>
 
-				<div class="tab-row">
-					<div class="tab-button @(Tab == 0 ? "active" : "")" onclick="@(() => SetTab(0))">
-						Available: @AvailableQuests.Count
-					</div>
-					<div class="tab-button @(Tab == 1 ? "active" : "")" onclick="@(() => SetTab(1))">
-						Completed: @CompletedQuests.Count
-					</div>
-				</div>
+				<div class="guide-body">
+					<div class="guide-sidebar">
+						<div class="guide-section-label">QUESTS</div>
+						<div class="guide-nav @(Page == 0 ? "active" : "")" onclick="@(() => SetPage( 0 ))">
+							<div class="guide-nav-icon">📜</div>
+							<div class="guide-nav-name">Journal</div>
+						</div>
 
-				@if ( CategoryList.Count > 0 )
-				{
-					<div class="category-row">
-						@foreach ( var cat in CategoryList )
+						<div class="guide-section-label">SKILLS</div>
+						@foreach ( var s in SidebarSkills )
 						{
-							int count = CountInCategory( cat );
-
-							<div class="category-button @(SelectedCategory == cat ? "active" : "")"
-								 onclick="@(() => SelectCategory( cat ))">
-								@cat: @count
+							<div class="guide-nav @(Page == (int)s.Skill ? "active" : "")" onclick="@(() => SetPage( (int)s.Skill ))">
+								<div class="guide-nav-icon">@s.Icon</div>
+								<div class="guide-nav-name">@s.Name</div>
+								<div class="guide-nav-level">@s.Level</div>
 							</div>
 						}
 					</div>
-				}
 
-				<div class="journal-body">
-					@{ var visible = GetVisibleQuests(); }
-					@if ( visible.Count == 0 )
-					{
-						<div class="no-recipes">
-							@if ( Tab == 0 )
+					<div class="guide-content">
+						@if ( Page == 0 )
+						{
+							@if ( !string.IsNullOrEmpty( QuestTracker.TrackedQuestId ) )
 							{
-								<text>No active quests in this category.</text>
+								<div class="tracking-strip">
+									<div class="tracking-label">Tracking: @GetTrackingLabel()</div>
+									<div class="tracking-clear" onclick="@(() => UntrackQuest())">✕</div>
+								</div>
 							}
-							else
-							{
-								<text>No completed quests in this category.</text>
-							}
-						</div>
-					}
 
-					@foreach ( var quest in visible )
-					{
-						bool expanded = ExpandedQuestId == quest.QuestId;
-
-						<div class="quest-row @(expanded ? "expanded" : "")">
-							<div class="quest-header" onclick="@(() => ToggleExpanded( quest.QuestId ))">
-								<div class="quest-arrow">@(expanded ? "▼" : "▶")</div>
-								<div class="quest-title-line">
-									<div class="quest-title">@quest.GetJournalTitle()</div>
-									<div class="quest-npc">@quest.NpcName</div>
+							<div class="tab-row">
+								<div class="tab-button @(Tab == 0 ? "active" : "")" onclick="@(() => SetTab( 0 ))">
+									Available: @AvailableQuests.Count
+								</div>
+								<div class="tab-button @(Tab == 1 ? "active" : "")" onclick="@(() => SetTab( 1 ))">
+									Completed: @CompletedQuests.Count
 								</div>
 							</div>
 
-							@if ( expanded )
+							@if ( CategoryList.Count > 0 )
 							{
-								<div class="quest-details">
-									@{ var requiredItems = quest.GetRequiredItems(); }
-									@if ( requiredItems.Count > 0 )
+								<div class="category-row">
+									@foreach ( var cat in CategoryList )
 									{
-										<div class="detail-section-label">Required Items</div>
-										@foreach ( var req in requiredItems )
-										{
-											var name = GetItemName( req.Item );
-											var have = GetPlayerItemCount( req.Item );
-											bool met = have >= req.Amount;
-											bool isCompleted = Tab == 1;
+										int count = CountInCategory( cat );
 
-											<div class="requirement-row @(met || isCompleted ? "met" : "unmet")">
-												<div class="req-name">@name</div>
-												<div class="req-count">@(isCompleted ? req.Amount : have) / @req.Amount</div>
-											</div>
-										}
-									}
-
-									@{ var requiredKills = quest.GetRequiredKills(); }
-									@if ( requiredKills.Count > 0 )
-									{
-										<div class="detail-section-label">Required Kills</div>
-										@foreach ( var req in requiredKills )
-										{
-											var have = GetPlayerKillCount( req.MonsterType );
-											bool met = have >= req.Amount;
-											bool isCompleted = Tab == 1;
-
-											<div class="requirement-row @(met || isCompleted ? "met" : "unmet")">
-												<div class="req-name">@req.MonsterType</div>
-												<div class="req-count">@(isCompleted ? req.Amount : have) / @req.Amount</div>
-											</div>
-										}
-									}
-
-									@{
-										var rewardItems = quest.GetRewardItems();
-										var recipeNames = quest.GetUnlockedRecipeNames();
-									}
-									@if ( rewardItems.Count > 0 || recipeNames.Count > 0 )
-									{
-										<div class="detail-section-label">Rewards</div>
-
-										@if ( rewardItems.Count > 0 )
-										{
-											<div class="reward-icon-row">
-												@foreach ( var reward in rewardItems )
-												{
-													var name = GetItemName( reward.Item );
-
-													<div class="reward-icon-slot">
-														<div class="reward-icon">
-															<img class="reward-icon-img" src="@GetIconPath( reward.Item )" />
-														</div>
-														@if ( reward.Amount > 1 )
-														{
-															<div class="reward-count">@reward.Amount</div>
-														}
-														<div class="reward-tooltip">@name x@(reward.Amount)</div>
-													</div>
-												}
-											</div>
-										}
-
-										@if ( recipeNames.Count > 0 )
-										{
-											<div class="recipe-list">
-												@foreach ( var recipeName in recipeNames )
-												{
-													<div class="recipe-row">
-														<span class="recipe-icon">📜</span>
-														<span class="recipe-name">Recipe: @recipeName</span>
-													</div>
-												}
-											</div>
-										}
+										<div class="category-button @(SelectedCategory == cat ? "active" : "")"
+											 onclick="@(() => SelectCategory( cat ))">
+											@cat: @count
+										</div>
 									}
 								</div>
 							}
-						</div>
-					}
+
+							<div class="journal-body">
+								@{ var visible = GetVisibleQuests(); }
+								@if ( visible.Count == 0 )
+								{
+									<div class="no-recipes">
+										@if ( Tab == 0 )
+										{
+											<text>No active quests in this category.</text>
+										}
+										else
+										{
+											<text>No completed quests in this category.</text>
+										}
+									</div>
+								}
+
+								@foreach ( var quest in visible )
+								{
+									bool expanded = ExpandedQuestId == quest.QuestId;
+
+									<div class="quest-row @(expanded ? "expanded" : "")">
+										<div class="quest-header" onclick="@(() => ToggleExpanded( quest.QuestId ))">
+											<div class="quest-arrow">@(expanded ? "▼" : "▶")</div>
+											<div class="quest-title-line">
+												<div class="quest-title">@quest.GetJournalTitle()</div>
+												<div class="quest-npc">@quest.NpcName</div>
+											</div>
+										</div>
+
+										@if ( expanded )
+										{
+											<div class="quest-details">
+												<div class="quest-track-row">
+													@if ( QuestTracker.IsTracking( quest.QuestId ) )
+													{
+														<div class="track-button tracking" onclick="@(() => UntrackQuest())">Tracking ✓</div>
+													}
+													else
+													{
+														<div class="track-button" onclick="@(() => TrackQuest( quest.QuestId ))">Track</div>
+													}
+												</div>
+
+												@{ var requiredItems = quest.GetRequiredItems(); }
+												@if ( requiredItems.Count > 0 )
+												{
+													<div class="detail-section-label">Required Items</div>
+													@foreach ( var req in requiredItems )
+													{
+														var name = GetItemName( req.Item );
+														var have = GetPlayerItemCount( req.Item );
+														bool met = have >= req.Amount;
+														bool isCompleted = Tab == 1;
+
+														<div class="requirement-row @(met || isCompleted ? "met" : "unmet")">
+															<div class="req-name">@name</div>
+															<div class="req-count">@(isCompleted ? req.Amount : have) / @req.Amount</div>
+														</div>
+													}
+												}
+
+												@{ var requiredKills = quest.GetRequiredKills(); }
+												@if ( requiredKills.Count > 0 )
+												{
+													<div class="detail-section-label">Required Kills</div>
+													@foreach ( var req in requiredKills )
+													{
+														var have = GetPlayerKillCount( req.MonsterType );
+														bool met = have >= req.Amount;
+														bool isCompleted = Tab == 1;
+
+														<div class="requirement-row @(met || isCompleted ? "met" : "unmet")">
+															<div class="req-name">@req.MonsterType</div>
+															<div class="req-count">@(isCompleted ? req.Amount : have) / @req.Amount</div>
+														</div>
+													}
+												}
+
+												@{
+													var rewardItems = quest.GetRewardItems();
+													var recipeNames = quest.GetUnlockedRecipeNames();
+												}
+												@if ( rewardItems.Count > 0 || recipeNames.Count > 0 )
+												{
+													<div class="detail-section-label">Rewards</div>
+
+													@if ( rewardItems.Count > 0 )
+													{
+														<div class="reward-icon-row">
+															@foreach ( var reward in rewardItems )
+															{
+																var name = GetItemName( reward.Item );
+																var label = reward.Amount > 1 ? $"{name} x{reward.Amount}" : name;
+
+																<div class="reward-chip">
+																	<div class="reward-icon">
+																		<img class="reward-icon-img" src="@GetIconPath( reward.Item )" />
+																	</div>
+																	<div class="reward-chip-name">@label</div>
+																</div>
+															}
+														</div>
+													}
+
+													@if ( recipeNames.Count > 0 )
+													{
+														<div class="recipe-list">
+															@foreach ( var recipeName in recipeNames )
+															{
+																<div class="recipe-row">
+																	<span class="recipe-icon">📜</span>
+																	<span class="recipe-name">Recipe: @recipeName</span>
+																</div>
+															}
+														</div>
+													}
+												}
+											</div>
+										}
+									</div>
+								}
+							</div>
+						}
+						else
+						{
+							<div class="skill-page-header">
+								<div class="skill-header-icon">@GetSkillIcon( CurrentSkill )</div>
+								<div class="skill-header-info">
+									<div class="skill-header-top">
+										<div class="skill-header-name">@CurrentSkill.ToString()</div>
+										<div class="skill-header-level">Level @SkillHeaderLevel</div>
+									</div>
+									<div class="skill-header-xp-row">
+										<div class="skill-xp-bar">
+											<div class="skill-xp-fill" style="width: @SkillXpPercent%;"></div>
+										</div>
+										<div class="skill-xp-text">@SkillXp / @SkillXpRequired XP</div>
+									</div>
+								</div>
+							</div>
+
+							<div class="skill-scroll">
+								@if ( SkillRows.Count == 0 )
+								{
+									<div class="no-recipes">No unlocks to show for this skill yet.</div>
+								}
+
+								@foreach ( var row in SkillRows )
+								{
+									<div class="unlock-row @UnlockRowClass( row )">
+										<div class="unlock-level">@row.Level</div>
+										<div class="unlock-mid">
+											<div class="unlock-name">@row.Name</div>
+											@if ( !string.IsNullOrEmpty( row.Detail ) )
+											{
+												<div class="unlock-detail">@row.Detail</div>
+											}
+										</div>
+										<div class="unlock-right">
+											@if ( row.RowKind == 2 )
+											{
+												@if ( QuestTracker.IsTracking( row.QuestId ) )
+												{
+													<div class="locate-button tracking" onclick="@(() => UntrackQuest())">Tracking ✓</div>
+												}
+												else
+												{
+													<div class="locate-button" onclick="@(() => TrackQuest( row.QuestId ))">Locate</div>
+												}
+												<div class="locate-quest">@row.QuestLabel</div>
+											}
+											else if ( row.RowKind == 1 )
+											{
+												<div class="unlock-lock">Lv @row.CurrentLevel/@row.Level</div>
+											}
+											else
+											{
+												<div class="unlock-check">✓</div>
+											}
+										</div>
+									</div>
+								}
+							</div>
+						}
+					</div>
 				</div>
 			</div>
 		</div>
@@ -162,7 +265,15 @@
 {
 	const string UncategorizedLabel = "Uncategorized";
 
+	static readonly SkillType[] SkillOrder =
+	{
+		SkillType.Woodcutting, SkillType.Mining, SkillType.Enchanting,
+		SkillType.Smithing, SkillType.Crafting, SkillType.Attack,
+		SkillType.Defence, SkillType.Archery, SkillType.Magic
+	};
+
 	bool IsOpen => JournalStation.IsOpen;
+	int Page => JournalStation.PageIndex;
 
 	int Tab { get; set; } = 0;
 	string SelectedCategory { get; set; } = "";
@@ -173,6 +284,42 @@
 	List<NpcInteract> AvailableQuests { get; set; } = new();
 	List<NpcInteract> CompletedQuests { get; set; } = new();
 	List<string> CategoryList { get; set; } = new();
+
+	List<SidebarSkill> SidebarSkills { get; set; } = new();
+
+	SkillType CurrentSkill { get; set; } = SkillType.Woodcutting;
+	List<UnlockRow> SkillRows { get; set; } = new();
+
+	int SkillHeaderLevel { get; set; } = 1;
+	int SkillXp { get; set; } = 0;
+	int SkillXpRequired { get; set; } = 1;
+	int SkillXpPercent { get; set; } = 0;
+
+	class SidebarSkill
+	{
+		public SkillType Skill;
+		public string Name;
+		public string Icon;
+		public int Level;
+	}
+
+	class UnlockRow
+	{
+		public int Level;
+		public string Name;
+		public string Detail = "";
+		public int RowKind;
+		public int CurrentLevel;
+		public NpcInteract Quest;
+		public string QuestId = "";
+		public string QuestLabel = "";
+	}
+
+	void SetPage( int page )
+	{
+		JournalStation.PageIndex = page;
+		ExpandedQuestId = "";
+	}
 
 	void SetTab( int tab )
 	{
@@ -199,6 +346,32 @@
 		JournalStation.Close();
 	}
 
+	void TrackQuest( string questId )
+	{
+		QuestTracker.Track( questId );
+	}
+
+	void UntrackQuest()
+	{
+		QuestTracker.Untrack();
+	}
+
+	string GetTrackingLabel()
+	{
+		return QuestTracker.GetResolvedLabel( Scene );
+	}
+
+	string UnlockRowClass( UnlockRow row )
+	{
+		if ( row.RowKind == 2 )
+			return "gated";
+
+		if ( row.RowKind == 1 )
+			return "locked";
+
+		return "unlocked";
+	}
+
 	int GetPlayerItemCount( ItemId id )
 	{
 		return PlayerInventory != null ? PlayerInventory.GetItemCount( id ) : 0;
@@ -221,6 +394,36 @@
 			return "";
 
 		return $"/ItemIcons/{id}.vtex";
+	}
+
+	string GetSkillIcon( SkillType skill )
+	{
+		switch ( skill )
+		{
+			case SkillType.Woodcutting: return "🪓";
+			case SkillType.Mining: return "⛏";
+			case SkillType.Enchanting: return "🔮";
+			case SkillType.Smithing: return "🔨";
+			case SkillType.Crafting: return "🧵";
+			case SkillType.Attack: return "⚔️";
+			case SkillType.Defence: return "🛡";
+			case SkillType.Archery: return "🏹";
+			case SkillType.Magic: return "✨";
+			default: return "?";
+		}
+	}
+
+	string GetStationName( StationType station )
+	{
+		switch ( station )
+		{
+			case StationType.Anvil: return "Anvil";
+			case StationType.Furnace: return "Furnace";
+			case StationType.Workbench: return "Workbench";
+			case StationType.AlchemyTable: return "Alchemy Table";
+			case StationType.EnchantingAltar: return "Enchanting Altar";
+			default: return station.ToString();
+		}
 	}
 
 	// Returns the category for a quest, mapping empty strings to the Uncategorized
@@ -353,8 +556,273 @@
 		}
 	}
 
-	// Force a re-render every frame while the journal is open so progress on
-	// requirements (kill counts, item counts) updates live.
+	void RebuildSidebar()
+	{
+		SidebarSkills.Clear();
+
+		var skills = PlayerHelper.GetSkills( PlayerHelper.GetLocalPlayer() );
+
+		foreach ( var skill in SkillOrder )
+		{
+			SidebarSkills.Add( new SidebarSkill
+			{
+				Skill = skill,
+				Name = skill.ToString(),
+				Icon = GetSkillIcon( skill ),
+				Level = skills != null ? skills.GetLevel( skill ) : 1
+			} );
+		}
+	}
+
+	void BuildSkillHeader( SkillType skill )
+	{
+		var skills = PlayerHelper.GetSkills( PlayerHelper.GetLocalPlayer() );
+		if ( skills == null )
+		{
+			SkillHeaderLevel = 1;
+			SkillXp = 0;
+			SkillXpRequired = 1;
+			SkillXpPercent = 0;
+			return;
+		}
+
+		SkillHeaderLevel = skills.GetLevel( skill );
+		SkillXp = skills.GetXp( skill );
+		SkillXpRequired = skills.GetXpRequired( skill );
+		SkillXpPercent = SkillXpRequired > 0 ? (int)( ( (float)SkillXp / SkillXpRequired ) * 100f ) : 0;
+	}
+
+	// Maps every quest-gated recipe id to the NpcInteract that unlocks it. Built fresh
+	// per page so it always reflects live quest state.
+	Dictionary<string, NpcInteract> BuildQuestGateMap()
+	{
+		var map = new Dictionary<string, NpcInteract>();
+
+		foreach ( var npc in Scene.GetAllComponents<NpcInteract>() )
+		{
+			if ( string.IsNullOrEmpty( npc.UnlocksRecipe ) )
+				continue;
+
+			foreach ( var raw in npc.UnlocksRecipe.Split( ',' ) )
+			{
+				var id = raw.Trim();
+				if ( string.IsNullOrEmpty( id ) )
+					continue;
+
+				if ( !map.ContainsKey( id ) )
+					map[id] = npc;
+			}
+		}
+
+		return map;
+	}
+
+	// Detects hatchet/pickaxe items the same way the gameplay code does
+	// (Inventory.IsWeaponHatchet / IsWeaponPickaxe): Tool type plus name.
+	bool IsHatchetItem( ItemId id )
+	{
+		var def = ItemDatabase.Get( id );
+		return def != null && def.Type == ItemType.Tool && def.Name.Contains( "Hatchet" );
+	}
+
+	bool IsPickaxeItem( ItemId id )
+	{
+		var def = ItemDatabase.Get( id );
+		return def != null && def.Type == ItemType.Tool && def.Name.Contains( "Pickaxe" );
+	}
+
+	RecipeDefinition FindRecipeByOutput( ItemId id )
+	{
+		foreach ( var recipe in RecipeDatabase.GetAll() )
+		{
+			if ( recipe.OutputItem == id )
+				return recipe;
+		}
+
+		return null;
+	}
+
+	// Applies the quest-locked treatment (Locate button + resolved quest label) to a
+	// row when the given recipe is quest-gated and not yet unlocked. Returns true when
+	// a gate was applied so callers can decide the fallback (level lock etc.).
+	bool TryApplyQuestGate( UnlockRow row, RecipeDefinition recipe, Dictionary<string, NpcInteract> questGate )
+	{
+		if ( recipe == null )
+			return false;
+
+		if ( !questGate.TryGetValue( recipe.Id, out var quest ) || quest == null )
+			return false;
+
+		if ( PlayerInventory != null && PlayerInventory.IsRecipeUnlocked( recipe.Id ) )
+			return false;
+
+		row.RowKind = 2;
+		row.Quest = quest;
+		row.QuestId = quest.QuestId;
+
+		var resolved = QuestTracker.ResolveChain( Scene, quest );
+		if ( resolved != null && resolved.QuestId != quest.QuestId )
+			row.QuestLabel = $"First: {resolved.GetJournalTitle()}";
+		else
+			row.QuestLabel = quest.GetJournalTitle();
+
+		return true;
+	}
+
+	UnlockRow BuildRecipeRow( RecipeDefinition recipe, Dictionary<string, NpcInteract> questGate, int currentLevel )
+	{
+		var row = new UnlockRow
+		{
+			Level = recipe.LevelRequired,
+			Name = recipe.Name,
+			Detail = GetStationName( recipe.Station ),
+			CurrentLevel = currentLevel
+		};
+
+		if ( !TryApplyQuestGate( row, recipe, questGate ) )
+			row.RowKind = currentLevel >= recipe.LevelRequired ? 0 : 1;
+
+		return row;
+	}
+
+	List<UnlockRow> BuildSkillRows( SkillType skill )
+	{
+		var rows = new List<UnlockRow>();
+
+		var skills = PlayerHelper.GetSkills( PlayerHelper.GetLocalPlayer() );
+		int currentLevel = skills != null ? skills.GetLevel( skill ) : 1;
+
+		var questGate = BuildQuestGateMap();
+
+		bool isGathering = skill == SkillType.Woodcutting || skill == SkillType.Mining || skill == SkillType.Enchanting;
+		bool hasRecipes = skill == SkillType.Smithing || skill == SkillType.Crafting || skill == SkillType.Enchanting;
+		bool isEquipmentSkill = skill == SkillType.Attack || skill == SkillType.Defence || skill == SkillType.Archery || skill == SkillType.Magic;
+
+		if ( isGathering )
+		{
+			var byItem = new Dictionary<ItemId, ResourceNode>();
+			foreach ( var node in Scene.GetAllComponents<ResourceNode>() )
+			{
+				if ( node.GetSkillType() != skill )
+					continue;
+
+				if ( byItem.TryGetValue( node.ResourceItem, out var existing ) )
+				{
+					if ( node.RequiredLevel < existing.RequiredLevel )
+						byItem[node.ResourceItem] = node;
+				}
+				else
+				{
+					byItem[node.ResourceItem] = node;
+				}
+			}
+
+			foreach ( var kv in byItem )
+			{
+				var node = kv.Value;
+				rows.Add( new UnlockRow
+				{
+					Level = node.RequiredLevel,
+					Name = node.GetDisplayName(),
+					Detail = node.Tier - 1 > 0 ? $"needs tier {node.Tier - 1}+ tool" : "",
+					CurrentLevel = currentLevel,
+					RowKind = currentLevel >= node.RequiredLevel ? 0 : 1
+				} );
+			}
+
+			// Plus this skill's own tool recipes: hatchets on Woodcutting, pickaxes on
+			// Mining. These keep the full quest-gated treatment via BuildRecipeRow.
+			if ( skill == SkillType.Woodcutting || skill == SkillType.Mining )
+			{
+				foreach ( var recipe in RecipeDatabase.GetAll() )
+				{
+					bool matches = skill == SkillType.Woodcutting
+						? IsHatchetItem( recipe.OutputItem )
+						: IsPickaxeItem( recipe.OutputItem );
+
+					if ( !matches )
+						continue;
+
+					rows.Add( BuildRecipeRow( recipe, questGate, currentLevel ) );
+				}
+			}
+		}
+
+		if ( hasRecipes )
+		{
+			foreach ( var recipe in RecipeDatabase.GetAll() )
+			{
+				if ( recipe.SkillRequired != skill )
+					continue;
+
+				rows.Add( BuildRecipeRow( recipe, questGate, currentLevel ) );
+			}
+		}
+
+		if ( isEquipmentSkill )
+		{
+			// One row per equippable item. Items crafted from a quest-gated recipe get
+			// the same Locate treatment as the recipe rows on Smithing/Crafting.
+			foreach ( var def in ItemDatabase.GetAll() )
+			{
+				if ( def.SkillRequired != skill )
+					continue;
+
+				if ( def.Slot == EquipSlot.None )
+					continue;
+
+				var row = new UnlockRow
+				{
+					Level = def.LevelRequired,
+					Name = def.Name,
+					CurrentLevel = currentLevel
+				};
+
+				var recipe = FindRecipeByOutput( def.Id );
+				if ( TryApplyQuestGate( row, recipe, questGate ) )
+				{
+					// Quest lock is primary; surface the level requirement in the detail
+					// line when the item is also still level-locked.
+					if ( currentLevel < def.LevelRequired )
+						row.Detail = $"Lv {currentLevel}/{def.LevelRequired}";
+				}
+				else
+				{
+					row.RowKind = currentLevel >= def.LevelRequired ? 0 : 1;
+				}
+
+				rows.Add( row );
+			}
+
+			if ( skill == SkillType.Magic )
+			{
+				foreach ( var spell in SpellDatabase.GetAll() )
+				{
+					rows.Add( new UnlockRow
+					{
+						Level = spell.RequiredLevel,
+						Name = spell.Name,
+						Detail = "Spell",
+						CurrentLevel = currentLevel,
+						RowKind = currentLevel >= spell.RequiredLevel ? 0 : 1
+					} );
+				}
+			}
+		}
+
+		rows.Sort( ( a, b ) =>
+		{
+			int cmp = a.Level.CompareTo( b.Level );
+			if ( cmp != 0 )
+				return cmp;
+
+			return string.Compare( a.Name, b.Name, System.StringComparison.OrdinalIgnoreCase );
+		} );
+		return rows;
+	}
+
+	// Force a re-render every frame while the guidebook is open so live progress
+	// (requirement counts, tracked quest, xp) updates without input.
 	protected override void OnUpdate()
 	{
 		if ( IsOpen )
@@ -366,6 +834,18 @@
 		if ( IsOpen )
 		{
 			RefreshLists();
+			RebuildSidebar();
+
+			if ( Page >= 1 && Page <= 9 )
+			{
+				CurrentSkill = (SkillType)Page;
+				SkillRows = BuildSkillRows( CurrentSkill );
+				BuildSkillHeader( CurrentSkill );
+			}
+			else
+			{
+				SkillRows.Clear();
+			}
 		}
 
 		int reqHash = 0;
@@ -381,15 +861,16 @@
 			}
 		}
 
-		return (
-			IsOpen,
-			Tab,
-			SelectedCategory,
-			ExpandedQuestId,
-			AvailableQuests.Count,
-			CompletedQuests.Count,
-			CategoryList.Count,
-			reqHash
-		).GetHashCode();
+		int rowHash = 0;
+		foreach ( var r in SkillRows )
+			rowHash = HashCode.Combine( rowHash, r.Level, r.Name, r.RowKind, r.CurrentLevel, r.QuestId, QuestTracker.IsTracking( r.QuestId ) );
+
+		int sidebarHash = 0;
+		foreach ( var s in SidebarSkills )
+			sidebarHash = HashCode.Combine( sidebarHash, (int)s.Skill, s.Level );
+
+		int a = HashCode.Combine( IsOpen, Page, Tab, SelectedCategory, ExpandedQuestId, reqHash, rowHash, sidebarHash );
+		int b = HashCode.Combine( AvailableQuests.Count, CompletedQuests.Count, CategoryList.Count, QuestTracker.TrackedQuestId ?? "", SkillHeaderLevel, SkillXp, SkillXpRequired );
+		return HashCode.Combine( a, b );
 	}
 }

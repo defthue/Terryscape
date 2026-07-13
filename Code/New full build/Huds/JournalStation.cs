@@ -4,10 +4,26 @@ public sealed class JournalStation : Component
 {
 	public static bool IsOpen { get; private set; } = false;
 
+	// Which Guidebook page is active. 0 = Journal, 1..9 = skills in sidebar order
+	// (matches the SkillType enum values Woodcutting..Magic).
+	public static int PageIndex { get; set; } = 0;
+
 	public static void Open()
 	{
 		IsOpen = true;
 		Mouse.Visibility = MouseVisibility.Visible;
+	}
+
+	public static void OpenToJournal()
+	{
+		PageIndex = 0;
+		Open();
+	}
+
+	public static void OpenToSkill( SkillType skill )
+	{
+		PageIndex = (int)skill;
+		Open();
 	}
 
 	public static void Close()
