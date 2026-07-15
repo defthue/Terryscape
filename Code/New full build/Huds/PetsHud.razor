@@ -1,5 +1,6 @@
 @using Sandbox;
 @using Sandbox.UI;
+@using System;
 @using System.Collections.Generic;
 @inherits PanelComponent
 
@@ -14,48 +15,79 @@
 					<div class="crafting-close" onclick="@(() => Close())">✕</div>
 				</div>
 
-				<div class="pet-body">
-					<div class="pet-slot-section">
-						<div class="pet-section-label">Active Pet</div>
-						@if ( ActivePet != PetKind.None )
-						{
-							var adef = PetDatabase.Get( ActivePet );
-							<div class="pet-slot filled" onclick="@(() => Unsummon())">
-								<div class="pet-disc" style="background-color: @adef.IconColor;"></div>
-								<div class="pet-slot-name">@adef.Name</div>
-								<div class="pet-slot-hint">Click to dismiss</div>
-							</div>
-						}
-						else
-						{
-							<div class="pet-slot empty">
-								<div class="pet-slot-name">No pet active</div>
-								<div class="pet-slot-hint">Pick one from your library</div>
-							</div>
-						}
-
-						<div class="pet-ride-hint">Walk up to your pet and press E to ride it.</div>
-					</div>
-
-					<div class="pet-library-section">
-						<div class="pet-section-label">Library</div>
-						<div class="pet-grid">
-							@foreach ( var kind in OwnedPets )
-							{
-								var def = PetDatabase.Get( kind );
-								bool active = ActivePet == kind;
-								<div class="pet-card @(active ? "active" : "")" onclick="@(() => Summon( kind ))">
-									<div class="pet-disc" style="background-color: @def.IconColor;"></div>
-									<div class="pet-card-name">@def.Name</div>
-									@if ( active )
-									{
-										<div class="pet-card-badge">Active</div>
-									}
+				@if ( ShowColorPicker )
+				{
+					<div class="pet-body">
+						<div class="color-picker-section">
+							<div class="pet-section-label">Slime Color</div>
+							<div class="color-picker-row">
+								<div class="color-wheel-wrap" @ref="WheelPanel" onclick="@(() => OnWheelClick())">
+									<img class="color-wheel-img" src="/UI/PetColorWheel.png" />
+									<div class="color-wheel-cursor" style="left: @(CursorXPct.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%; top: @(CursorYPct.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%;"></div>
 								</div>
-							}
+								<div class="color-value-bar" @ref="ValuePanel" onclick="@(() => OnValueClick())" style="background: linear-gradient(180deg, @(ToHex( HsvToRgb( Hue, Sat, 1f ) )), #000000);"></div>
+							</div>
+							<div class="color-preview-row">
+								<div class="color-preview" style="background-color: @(ToHex( ComposedColor ));"></div>
+								<div class="color-buttons">
+									<div class="color-btn" onclick="@(() => ApplyColor())">Apply</div>
+									<div class="color-btn" onclick="@(() => ApplyRandom())">Random</div>
+									<div class="color-btn" onclick="@(() => ShowColorPicker = false)">Back</div>
+								</div>
+							</div>
 						</div>
 					</div>
-				</div>
+				}
+				else
+				{
+					<div class="pet-body">
+						<div class="pet-slot-section">
+							<div class="pet-section-label">Active Pet</div>
+							@if ( ActivePet != PetKind.None )
+							{
+								var adef = PetDatabase.Get( ActivePet );
+								<div class="pet-slot filled" onclick="@(() => Unsummon())">
+									<div class="pet-disc" style="background-color: @adef.IconColor;"></div>
+									<div class="pet-slot-name">@adef.Name</div>
+									<div class="pet-slot-hint">Click to dismiss</div>
+								</div>
+							}
+							else
+							{
+								<div class="pet-slot empty">
+									<div class="pet-slot-name">No pet active</div>
+									<div class="pet-slot-hint">Pick one from your library</div>
+								</div>
+							}
+
+							<div class="pet-ride-hint">Walk up to your pet and press E to ride it.</div>
+
+							@if ( ActivePet == PetKind.Slime && PetColorState.IsUnlocked() )
+							{
+								<div class="pet-color-btn" onclick="@(() => ShowColorPicker = true)">Change Color</div>
+							}
+						</div>
+
+						<div class="pet-library-section">
+							<div class="pet-section-label">Library</div>
+							<div class="pet-grid">
+								@foreach ( var kind in OwnedPets )
+								{
+									var def = PetDatabase.Get( kind );
+									bool active = ActivePet == kind;
+									<div class="pet-card @(active ? "active" : "")" onclick="@(() => Summon( kind ))">
+										<div class="pet-disc" style="background-color: @def.IconColor;"></div>
+										<div class="pet-card-name">@def.Name</div>
+										@if ( active )
+										{
+											<div class="pet-card-badge">Active</div>
+										}
+									</div>
+								}
+							</div>
+						</div>
+					</div>
+				}
 			</div>
 		</div>
 	}
@@ -69,6 +101,91 @@
 
 	List<PetKind> OwnedPets => PetManager.Local != null ? PetManager.Local.Library : new List<PetKind>();
 
+	bool ShowColorPicker { get; set; }
+	float Hue { get; set; } = 120f;
+	float Sat { get; set; } = 0.8f;
+	float Val { get; set; } = 1f;
+
+	Sandbox.UI.Panel WheelPanel { get; set; }
+	Sandbox.UI.Panel ValuePanel { get; set; }
+
+	Color ComposedColor => HsvToRgb( Hue, Sat, Val );
+
+	float CursorXPct => 50f + MathF.Cos( Hue * MathF.PI / 180f ) * Sat * 50f;
+	float CursorYPct => 50f + MathF.Sin( Hue * MathF.PI / 180f ) * Sat * 50f;
+
+	void OnWheelClick()
+	{
+		if ( WheelPanel == null )
+			return;
+
+		var rect = WheelPanel.Box.Rect;
+		if ( rect.Width <= 0f || rect.Height <= 0f )
+			return;
+
+		var mp = Mouse.Position;
+		float dx = ( mp.x - rect.Left ) / rect.Width - 0.5f;
+		float dy = ( mp.y - rect.Top ) / rect.Height - 0.5f;
+
+		float r = MathF.Sqrt( dx * dx + dy * dy ) / 0.5f;
+		if ( r > 1f ) r = 1f;
+
+		Hue = ( MathF.Atan2( dy, dx ) * 180f / MathF.PI + 360f ) % 360f;
+		Sat = r;
+	}
+
+	void OnValueClick()
+	{
+		if ( ValuePanel == null )
+			return;
+
+		var rect = ValuePanel.Box.Rect;
+		if ( rect.Height <= 0f )
+			return;
+
+		var mp = Mouse.Position;
+		float relY = ( mp.y - rect.Top ) / rect.Height;
+		if ( relY < 0f ) relY = 0f;
+		if ( relY > 1f ) relY = 1f;
+
+		Val = 1f - relY;
+	}
+
+	void ApplyColor()
+	{
+		PetColorState.SetColor( ComposedColor );
+		PetManager.Local?.ReapplyColor();
+		ShowColorPicker = false;
+	}
+
+	void ApplyRandom()
+	{
+		PetColorState.SetColor( null );
+		PetManager.Local?.ReapplyColor();
+		ShowColorPicker = false;
+	}
+
+	static Color HsvToRgb( float hue, float sat, float val )
+	{
+		float c = val * sat;
+		float hp = hue / 60f;
+		float x = c * ( 1f - MathF.Abs( hp % 2f - 1f ) );
+		float r = 0f, g = 0f, b = 0f;
+		if ( hp < 1f ) { r = c; g = x; }
+		else if ( hp < 2f ) { r = x; g = c; }
+		else if ( hp < 3f ) { g = c; b = x; }
+		else if ( hp < 4f ) { g = x; b = c; }
+		else if ( hp < 5f ) { r = x; b = c; }
+		else { r = c; b = x; }
+		float m = val - c;
+		return new Color( r + m, g + m, b + m );
+	}
+
+	static string ToHex( Color c )
+	{
+		return $"#{(int)( c.r * 255f ):X2}{(int)( c.g * 255f ):X2}{(int)( c.b * 255f ):X2}";
+	}
+
 	void Summon( PetKind kind )
 	{
 		PetManager.Local?.Summon( kind );
@@ -81,11 +198,12 @@
 
 	void Close()
 	{
+		ShowColorPicker = false;
 		PetsStation.Close();
 	}
 
 	protected override int BuildHash()
 	{
-		return ( PetsStation.IsOpen, ActivePet, OwnedPets.Count ).GetHashCode();
+		return ( PetsStation.IsOpen, ActivePet, OwnedPets.Count, ShowColorPicker, (int)( Hue * 10f ), (int)( Sat * 1000f ), (int)( Val * 1000f ), PetColorState.IsUnlocked() ).GetHashCode();
 	}
 }

@@ -1195,6 +1195,7 @@ public sealed class Boss : Component
 		_contributors.Clear();
 		BroadcastAnimBool( "b_death", false );
 		BroadcastRespawn();
+		GameManager.Instance?.BroadcastServerNotice( $"{BossName} has stirred once more..." );
 	}
 
 	[Rpc.Broadcast]

@@ -92,7 +92,9 @@
 						<div class="bank-btn @(QuantityIndex == 0 ? "active" : "")" onclick="@(() => QuantityIndex = 0)">1</div>
 						<div class="bank-btn @(QuantityIndex == 1 ? "active" : "")" onclick="@(() => QuantityIndex = 1)">10</div>
 						<div class="bank-btn @(QuantityIndex == 2 ? "active" : "")" onclick="@(() => QuantityIndex = 2)">100</div>
-						<div class="bank-btn @(QuantityIndex == 3 ? "active" : "")" onclick="@(() => QuantityIndex = 3)">All</div>
+						<div class="bank-btn @(QuantityIndex == 3 ? "active" : "")" onclick="@(() => QuantityIndex = 3)">1K</div>
+						<div class="bank-btn @(QuantityIndex == 4 ? "active" : "")" onclick="@(() => QuantityIndex = 4)">10K</div>
+						<div class="bank-btn @(QuantityIndex == 5 ? "active" : "")" onclick="@(() => QuantityIndex = 5)">All</div>
 						<div class="bank-spacer"></div>
 						<div class="bank-btn @(BulkArmed ? "danger" : "")" onclick="@(() => ClickDepositAll())">@(BulkArmed ? "Sure?" : "Deposit all")</div>
 					</div>
@@ -348,19 +350,19 @@
 
 	int ComputeAmount( int max )
 	{
-		if ( QuantityIndex == 3 )
+		if ( QuantityIndex == 5 )
 			return max;
 
-		int mode = QuantityIndex == 0 ? 1 : QuantityIndex == 1 ? 10 : 100;
+		int mode = QuantityIndex == 0 ? 1 : QuantityIndex == 1 ? 10 : QuantityIndex == 2 ? 100 : QuantityIndex == 3 ? 1000 : 10000;
 		return Math.Min( mode, max );
 	}
 
 	string AmountLabel( int max )
 	{
-		if ( QuantityIndex == 3 )
+		if ( QuantityIndex == 5 )
 			return $"All ({FmtCount( max )})";
 
-		int mode = QuantityIndex == 0 ? 1 : QuantityIndex == 1 ? 10 : 100;
+		int mode = QuantityIndex == 0 ? 1 : QuantityIndex == 1 ? 10 : QuantityIndex == 2 ? 100 : QuantityIndex == 3 ? 1000 : 10000;
 		return FmtCount( Math.Min( mode, max ) );
 	}
 

@@ -63,6 +63,10 @@ root {
 	display: none;
 }
 
+.log-panel.enlarged {
+	height: 620px;
+}
+
 .log-tabs {
 	display: flex;
 	flex-direction: row;
@@ -71,13 +75,38 @@ root {
 	flex-shrink: 0;
 }
 
-.log-collapse {
+.log-enlarge {
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	width: 28px;
 	height: 28px;
 	margin-left: auto;
+	margin-right: 6px;
+	background: #1a150ecc;
+	border: 1px solid #c9a84c66;
+	border-radius: 4px;
+	color: #c9a84c;
+	font-size: 16px;
+	cursor: pointer;
+	pointer-events: all;
+	flex-shrink: 0;
+	transition: all 0.15s ease;
+
+	&:hover {
+		border-color: #c9a84c;
+		background: #c9a84c;
+		color: #1a150e;
+		box-shadow: 0 0 8px #c9a84c66;
+	}
+}
+
+.log-collapse {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
 	margin-right: 8px;
 	background: #1a150ecc;
 	border: 1px solid #c9a84c66;

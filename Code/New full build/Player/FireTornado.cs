@@ -258,5 +258,34 @@ public sealed class FireTornado : Component
 			boss.TakeDamage( dmg, Source );
 			DamagePopupBroadcaster.Broadcast( boss.WorldPosition + Vector3.Up * 60f, dmg, boss.MaxHealth, false );
 		}
+
+		foreach ( var slimeKing in Scene.GetAllComponents<SlimeKing>() )
+		{
+			if ( slimeKing == null || !slimeKing.IsValid() || slimeKing.IsDead )
+				continue;
+			if ( ( slimeKing.WorldPosition - pos ).LengthSquared > radiusSqr )
+				continue;
+
+			slimeKing.TakeDamage( dmg, Source );
+			DamagePopupBroadcaster.Broadcast( slimeKing.WorldPosition + Vector3.Up * 60f, dmg, slimeKing.MaxHealth, false );
+		}
+
+		foreach ( var player in PlayerHelper.GetAllPlayers() )
+		{
+			if ( player == null || !player.IsValid() )
+				continue;
+			if ( ( player.WorldPosition - pos ).LengthSquared > radiusSqr )
+				continue;
+			if ( !PvpCombat.CanDamage( Source, player ) )
+				continue;
+
+			int dealt = PvpCombat.ResolveDamage( dmg, CombatStyle.Magic, player );
+			var health = player.Components.Get<PlayerHealth>();
+			if ( health == null )
+				continue;
+
+			int applied = health.TakeDamage( dealt );
+			Source?.Components.Get<PlayerCombat>()?.NotifyPvpHit( player, applied, false, false );
+		}
 	}
 }

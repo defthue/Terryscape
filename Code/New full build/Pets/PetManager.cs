@@ -108,6 +108,11 @@ public sealed class PetManager : Component
 
 	public bool IsActive( PetKind kind ) => ActiveSlot == kind;
 
+	public void ReapplyColor()
+	{
+		RefreshSlime();
+	}
+
 	void RefreshSlime()
 	{
 		DespawnSlime();
@@ -139,6 +144,13 @@ public sealed class PetManager : Component
 			slime.OwnerSteamId = Network.Owner?.SteamId ?? 0ul;
 			slime.Kind = ActiveSlot;
 			slime.ColorIndex = _colorIndex;
+
+			var overrideColor = PetColorState.GetColor();
+			if ( overrideColor != null )
+			{
+				slime.HasOverrideColor = true;
+				slime.OverrideColor = overrideColor.Value;
+			}
 		}
 
 		if ( Networking.IsActive )

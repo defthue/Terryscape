@@ -196,7 +196,8 @@ public enum ItemId
 	Ring,
 	Amulet,
 	Rune,
-	AbyssalBlade
+	AbyssalBlade,
+	SlimerootStaff
 }
 
 public enum ItemType
@@ -273,7 +274,7 @@ public static class ItemDatabase
 		string name,
 		ItemType type,
 		int tier = 0,
-		int maxStack = 999,
+		int maxStack = 1000,
 		EquipSlot slot = EquipSlot.None,
 		SkillType skillRequired = SkillType.None,
 		int levelRequired = 0,
@@ -388,13 +389,14 @@ public static class ItemDatabase
 		Add( Define( ItemId.GhostwoodStaff, "Ghostwood Staff", ItemType.MagicWeapon, tier: 4, maxStack: 1, slot: EquipSlot.Weapon, skillRequired: SkillType.Magic, levelRequired: 30, weaponPower: 26f, baseSellPrice: 44 ) );
 		Add( Define( ItemId.DuskoakStaff, "Duskoak Staff", ItemType.MagicWeapon, tier: 5, maxStack: 1, slot: EquipSlot.Weapon, skillRequired: SkillType.Magic, levelRequired: 40, weaponPower: 37f, baseSellPrice: 64 ) );
 		Add( Define( ItemId.WorldrootStaff, "Worldroot Staff", ItemType.MagicWeapon, tier: 6, maxStack: 1, slot: EquipSlot.Weapon, skillRequired: SkillType.Magic, levelRequired: 50, weaponPower: 50f, baseSellPrice: 88 ) );
+		Add( Define( ItemId.SlimerootStaff, "Slimeroot Staff", ItemType.MagicWeapon, tier: 6, maxStack: 1, slot: EquipSlot.Weapon, skillRequired: SkillType.Magic, levelRequired: 50, weaponPower: 50f, baseSellPrice: 176 ) );
 
-		Add( Define( ItemId.CoppiteArrow, "Coppite Arrow", ItemType.Arrow, tier: 1, slot: EquipSlot.Ammo, skillRequired: SkillType.Archery, levelRequired: 1, weaponPower: 2f, baseSellPrice: 1 ) );
-		Add( Define( ItemId.AshsteelArrow, "Ashsteel Arrow", ItemType.Arrow, tier: 2, slot: EquipSlot.Ammo, skillRequired: SkillType.Archery, levelRequired: 10, weaponPower: 5f, baseSellPrice: 2 ) );
-		Add( Define( ItemId.ColdveinArrow, "Coldvein Arrow", ItemType.Arrow, tier: 3, slot: EquipSlot.Ammo, skillRequired: SkillType.Archery, levelRequired: 20, weaponPower: 9f, baseSellPrice: 3 ) );
-		Add( Define( ItemId.SolariumArrow, "Solarium Arrow", ItemType.Arrow, tier: 4, slot: EquipSlot.Ammo, skillRequired: SkillType.Archery, levelRequired: 30, weaponPower: 14f, baseSellPrice: 5 ) );
-		Add( Define( ItemId.LunariteArrow, "Lunarite Arrow", ItemType.Arrow, tier: 5, slot: EquipSlot.Ammo, skillRequired: SkillType.Archery, levelRequired: 40, weaponPower: 20f, baseSellPrice: 7 ) );
-		Add( Define( ItemId.AbyssiumArrow, "Abyssium Arrow", ItemType.Arrow, tier: 6, slot: EquipSlot.Ammo, skillRequired: SkillType.Archery, levelRequired: 50, weaponPower: 27f, baseSellPrice: 10 ) );
+		Add( Define( ItemId.CoppiteArrow, "Coppite Arrow", ItemType.Arrow, tier: 1, maxStack: 10000, slot: EquipSlot.Ammo, skillRequired: SkillType.Archery, levelRequired: 1, weaponPower: 2f, baseSellPrice: 1 ) );
+		Add( Define( ItemId.AshsteelArrow, "Ashsteel Arrow", ItemType.Arrow, tier: 2, maxStack: 10000, slot: EquipSlot.Ammo, skillRequired: SkillType.Archery, levelRequired: 10, weaponPower: 5f, baseSellPrice: 2 ) );
+		Add( Define( ItemId.ColdveinArrow, "Coldvein Arrow", ItemType.Arrow, tier: 3, maxStack: 10000, slot: EquipSlot.Ammo, skillRequired: SkillType.Archery, levelRequired: 20, weaponPower: 9f, baseSellPrice: 3 ) );
+		Add( Define( ItemId.SolariumArrow, "Solarium Arrow", ItemType.Arrow, tier: 4, maxStack: 10000, slot: EquipSlot.Ammo, skillRequired: SkillType.Archery, levelRequired: 30, weaponPower: 14f, baseSellPrice: 5 ) );
+		Add( Define( ItemId.LunariteArrow, "Lunarite Arrow", ItemType.Arrow, tier: 5, maxStack: 10000, slot: EquipSlot.Ammo, skillRequired: SkillType.Archery, levelRequired: 40, weaponPower: 20f, baseSellPrice: 7 ) );
+		Add( Define( ItemId.AbyssiumArrow, "Abyssium Arrow", ItemType.Arrow, tier: 6, maxStack: 10000, slot: EquipSlot.Ammo, skillRequired: SkillType.Archery, levelRequired: 50, weaponPower: 27f, baseSellPrice: 10 ) );
 
 		Add( Define( ItemId.CoppiteShield, "Coppite Shield", ItemType.Shield, tier: 1, maxStack: 1, slot: EquipSlot.Shield, skillRequired: SkillType.Defence, levelRequired: 1, armorValue: 3f, baseSellPrice: 5 ) );
 		Add( Define( ItemId.AshsteelShield, "Ashsteel Shield", ItemType.Shield, tier: 2, maxStack: 1, slot: EquipSlot.Shield, skillRequired: SkillType.Defence, levelRequired: 10, armorValue: 7f, baseSellPrice: 12 ) );
@@ -463,7 +465,7 @@ public static class ItemDatabase
 		Add( Define( ItemId.Ring, "Ring", ItemType.Ring, tier: 3, maxStack: 1, slot: EquipSlot.Ring, skillRequired: SkillType.Smithing, levelRequired: 1, baseSellPrice: 25 ) );
 		Add( Define( ItemId.Amulet, "Amulet", ItemType.Amulet, tier: 3, maxStack: 1, slot: EquipSlot.Amulet, skillRequired: SkillType.Smithing, levelRequired: 1, baseSellPrice: 25 ) );
 
-		Add( Define( ItemId.Rune, "Rune", ItemType.Rune, tier: 3, maxStack: 999, baseSellPrice: 8 ) );
+		Add( Define( ItemId.Rune, "Rune", ItemType.Rune, tier: 3, maxStack: 1000, baseSellPrice: 8 ) );
 
 		Add( Define( ItemId.LesserHealingPotion, "Lesser Healing Potion", ItemType.Potion, tier: 1, maxStack: 50, baseSellPrice: 3 ) );
 		Add( Define( ItemId.HealingPotion, "Healing Potion", ItemType.Potion, tier: 2, maxStack: 50, baseSellPrice: 7 ) );
@@ -478,12 +480,12 @@ public static class ItemDatabase
 		Add( Define( ItemId.ManaPotion, "Mana Potion", ItemType.Potion, tier: 2, maxStack: 50, baseSellPrice: 7 ) );
 		Add( Define( ItemId.GreaterManaPotion, "Greater Mana Potion", ItemType.Potion, tier: 4, maxStack: 50, baseSellPrice: 16 ) );
 
-		Add( Define( ItemId.GlassVial, "Empty Vial", ItemType.Misc, tier: 0, maxStack: 999, baseSellPrice: 1 ) );
-		Add( Define( ItemId.CrystalVial, "Crystal Vial", ItemType.Misc, tier: 4, maxStack: 999, baseSellPrice: 8 ) );
+		Add( Define( ItemId.GlassVial, "Empty Vial", ItemType.Misc, tier: 0, maxStack: 1000, baseSellPrice: 1 ) );
+		Add( Define( ItemId.CrystalVial, "Crystal Vial", ItemType.Misc, tier: 4, maxStack: 1000, baseSellPrice: 8 ) );
 		Add( Define( ItemId.GoldCoin, "Gold Coin", ItemType.Misc, tier: 0, maxStack: 99999, baseSellPrice: 0 ) );
-		Add( Define( ItemId.MonsterBone, "Monster Bone", ItemType.Misc, tier: 0, maxStack: 999, baseSellPrice: 1 ) );
-		Add( Define( ItemId.MonsterHide, "Monster Hide", ItemType.Misc, tier: 0, maxStack: 999, baseSellPrice: 2 ) );
-		Add( Define( ItemId.Nugget, "Nugget", ItemType.Misc, tier: 0, maxStack: 999, baseSellPrice: 3 ) );
+		Add( Define( ItemId.MonsterBone, "Monster Bone", ItemType.Misc, tier: 0, maxStack: 1000, baseSellPrice: 1 ) );
+		Add( Define( ItemId.MonsterHide, "Monster Hide", ItemType.Misc, tier: 0, maxStack: 1000, baseSellPrice: 2 ) );
+		Add( Define( ItemId.Nugget, "Nugget", ItemType.Misc, tier: 0, maxStack: 1000, baseSellPrice: 3 ) );
 	}
 
 	static void Add( ItemDefinition def )

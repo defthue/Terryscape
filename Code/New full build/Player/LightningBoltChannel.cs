@@ -213,6 +213,27 @@ public sealed class LightningBoltChannel : Component
 			candidates.Add( ( boss.GameObject, dot ) );
 		}
 
+		foreach ( var slimeKing in Scene.GetAllComponents<SlimeKing>() )
+		{
+			if ( slimeKing == null || !slimeKing.IsValid() || slimeKing.IsDead )
+				continue;
+
+			Vector3 to = slimeKing.WorldPosition - origin;
+			float distSqr = to.LengthSquared;
+			if ( distSqr > rangeSqr || distSqr < 1f )
+				continue;
+
+			Vector3 dir = to.Normal;
+			float dot = forward.Dot( dir );
+
+			bool isClose = distSqr <= closeRangeSqr;
+			float effectiveThreshold = isClose ? 0f : cosThreshold;
+			if ( dot < effectiveThreshold )
+				continue;
+
+			candidates.Add( ( slimeKing.GameObject, dot ) );
+		}
+
 		var dm = DuelManager.Instance;
 		if ( dm != null && dm.MatchActive && dm.RoundLive && dm.IsDuelist( _caster ) )
 		{
@@ -334,8 +355,8 @@ public sealed class LightningBoltChannel : Component
 				var targetHealth = pvpTarget.Components.Get<PlayerHealth>();
 				if ( targetHealth != null )
 				{
-					targetHealth.TakeDamage( dealt );
-					_caster?.Components.Get<PlayerCombat>()?.NotifyPvpHit( pvpTarget, dealt, false, false );
+					int applied = targetHealth.TakeDamage( dealt );
+					_caster?.Components.Get<PlayerCombat>()?.NotifyPvpHit( pvpTarget, applied, false, false );
 				}
 				continue;
 			}
@@ -361,6 +382,18 @@ public sealed class LightningBoltChannel : Component
 
 				boss.TakeDamage( dealt, _caster );
 				DamagePopupBroadcaster.Broadcast( boss.WorldPosition + Vector3.Up * 50f, dealt, boss.MaxHealth, false );
+				continue;
+			}
+
+			var slimeKing = target.Components.Get<SlimeKing>();
+			if ( slimeKing != null && !slimeKing.IsDead )
+			{
+				float triangleMult = CombatTriangle.GetDealMultiplier( CombatStyle.Magic, slimeKing.CombatStyle );
+				int dealt = (int)( damage * triangleMult );
+				if ( dealt < 1 ) dealt = 1;
+
+				slimeKing.TakeDamage( dealt, _caster );
+				DamagePopupBroadcaster.Broadcast( slimeKing.WorldPosition + Vector3.Up * 50f, dealt, slimeKing.MaxHealth, false );
 			}
 		}
 

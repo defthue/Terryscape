@@ -1,0 +1,86 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using System.Linq;
+@inherits PanelComponent
+
+<root>
+	@foreach ( var slime in GetVisibleSlimes() )
+	{
+		@if ( IsInFrontOfCamera( slime ) )
+		{
+			var screenPos = GetScreenPosition( slime );
+			<div class="sk-plate gen@(slime.Generation)" style="left: @(screenPos.x.ToString("0.##"))%; top: @(screenPos.y.ToString("0.##"))%;">
+				@if ( slime.Generation == 0 )
+				{
+					<div class="sk-crown">♛</div>
+				}
+				<div class="sk-name">@(slime.DisplayName)</div>
+				<div class="sk-bar-frame">
+					<div class="sk-bar-cap left"></div>
+					<div class="sk-bar-bg">
+						<div class="sk-bar-fill" style="width: @(GetHealthPercent( slime ))%;"></div>
+						<div class="sk-bar-text">@(slime.CurrentHealth) / @(slime.MaxHealth)</div>
+					</div>
+					<div class="sk-bar-cap right"></div>
+				</div>
+			</div>
+		}
+	}
+</root>
+
+@code
+{
+	const float VisibilityRange = 2000f;
+
+	System.Collections.Generic.List<global::SlimeKing> GetVisibleSlimes()
+	{
+		var player = PlayerHelper.GetLocalPlayer();
+		if ( player == null )
+			return new();
+
+		var playerPos = player.WorldPosition;
+		var slimes = Scene?.GetAllComponents<global::SlimeKing>().ToList() ?? new();
+
+		return slimes.FindAll( s =>
+			s != null &&
+			!s.IsDead &&
+			!s.IsHiddenRoot &&
+			Vector3.DistanceBetween( s.WorldPosition, playerPos ) <= VisibilityRange
+		);
+	}
+
+	Vector2 GetScreenPosition( global::SlimeKing slime )
+	{
+		var worldPos = slime.WorldPosition + Vector3.Up * slime.HealthBarHeight;
+		var normal = Scene.Camera.PointToScreenNormal( worldPos );
+		return new Vector2( normal.x * 100f, normal.y * 100f );
+	}
+
+	bool IsInFrontOfCamera( global::SlimeKing slime )
+	{
+		var toSlime = slime.WorldPosition - Scene.Camera.WorldPosition;
+		return Vector3.Dot( Scene.Camera.WorldRotation.Forward, toSlime ) > 0;
+	}
+
+	int GetHealthPercent( global::SlimeKing slime )
+	{
+		if ( slime.MaxHealth <= 0 ) return 0;
+		return (int)( ( (float)slime.CurrentHealth / slime.MaxHealth ) * 100f );
+	}
+
+	protected override void OnUpdate()
+	{
+		StateHasChanged();
+	}
+
+	protected override int BuildHash()
+	{
+		int hash = 0;
+		foreach ( var s in GetVisibleSlimes() )
+		{
+			var pos = GetScreenPosition( s );
+			hash = ( hash, s.CurrentHealth, s.MaxHealth, s.IsDead, s.Generation, (int)pos.x, (int)pos.y ).GetHashCode();
+		}
+		return hash;
+	}
+}

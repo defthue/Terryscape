@@ -95,6 +95,28 @@ public sealed class AcidSpitProjectile : Component
 			PoisonEffect.Apply( boss.GameObject, source, dmgPerTick, tickInterval, duration );
 		}
 
+		foreach ( var slimeKing in scene.GetAllComponents<SlimeKing>() )
+		{
+			if ( slimeKing == null || !slimeKing.IsValid() || slimeKing.IsDead )
+				continue;
+			if ( ( slimeKing.WorldPosition - position ).LengthSquared > radiusSqr )
+				continue;
+
+			PoisonEffect.Apply( slimeKing.GameObject, source, dmgPerTick, tickInterval, duration );
+		}
+
+		foreach ( var player in PlayerHelper.GetAllPlayers() )
+		{
+			if ( player == null || !player.IsValid() )
+				continue;
+			if ( ( player.WorldPosition - position ).LengthSquared > radiusSqr )
+				continue;
+			if ( !PvpCombat.CanDamage( source, player ) )
+				continue;
+
+			PoisonEffect.Apply( player, source, dmgPerTick, tickInterval, duration );
+		}
+
 		var poolGo = scene.CreateObject();
 		poolGo.Name = "AcidPoolVisual";
 		poolGo.WorldPosition = position;

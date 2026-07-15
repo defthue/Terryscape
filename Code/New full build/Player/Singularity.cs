@@ -163,11 +163,41 @@ public sealed class Singularity : Component
 		SpawnInwardParticles();
 		UpdateInwardParticles();
 
+		PullLocalPlayer( t );
+
 		if ( !VisualOnly )
 		{
 			PullMonsters( t );
 			SuppressMonsterAttacks();
 		}
+	}
+
+	void PullLocalPlayer( float t )
+	{
+		var localPlayer = PlayerHelper.GetLocalPlayer();
+		if ( localPlayer == null || !localPlayer.IsValid() )
+			return;
+
+		if ( !PvpCombat.CanDamage( Source, localPlayer ) )
+			return;
+
+		Vector3 center = WorldPosition;
+		Vector3 to = center - localPlayer.WorldPosition;
+		to.z = 0f;
+		float distSqr = to.LengthSquared;
+		if ( distSqr > PullRadius * PullRadius || distSqr < 1f )
+			return;
+
+		float dist = MathF.Sqrt( distSqr );
+		Vector3 dir = to / dist;
+
+		float pullStrength = 200f + t * 600f;
+		float distFactor = 1f - ( dist / PullRadius );
+		float moveAmount = pullStrength * ( 0.3f + distFactor ) * Time.Delta;
+		if ( moveAmount > dist - 10f )
+			moveAmount = MathF.Max( 0f, dist - 10f );
+
+		localPlayer.WorldPosition += dir * moveAmount;
 	}
 
 	void UpdateCore( float t )
@@ -365,6 +395,35 @@ public sealed class Singularity : Component
 
 			boss.TakeDamage( dmg, Source );
 			DamagePopupBroadcaster.Broadcast( boss.WorldPosition + Vector3.Up * 60f, dmg, boss.MaxHealth, true );
+		}
+
+		foreach ( var slimeKing in Scene.GetAllComponents<SlimeKing>() )
+		{
+			if ( slimeKing == null || !slimeKing.IsValid() || slimeKing.IsDead )
+				continue;
+			if ( ( slimeKing.WorldPosition - center ).LengthSquared > radiusSqr )
+				continue;
+
+			slimeKing.TakeDamage( dmg, Source );
+			DamagePopupBroadcaster.Broadcast( slimeKing.WorldPosition + Vector3.Up * 60f, dmg, slimeKing.MaxHealth, true );
+		}
+
+		foreach ( var player in PlayerHelper.GetAllPlayers() )
+		{
+			if ( player == null || !player.IsValid() )
+				continue;
+			if ( ( player.WorldPosition - center ).LengthSquared > radiusSqr )
+				continue;
+			if ( !PvpCombat.CanDamage( Source, player ) )
+				continue;
+
+			int dealt = PvpCombat.ResolveDamage( dmg, CombatStyle.Magic, player );
+			var health = player.Components.Get<PlayerHealth>();
+			if ( health == null )
+				continue;
+
+			int applied = health.TakeDamage( dealt );
+			Source?.Components.Get<PlayerCombat>()?.NotifyPvpHit( player, applied, true, true );
 		}
 	}
 

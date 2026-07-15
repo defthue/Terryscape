@@ -28,7 +28,7 @@
 		<div class="fullmap-backdrop" onclick="@(() => CloseFullMap())"></div>
 		<div class="fullmap-overlay">
 			<div class="fullmap-popup">
-				<div class="fullmap-body">
+				<div class="fullmap-body" @ref="FullmapBody">
 					<img class="fullmap-image" src="/Map/FullMap.vtex" />
 
 					@foreach ( var m in FullmapMarkers )
@@ -42,6 +42,25 @@
 					}
 
 					<div class="fullmap-dot" style="left: @(FullDotX)%; top: @(FullDotY)%;"></div>
+
+					@if ( LoupeVisible )
+					{
+						<div class="fullmap-loupe" style="left: @(LoupeLeftPercent.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%; top: @(LoupeTopPercent.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%; width: @(LoupeSize)px; height: @(LoupeSize)px;">
+							<div class="loupe-canvas" style="width: @(LoupeCanvasWidthPercent.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%; height: @(LoupeCanvasHeightPercent.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%; left: @(LoupeCanvasLeft.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%; top: @(LoupeCanvasTop.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%;">
+								<img class="loupe-image" src="/Map/FullMap.vtex" />
+								@foreach ( var m in FullmapMarkers )
+								{
+									<div class="map-marker @m.CssClass" style="left: @(m.X)%; top: @(m.Y)%; z-index: @m.ZIndex;">
+										@if ( !string.IsNullOrEmpty( m.Glyph ) )
+										{
+											<span class="marker-glyph">@m.Glyph</span>
+										}
+									</div>
+								}
+								<div class="fullmap-dot" style="left: @(FullDotX)%; top: @(FullDotY)%;"></div>
+							</div>
+						</div>
+					}
 				</div>
 			</div>
 		</div>
@@ -55,6 +74,8 @@
 	[Property] public float ZoomLevel { get; set; } = 6f;
 	[Property] public bool FlipY { get; set; } = true;
 	[Property] public float MonsterMinimapRadius { get; set; } = 3000f;
+	[Property] public float LoupeZoom { get; set; } = 2f;
+	[Property] public float LoupeSize { get; set; } = 260f;
 
 	public static bool IsFullMapOpen
 	{
@@ -67,6 +88,20 @@
 
 	float FullDotX { get; set; } = 50f;
 	float FullDotY { get; set; } = 50f;
+
+	Sandbox.UI.Panel FullmapBody { get; set; }
+
+	float HoverU { get; set; }
+	float HoverV { get; set; }
+	float LoupeLeftPercent { get; set; }
+	float LoupeTopPercent { get; set; }
+	bool LoupeVisible { get; set; }
+
+	float LoupeCanvasWidthPercent { get; set; }
+	float LoupeCanvasHeightPercent { get; set; }
+
+	float LoupeCanvasLeft => 50f - HoverU * LoupeCanvasWidthPercent;
+	float LoupeCanvasTop => 50f - HoverV * LoupeCanvasHeightPercent;
 
 	struct Marker
 	{
@@ -85,14 +120,64 @@
 		if ( Input.Pressed( "Map" ) )
 		{
 			IsFullMapOpen = !IsFullMapOpen;
+			Mouse.Visibility = IsFullMapOpen ? MouseVisibility.Visible : MouseVisibility.Hidden;
 		}
 
+		UpdateLoupe();
+
 		StateHasChanged();
+	}
+
+	void UpdateLoupe()
+	{
+		if ( !IsFullMapOpen || FullmapBody == null )
+		{
+			LoupeVisible = false;
+			return;
+		}
+
+		var rect = FullmapBody.Box.Rect;
+		var mp = Mouse.Position;
+
+		if ( rect.Width <= 0f || rect.Height <= 0f || mp.x < rect.Left || mp.x > rect.Right || mp.y < rect.Top || mp.y > rect.Bottom )
+		{
+			LoupeVisible = false;
+			return;
+		}
+
+		HoverU = ( mp.x - rect.Left ) / rect.Width;
+		HoverV = ( mp.y - rect.Top ) / rect.Height;
+
+		float scale = FullmapBody.ScaleToScreen;
+		if ( scale <= 0f )
+		{
+			LoupeVisible = false;
+			return;
+		}
+
+		float loupePx = LoupeSize * scale;
+		float offsetPx = 20f * scale;
+
+		LoupeCanvasWidthPercent = LoupeZoom * ( rect.Width / scale ) / LoupeSize * 100f;
+		LoupeCanvasHeightPercent = LoupeZoom * ( rect.Height / scale ) / LoupeSize * 100f;
+
+		float leftPx = mp.x - rect.Left + offsetPx;
+		if ( leftPx + loupePx > rect.Width )
+			leftPx = mp.x - rect.Left - offsetPx - loupePx;
+
+		float topPx = mp.y - rect.Top + offsetPx;
+		if ( topPx + loupePx > rect.Height )
+			topPx = mp.y - rect.Top - offsetPx - loupePx;
+
+		LoupeLeftPercent = leftPx / rect.Width * 100f;
+		LoupeTopPercent = topPx / rect.Height * 100f;
+		LoupeVisible = true;
 	}
 
 	void CloseFullMap()
 	{
 		IsFullMapOpen = false;
+		Mouse.Visibility = MouseVisibility.Hidden;
 	}
 
 	(float u, float v) WorldToUV( Vector3 worldPos )
@@ -313,6 +398,6 @@
 
 		RebuildMarkers();
 
-		return ((int)(u * 10000f), (int)(v * 10000f), IsFullMapOpen, MinimapMarkers.Count, FullmapMarkers.Count, QuestTracker.TrackedQuestId ?? "").GetHashCode();
+		return ((int)(u * 10000f), (int)(v * 10000f), IsFullMapOpen, MinimapMarkers.Count, FullmapMarkers.Count, QuestTracker.TrackedQuestId ?? "", (int)(HoverU * 10000f), (int)(HoverV * 10000f), LoupeVisible).GetHashCode();
 	}
 }

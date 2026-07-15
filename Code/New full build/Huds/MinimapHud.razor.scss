@@ -106,6 +106,29 @@ root {
 	overflow: hidden;
 }
 
+.fullmap-loupe {
+	position: absolute;
+	border: 2px solid #c9a84c;
+	border-radius: 5px;
+	background-color: #1a150e;
+	overflow: hidden;
+	pointer-events: none;
+	box-shadow: 0 4px 28px #00000088;
+	z-index: 9000;
+}
+
+.loupe-canvas {
+	position: absolute;
+}
+
+.loupe-image {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+}
+
 .fullmap-dot {
 	position: absolute;
 	width: 14px;

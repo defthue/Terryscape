@@ -74,8 +74,8 @@ public sealed class ArrowProjectile : Component
 			var targetHealth = pvpTarget.Components.Get<PlayerHealth>();
 			if ( targetHealth != null )
 			{
-				targetHealth.TakeDamage( finalDamage );
-				Shooter?.Components.Get<PlayerCombat>()?.NotifyPvpHit( pvpTarget, finalDamage, IsCrit, true );
+				int applied = targetHealth.TakeDamage( finalDamage );
+				Shooter?.Components.Get<PlayerCombat>()?.NotifyPvpHit( pvpTarget, applied, IsCrit, true );
 			}
 			SoundLibrary.PlayArrowImpact( trace.HitPosition );
 			GameObject.Destroy();
@@ -107,6 +107,21 @@ public sealed class ArrowProjectile : Component
 
 			boss.TakeDamage( finalDamage, Shooter );
 			DamagePopupBroadcaster.Broadcast( trace.HitPosition, finalDamage, boss.MaxHealth, IsCrit );
+			SoundLibrary.PlayArrowImpact( trace.HitPosition );
+			GameObject.Destroy();
+			return;
+		}
+
+		var slimeKing = trace.GameObject.Components.Get<SlimeKing>();
+		if ( slimeKing != null )
+		{
+			_impacted = true;
+			float triangleMult = CombatTriangle.GetDealMultiplier( Style, slimeKing.CombatStyle );
+			int finalDamage = (int)( Damage * triangleMult );
+			if ( finalDamage < 1 ) finalDamage = 1;
+
+			slimeKing.TakeDamage( finalDamage, Shooter );
+			DamagePopupBroadcaster.Broadcast( trace.HitPosition, finalDamage, slimeKing.MaxHealth, IsCrit );
 			SoundLibrary.PlayArrowImpact( trace.HitPosition );
 			GameObject.Destroy();
 			return;

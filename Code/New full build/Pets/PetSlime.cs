@@ -6,6 +6,15 @@ public sealed class PetSlime : Component
 	[Sync] public ulong OwnerSteamId { get; set; }
 	[Sync] public PetKind Kind { get; set; } = PetKind.Slime;
 	[Sync] public int ColorIndex { get; set; }
+	[Sync] public bool HasOverrideColor { get; set; }
+	[Sync] public Color OverrideColor { get; set; }
+
+	Color ResolveColor( float alpha )
+	{
+		if ( HasOverrideColor )
+			return new Color( OverrideColor.r, OverrideColor.g, OverrideColor.b, alpha );
+		return PetDatabase.SlimeColorByIndex( ColorIndex, alpha );
+	}
 
 	Vector3 _targetPos;
 	float _orbitTimer;
@@ -506,7 +515,7 @@ public sealed class PetSlime : Component
 		float time = Time.Now;
 		var pos = WorldPosition;
 		float centerZ = pos.z + _modelHalf * _curScale;
-		var color = PetDatabase.SlimeColorByIndex( ColorIndex, 1f );
+		var color = ResolveColor( 1f );
 		bool moving = _velSmooth.WithZ( 0 ).Length > 20f;
 
 		for ( int i = 0; i < 6; i++ )
@@ -554,7 +563,7 @@ public sealed class PetSlime : Component
 		_visualRenderer = _visual.Components.Get<ModelRenderer>();
 		if ( _visualRenderer != null )
 		{
-			_visualRenderer.Tint = PetDatabase.SlimeColorByIndex( ColorIndex, 0.66f );
+			_visualRenderer.Tint = ResolveColor( 0.66f );
 			if ( _visualRenderer.Model != null )
 			{
 				float h = _visualRenderer.Model.Bounds.Size.z * 0.5f;
@@ -622,7 +631,7 @@ public sealed class PetSlime : Component
 				return;
 		}
 
-		var color = PetDatabase.SlimeColorByIndex( ColorIndex, 0.55f );
+		var color = ResolveColor( 0.55f );
 		float[] bx = { 6f, -5f, 3f, -4f };
 		float[] by = { 4f, 5f, -2f, 3f };
 		float[] bz = { 3f, -3f, 4f, -2f };

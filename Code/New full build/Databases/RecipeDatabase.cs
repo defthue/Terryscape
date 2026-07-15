@@ -368,19 +368,19 @@ public static class RecipeDatabase
 			ItemId.HealingPotion, 1, SkillType.Crafting, 15, SkillType.Crafting, 30 ) );
 
 		Add( Define( "greater_healing_potion", "Greater Healing Potion", StationType.AlchemyTable,
-			new[] { new RecipeIngredient( ItemId.VoidcapMushroom, 1 ), new RecipeIngredient( ItemId.Liferoot, 1 ), new RecipeIngredient( ItemId.GlassVial, 1 ) },
+			new[] { new RecipeIngredient( ItemId.VoidcapMushroom, 1 ), new RecipeIngredient( ItemId.Liferoot, 1 ), new RecipeIngredient( ItemId.CrystalVial, 1 ) },
 			ItemId.GreaterHealingPotion, 1, SkillType.Crafting, 35, SkillType.Crafting, 100 ) );
 
 		Add( Define( "lesser_mana_potion", "Lesser Mana Potion", StationType.AlchemyTable,
-			new[] { new RecipeIngredient( ItemId.BlueMoss, 1 ), new RecipeIngredient( ItemId.ArcaneDust, 1 ), new RecipeIngredient( ItemId.GlassVial, 1 ) },
+			new[] { new RecipeIngredient( ItemId.BlueMoss, 1 ), new RecipeIngredient( ItemId.GlassVial, 1 ) },
 			ItemId.LesserManaPotion, 1, SkillType.Crafting, 5, SkillType.Crafting, 15 ) );
 
 		Add( Define( "mana_potion", "Mana Potion", StationType.AlchemyTable,
-			new[] { new RecipeIngredient( ItemId.Whisperfern, 1 ), new RecipeIngredient( ItemId.ArcaneDust, 2 ), new RecipeIngredient( ItemId.GlassVial, 1 ) },
+			new[] { new RecipeIngredient( ItemId.BlueMoss, 1 ), new RecipeIngredient( ItemId.Whisperfern, 1 ), new RecipeIngredient( ItemId.GlassVial, 1 ) },
 			ItemId.ManaPotion, 1, SkillType.Crafting, 20, SkillType.Crafting, 50 ) );
 
 		Add( Define( "greater_mana_potion", "Greater Mana Potion", StationType.AlchemyTable,
-			new[] { new RecipeIngredient( ItemId.Moonbloom, 1 ), new RecipeIngredient( ItemId.ArcaneDust, 3 ), new RecipeIngredient( ItemId.CrystalVial, 1 ) },
+			new[] { new RecipeIngredient( ItemId.Moonbloom, 1 ), new RecipeIngredient( ItemId.Whisperfern, 1 ), new RecipeIngredient( ItemId.BlueMoss, 1 ), new RecipeIngredient( ItemId.CrystalVial, 1 ) },
 			ItemId.GreaterManaPotion, 1, SkillType.Crafting, 35, SkillType.Crafting, 100 ) );
 
 		Add( Define( "attack_potion", "Attack Potion", StationType.AlchemyTable,

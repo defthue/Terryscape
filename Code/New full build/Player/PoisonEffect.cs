@@ -112,6 +112,22 @@ public sealed class PoisonEffect : Component
 
 	void ApplyTick()
 	{
+		var pvpTarget = PvpCombat.ResolveTarget( GameObject, _source );
+		if ( pvpTarget != null )
+		{
+			int raw = (int)DamagePerTick;
+			if ( raw < 1 ) raw = 1;
+
+			int dealt = PvpCombat.ResolveDamage( raw, CombatStyle.Magic, pvpTarget );
+			var health = pvpTarget.Components.Get<PlayerHealth>();
+			if ( health != null )
+			{
+				int applied = health.TakeDamage( dealt );
+				_source?.Components.Get<PlayerCombat>()?.NotifyPvpHit( pvpTarget, applied, false, false );
+			}
+			return;
+		}
+
 		var monster = GameObject.Components.Get<Monster>();
 		if ( monster != null && !monster.IsDead )
 		{
@@ -129,6 +145,16 @@ public sealed class PoisonEffect : Component
 			if ( dmg < 1 ) dmg = 1;
 			boss.TakeDamage( dmg, _source );
 			DamagePopupBroadcaster.BroadcastPoison( boss.WorldPosition + Vector3.Up * 60f, dmg );
+			return;
+		}
+
+		var slimeKing = GameObject.Components.Get<SlimeKing>();
+		if ( slimeKing != null && !slimeKing.IsDead )
+		{
+			int dmg = (int)DamagePerTick;
+			if ( dmg < 1 ) dmg = 1;
+			slimeKing.TakeDamage( dmg, _source );
+			DamagePopupBroadcaster.BroadcastPoison( slimeKing.WorldPosition + Vector3.Up * 60f, dmg );
 		}
 	}
 }

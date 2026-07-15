@@ -122,9 +122,9 @@ public sealed class PlayerCombat : Component
 		if ( targetHealth == null )
 			return;
 
-		targetHealth.TakeDamage( finalDamage );
+		int applied = targetHealth.TakeDamage( finalDamage );
 
-		NotifyPvpHit( target, finalDamage, isCrit, true );
+		NotifyPvpHit( target, applied, isCrit, true );
 	}
 
 	public void NotifyPvpHit( GameObject target, int dealt, bool isCrit = false, bool playSound = true )
@@ -240,5 +240,50 @@ public sealed class PlayerCombat : Component
 		boss.TakeDamage( damage, GameObject );
 
 		DamagePopupBroadcaster.Broadcast( boss.WorldPosition + Vector3.Up * 50f, damage, boss.MaxHealth, isCrit );
+	}
+
+	public void DoSlimeKingHit( SlimeKing slimeKing, Inventory inventory, Skills skills )
+	{
+		var weaponDef = inventory.GetEquippedWeaponDef();
+		CombatStyle playerStyle = CombatTriangle.GetStyleFromWeapon( weaponDef );
+
+		float weaponPower = 1f;
+
+		if ( weaponDef != null )
+		{
+			weaponPower = weaponDef.WeaponPower;
+		}
+
+		float skillBonus = skills.GetCombatPower( SkillType.Attack );
+		float triangleMult = CombatTriangle.GetDealMultiplier( playerStyle, slimeKing.CombatStyle );
+
+		float buffMult = 1f;
+		var potionSystem = GameObject.Components.Get<PotionSystem>();
+		if ( potionSystem != null )
+			buffMult = potionSystem.GetBuffMultiplier( BuffType.Attack );
+
+		float enchantMult = 1f;
+		if ( weaponDef != null && ( weaponDef.Type == ItemType.MeleeWeapon || weaponDef.Type == ItemType.Tool ) )
+			enchantMult = 1f + inventory.GetEnchantmentBonus( EnchantmentType.Sharpness ) / 100f;
+
+		int damage = (int)( weaponPower * skillBonus * triangleMult * buffMult * enchantMult );
+		if ( damage < 1 ) damage = 1;
+
+		bool isCrit = CombatConstants.RollCrit();
+		if ( isCrit )
+			damage = (int)( damage * CombatConstants.CritMultiplier );
+
+		var manaCombat = GameObject.Components.Get<ManaSystem>();
+		if ( manaCombat != null )
+			manaCombat.MarkCombat();
+
+		int slimeHpLeft = System.Math.Max( 0, slimeKing.CurrentHealth - damage );
+		GameLog.Add( $"You hit {slimeKing.DisplayName} for {damage} damage{( isCrit ? " (CRIT!)" : "" )}. ({slimeHpLeft}/{slimeKing.MaxHealth} HP left)", "#a8c8a8" );
+
+		SoundLibrary.PlayMonsterHit( slimeKing.WorldPosition );
+
+		slimeKing.TakeDamage( damage, GameObject );
+
+		DamagePopupBroadcaster.Broadcast( slimeKing.WorldPosition + Vector3.Up * 50f, damage, slimeKing.MaxHealth, isCrit );
 	}
 }

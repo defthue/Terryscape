@@ -742,6 +742,25 @@ public sealed class SpellCaster : Component
 			}
 		}
 
+		foreach ( var slimeKing in Scene.GetAllComponents<SlimeKing>() )
+		{
+			if ( slimeKing == null || !slimeKing.IsValid() || slimeKing.IsDead )
+				continue;
+
+			Vector3 toSlime = slimeKing.WorldPosition - originPos;
+			float dist = toSlime.Length;
+			if ( dist > HomingMaxAcquireRange || dist < 1f )
+				continue;
+
+			Vector3 toSlimeDir = toSlime / dist;
+			float dot = aimDir.Dot( toSlimeDir );
+			if ( dot > bestDot )
+			{
+				bestDot = dot;
+				best = slimeKing.GameObject;
+			}
+		}
+
 		return best;
 	}
 
@@ -1009,7 +1028,9 @@ public sealed class SpellCaster : Component
 		acid.TraceRadius = spell.TraceRadius;
 		acid.SplashRadius = spell.SplashRadius;
 		acid.SplashVisualDuration = spell.SplashVisualDuration;
-		acid.PoisonDamagePerTick = spell.PoisonDamagePerTick;
+		float poisonTick = ComputeCasterPower() * spell.PoisonDamagePerTick;
+		if ( poisonTick < 1f ) poisonTick = 1f;
+		acid.PoisonDamagePerTick = poisonTick;
 		acid.PoisonTickInterval = spell.PoisonTickInterval;
 		acid.PoisonDuration = spell.PoisonDuration;
 		acid.SplashColor = AcidPoolColor;
@@ -1082,7 +1103,9 @@ public sealed class SpellCaster : Component
 		switch ( spell.Id )
 		{
 			case SpellId.Inferno:
-				FireTornado.Spawn( Scene, ground, GameObject, spell.AoeRadius, spell.AoeHeight, spell.AoeDuration, spell.AoeDamagePerTick, spell.AoeTickInterval, false );
+				int tickDamage = (int)( ComputeCasterPower() * spell.AoeDamagePerTick );
+				if ( tickDamage < 1 ) tickDamage = 1;
+				FireTornado.Spawn( Scene, ground, GameObject, spell.AoeRadius, spell.AoeHeight, spell.AoeDuration, tickDamage, spell.AoeTickInterval, false );
 				BroadcastFireTornado( ground, spell.AoeRadius, spell.AoeHeight, spell.AoeDuration );
 				break;
 
@@ -1117,12 +1140,12 @@ public sealed class SpellCaster : Component
 		Singularity.Spawn( Scene, position, GameObject, pullRadius, collapseRadius, pullDuration, 0, true );
 	}
 
-	int ComputeSpellDamage( SpellDefinition spell )
+	float ComputeCasterPower()
 	{
 		var inventory = GameObject.Components.Get<Inventory>();
 		var skills = GameObject.Components.Get<Skills>();
 		if ( inventory == null || skills == null )
-			return 1;
+			return 1f;
 
 		var weaponDef = inventory.GetEquippedWeaponDef();
 		float staffPower = weaponDef != null ? weaponDef.WeaponPower : 1f;
@@ -1138,8 +1161,12 @@ public sealed class SpellCaster : Component
 		if ( mana != null )
 			sicknessMult = mana.GetManaDamageMultiplier();
 
-		float totalPower = staffPower * spell.DamageMultiplier * skillBonus * buffMult * sicknessMult;
-		int damage = (int)totalPower;
+		return staffPower * skillBonus * buffMult * sicknessMult;
+	}
+
+	int ComputeSpellDamage( SpellDefinition spell )
+	{
+		int damage = (int)( ComputeCasterPower() * spell.DamageMultiplier );
 		if ( damage < 1 ) damage = 1;
 		return damage;
 	}

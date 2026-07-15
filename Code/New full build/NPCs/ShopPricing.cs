@@ -88,6 +88,7 @@ public static class ShopPricing
 			case ItemId.GhostwoodStaff: return 44;
 			case ItemId.DuskoakStaff: return 64;
 			case ItemId.WorldrootStaff: return 88;
+			case ItemId.SlimerootStaff: return 176;
 
 			case ItemId.CoppiteArrow: return 1;
 			case ItemId.AshsteelArrow: return 2;

@@ -98,7 +98,7 @@ public sealed class PlayerHealth : Component
 			MaxHealth = NormalizedMaxOverride;
 	}
 
-	public void TakeDamage( int damage )
+	public int TakeDamage( int damage )
 	{
 		int reduced = damage;
 
@@ -110,6 +110,7 @@ public sealed class PlayerHealth : Component
 		}
 
 		ApplyDamage( reduced );
+		return reduced;
 	}
 
 	[Rpc.Broadcast]

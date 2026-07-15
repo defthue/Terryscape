@@ -192,7 +192,7 @@ public sealed class Inventory : Component
 			return true;
 
 		var def = ItemDatabase.Get( id );
-		int maxStack = def != null ? def.MaxStack : 999;
+		int maxStack = def != null ? def.MaxStack : 1000;
 		if ( maxStack < 1 ) maxStack = 1;
 
 		int remaining = amount;
@@ -333,7 +333,7 @@ public sealed class Inventory : Component
 		}
 
 		var def = ItemDatabase.Get( id );
-		int maxStack = def != null ? def.MaxStack : 999;
+		int maxStack = def != null ? def.MaxStack : 1000;
 		if ( maxStack < 1 ) maxStack = 1;
 
 		int remaining = amount;
@@ -484,7 +484,7 @@ public sealed class Inventory : Component
 		if ( a.IsStack && b.IsStack && a.ItemId == b.ItemId )
 		{
 			var def = ItemDatabase.Get( a.ItemId );
-			int maxStack = def != null ? def.MaxStack : 999;
+			int maxStack = def != null ? def.MaxStack : 1000;
 			if ( maxStack < 1 ) maxStack = 1;
 
 			int room = maxStack - b.Count;
@@ -1331,6 +1331,21 @@ public sealed class Inventory : Component
 	public Dictionary<string, string> GetChestClaims()
 	{
 		return _chestClaims;
+	}
+
+	public string GetProgressValue( string key )
+	{
+		if ( string.IsNullOrEmpty( key ) )
+			return null;
+		return _chestClaims.TryGetValue( key, out var v ) ? v : null;
+	}
+
+	public void SetProgressValue( string key, string value )
+	{
+		if ( string.IsNullOrEmpty( key ) )
+			return;
+		_chestClaims[key] = value ?? "";
+		PlayerPersistence.Local?.MarkDirty( SaveSection.Progress | SaveSection.Inventory | SaveSection.Stats );
 	}
 
 	public static PlayerSaveData.UniqueItemEntry BuildUniqueEntry( ItemInstance instance )

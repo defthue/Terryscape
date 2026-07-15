@@ -364,9 +364,10 @@ public sealed class PlayerGatherResource : Component
 		var node = trace.GameObject.Components.Get<ResourceNode>();
 		var monster = trace.GameObject.Components.Get<Monster>();
 		var boss = trace.GameObject.Components.Get<Boss>();
+		var slimeKing = trace.GameObject.Components.Get<SlimeKing>();
 		var pvpTarget = PvpCombat.ResolveTarget( trace.GameObject, GameObject );
 
-		if ( node == null && monster == null && boss == null && pvpTarget == null )
+		if ( node == null && monster == null && boss == null && slimeKing == null && pvpTarget == null )
 		{
 			var retryTrace = Scene.Trace
 				.Ray( start, end )
@@ -381,10 +382,11 @@ public sealed class PlayerGatherResource : Component
 				node = retryTrace.GameObject.Components.Get<ResourceNode>();
 				monster = retryTrace.GameObject.Components.Get<Monster>();
 				boss = retryTrace.GameObject.Components.Get<Boss>();
+				slimeKing = retryTrace.GameObject.Components.Get<SlimeKing>();
 				pvpTarget = PvpCombat.ResolveTarget( retryTrace.GameObject, GameObject );
 			}
 
-			if ( node == null && monster == null && boss == null && pvpTarget == null )
+			if ( node == null && monster == null && boss == null && slimeKing == null && pvpTarget == null )
 			{
 				if ( TryForageFallback( forward ) )
 					return;
@@ -415,7 +417,7 @@ public sealed class PlayerGatherResource : Component
 
 		var combat = GameObject.Components.Get<PlayerCombat>();
 
-		if ( pvpTarget == null && node == null && monster == null && boss == null && combat != null )
+		if ( pvpTarget == null && node == null && monster == null && boss == null && slimeKing == null && combat != null )
 			pvpTarget = combat.FindArcPvpTarget();
 
 		if ( pvpTarget != null && combat != null )
@@ -431,6 +433,14 @@ public sealed class PlayerGatherResource : Component
 			_autoGatherNode = null;
 			TriggerSwingAnimation( false );
 			combat.DoBossHit( boss, inventory, skills );
+			return;
+		}
+
+		if ( slimeKing != null && combat != null )
+		{
+			_autoGatherNode = null;
+			TriggerSwingAnimation( false );
+			combat.DoSlimeKingHit( slimeKing, inventory, skills );
 			return;
 		}
 

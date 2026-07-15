@@ -114,8 +114,8 @@ public sealed class SpellProjectile : Component
 			var targetHealth = pvpTarget.Components.Get<PlayerHealth>();
 			if ( targetHealth != null )
 			{
-				targetHealth.TakeDamage( finalDamage );
-				Shooter?.Components.Get<PlayerCombat>()?.NotifyPvpHit( pvpTarget, finalDamage, IsCrit, true );
+				int applied = targetHealth.TakeDamage( finalDamage );
+				Shooter?.Components.Get<PlayerCombat>()?.NotifyPvpHit( pvpTarget, applied, IsCrit, true );
 			}
 			PlayImpactSound( hitPos );
 			GameObject.Destroy();
@@ -160,6 +160,20 @@ public sealed class SpellProjectile : Component
 
 			boss.TakeDamage( finalDamage, Shooter );
 			DamagePopupBroadcaster.Broadcast( hitPos, finalDamage, boss.MaxHealth, IsCrit );
+			PlayImpactSound( hitPos );
+			GameObject.Destroy();
+			return;
+		}
+
+		var slimeKing = hitObject.Components.Get<SlimeKing>();
+		if ( slimeKing != null )
+		{
+			float triangleMult = CombatTriangle.GetDealMultiplier( CombatStyle.Magic, slimeKing.CombatStyle );
+			int finalDamage = (int)( Damage * triangleMult );
+			if ( finalDamage < 1 ) finalDamage = 1;
+
+			slimeKing.TakeDamage( finalDamage, Shooter );
+			DamagePopupBroadcaster.Broadcast( hitPos, finalDamage, slimeKing.MaxHealth, IsCrit );
 			PlayImpactSound( hitPos );
 			GameObject.Destroy();
 			return;

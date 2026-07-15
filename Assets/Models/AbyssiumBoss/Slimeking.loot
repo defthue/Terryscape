@@ -1,0 +1,62 @@
+{
+  "GoldMin": 3000,
+  "GoldMax": 5000,
+  "Entries": [
+    {
+      "Item": "Coal",
+      "MinAmount": 20,
+      "MaxAmount": 35,
+      "ChancePercent": 60
+    },
+    {
+      "Item": "AbyssiumOre",
+      "MinAmount": 1,
+      "MaxAmount": 3,
+      "ChancePercent": 35
+    },
+    {
+      "Item": "Starbloom",
+      "MinAmount": 1,
+      "MaxAmount": 3,
+      "ChancePercent": 32
+    },
+    {
+      "Item": "Liferoot",
+      "MinAmount": 1,
+      "MaxAmount": 3,
+      "ChancePercent": 30
+    },
+    {
+      "Item": "Gem",
+      "MinAmount": 2,
+      "MaxAmount": 4,
+      "ChancePercent": 25
+    },
+    {
+      "Item": "LunariteBar",
+      "MinAmount": 1,
+      "MaxAmount": 3,
+      "ChancePercent": 18
+    },
+    {
+      "Item": "AbyssiumBar",
+      "MinAmount": 1,
+      "MaxAmount": 3,
+      "ChancePercent": 10
+    },
+    {
+      "Item": "Nugget",
+      "MinAmount": 5,
+      "MaxAmount": 12,
+      "ChancePercent": 40
+    },
+    {
+      "Item": "AbyssiumHeavyHelm",
+      "MinAmount": 1,
+      "MaxAmount": 1,
+      "ChancePercent": 1
+    }
+  ],
+  "__references": [],
+  "__version": 0
+}

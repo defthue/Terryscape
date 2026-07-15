@@ -11,11 +11,12 @@
 		<div class="ui-backdrop" onclick="@OnBackdropClick"></div>
 	}
 
-	<div class="log-panel @(IsUIOpen ? "ui-open" : "") @(IsChatOpen ? "chat-open" : "") @(HudState.ChatCollapsed ? "collapsed" : "")">
+	<div class="log-panel @(IsUIOpen ? "ui-open" : "") @(IsChatOpen ? "chat-open" : "") @(HudState.ChatCollapsed ? "collapsed" : "") @(HudState.ChatEnlarged ? "enlarged" : "")">
 		<div class="log-tabs">
 			<div class="log-tab @(LogTab == 0 ? "active" : "")" onclick="@(() => LogTab = 0)">All</div>
 			<div class="log-tab @(LogTab == 1 ? "active" : "")" onclick="@(() => LogTab = 1)">Log</div>
 			<div class="log-tab @(LogTab == 2 ? "active" : "")" onclick="@(() => LogTab = 2)">Chat</div>
+			<div class="log-enlarge" onclick="@(() => ToggleChatEnlarge())">@(HudState.ChatEnlarged ? "⤡" : "⤢")</div>
 			<div class="log-collapse" onclick="@(() => ToggleChatCollapse())">@(HudState.ChatCollapsed ? "▲" : "▼")</div>
 		</div>
 
@@ -477,6 +478,15 @@
 	void ToggleChatCollapse()
 	{
 		HudState.ChatCollapsed = !HudState.ChatCollapsed;
+		if ( HudState.ChatCollapsed )
+			HudState.ChatEnlarged = false;
+	}
+
+	void ToggleChatEnlarge()
+	{
+		HudState.ChatEnlarged = !HudState.ChatEnlarged;
+		if ( HudState.ChatEnlarged )
+			HudState.ChatCollapsed = false;
 	}
 
 	string FmtAmmo( int n )
