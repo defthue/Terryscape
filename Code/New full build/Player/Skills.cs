@@ -10,6 +10,7 @@ public class SkillData
 public sealed class Skills : Component
 {
 	[Sync] public int TotalLevel { get; set; }
+	[Sync] public int NetDefenceLevel { get; set; } = 1;
 
 	Dictionary<SkillType, SkillData> _skills = new();
 
@@ -56,6 +57,7 @@ public sealed class Skills : Component
 			total += kv.Value.Level;
 
 		TotalLevel = total;
+		NetDefenceLevel = GetLevel( SkillType.Defence );
 	}
 
 	public int GetLevel( SkillType skill )
@@ -189,7 +191,7 @@ public sealed class Skills : Component
 
 	public float GetDefenceMultiplier()
 	{
-		int level = GetLevel( SkillType.Defence );
+		int level = IsProxy ? NetDefenceLevel : GetLevel( SkillType.Defence );
 		return 1.0f + (level - 1) * 0.02f;
 	}
 

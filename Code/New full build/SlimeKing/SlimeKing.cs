@@ -100,6 +100,7 @@ public sealed class SlimeKing : Component
 	ModelRenderer _visualRenderer;
 	float _modelHalf = 14f;
 	bool _visualsSetUp;
+	bool _metricsCaptured;
 	float _proxyDelay;
 	Vector3 _lastPos;
 	Vector3 _velSmooth;
@@ -187,6 +188,9 @@ public sealed class SlimeKing : Component
 				SetupVisuals();
 			}
 		}
+
+		if ( _visualsSetUp && !_metricsCaptured )
+			_metricsCaptured = TryCaptureModelMetrics();
 
 		TrackVelocity();
 		ApplyTint();
@@ -947,18 +951,24 @@ public sealed class SlimeKing : Component
 
 		_visualRenderer = _visual.Components.Get<ModelRenderer>();
 		if ( _visualRenderer != null )
-		{
 			_visualRenderer.Tint = SlimeColor.WithAlpha( 0.66f );
-			if ( _visualRenderer.Model != null )
-			{
-				float h = _visualRenderer.Model.Bounds.Size.z * 0.5f;
-				if ( h > 0.1f )
-					_modelHalf = h;
-			}
-		}
 
-		AlignCollider();
+		_metricsCaptured = TryCaptureModelMetrics();
 		EnsureBubbles();
+	}
+
+	bool TryCaptureModelMetrics()
+	{
+		if ( _visualRenderer == null || !_visualRenderer.IsValid() || _visualRenderer.Model == null )
+			return false;
+
+		float h = _visualRenderer.Model.Bounds.Size.z * 0.5f;
+		if ( h <= 0.1f )
+			return false;
+
+		_modelHalf = h;
+		AlignCollider();
+		return true;
 	}
 
 	void AlignCollider()

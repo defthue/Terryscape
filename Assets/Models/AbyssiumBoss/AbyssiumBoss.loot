@@ -1,17 +1,17 @@
 {
-  "GoldMin": 3000,
-  "GoldMax": 5000,
+  "GoldMin": 5000,
+  "GoldMax": 10000,
   "Entries": [
     {
       "Item": "Coal",
       "MinAmount": 20,
-      "MaxAmount": 35,
+      "MaxAmount": 50,
       "ChancePercent": 60
     },
     {
       "Item": "AbyssiumOre",
       "MinAmount": 1,
-      "MaxAmount": 3,
+      "MaxAmount": 5,
       "ChancePercent": 35
     },
     {
@@ -34,8 +34,8 @@
     },
     {
       "Item": "LunariteBar",
-      "MinAmount": 1,
-      "MaxAmount": 3,
+      "MinAmount": 2,
+      "MaxAmount": 5,
       "ChancePercent": 18
     },
     {

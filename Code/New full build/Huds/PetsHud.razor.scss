@@ -183,12 +183,24 @@
 }
 
 .color-value-bar {
+	position: relative;
 	width: 24px;
 	height: 300px;
 	border: 2px solid #6b5a3a;
 	border-radius: 6px;
+	overflow: hidden;
 	pointer-events: all;
 	cursor: pointer;
+}
+
+.color-value-overlay {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background: linear-gradient(180deg, #00000000, #000000);
+	pointer-events: none;
 }
 
 .color-preview-row {

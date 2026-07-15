@@ -22,10 +22,12 @@
 							<div class="pet-section-label">Slime Color</div>
 							<div class="color-picker-row">
 								<div class="color-wheel-wrap" @ref="WheelPanel" onclick="@(() => OnWheelClick())">
-									<img class="color-wheel-img" src="/UI/PetColorWheel.png" />
+									<img class="color-wheel-img" src="/UI/PetColorWheel.vtex" />
 									<div class="color-wheel-cursor" style="left: @(CursorXPct.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%; top: @(CursorYPct.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%;"></div>
 								</div>
-								<div class="color-value-bar" @ref="ValuePanel" onclick="@(() => OnValueClick())" style="background: linear-gradient(180deg, @(ToHex( HsvToRgb( Hue, Sat, 1f ) )), #000000);"></div>
+								<div class="color-value-bar" @ref="ValuePanel" onclick="@(() => OnValueClick())" style="background-color: @(ToHex( HsvToRgb( Hue, Sat, 1f ) ));">
+								<div class="color-value-overlay"></div>
+							</div>
 							</div>
 							<div class="color-preview-row">
 								<div class="color-preview" style="background-color: @(ToHex( ComposedColor ));"></div>
