@@ -18,8 +18,6 @@
 {
 	[Property] public float HeightOffset { get; set; } = 100f;
 
-	const float MountPromptRange = 150f;
-
 	bool ShouldShow { get; set; }
 	float ScreenX { get; set; }
 	float ScreenY { get; set; }
@@ -183,31 +181,22 @@
 			}
 		}
 
-		if ( best == null && Scene.Camera != null )
+		if ( best == null && Scene.Camera != null && !InteractPriority.StationWantsUse() )
 		{
 			var localConn = player.Network.Owner;
 			ulong localSteam = localConn != null ? (ulong)localConn.SteamId : 0ul;
-
-			var aimOrigin = playerPos + Vector3.Up * 30f;
-			var aimDir = Scene.Camera.WorldRotation.Forward;
+			var camForward = Scene.Camera.WorldRotation.Forward;
 
 			foreach ( var slime in Scene.GetAllComponents<PetSlime>() )
 			{
 				if ( !slime.IsValid() ) continue;
 				if ( !slime.MountAvailableFor( localSteam ) ) continue;
+				if ( !PetSlime.MountProximityTest( slime, playerPos, camForward ) ) continue;
 
-				var center = slime.MountAimCenter();
-				var toCenter = center - aimOrigin;
-				float along = Vector3.Dot( toCenter, aimDir );
-				if ( along < 0f || along > MountPromptRange ) continue;
-
-				var closest = aimOrigin + aimDir * along;
-				float off = ( center - closest ).Length;
-				if ( off > slime.MountAimRadius() ) continue;
-
-				if ( along < bestDist )
+				float d = Vector3.DistanceBetween( slime.MountAimCenter(), playerPos );
+				if ( d < bestDist )
 				{
-					bestDist = along;
+					bestDist = d;
 					best = slime.GameObject;
 					bestLabel = "Mount";
 				}

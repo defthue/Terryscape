@@ -246,6 +246,8 @@ public sealed class Boss : Component
 	int _currentAttackHitsFired;
 	float _currentAttackTime;
 	bool _forceBeamNext;
+	bool _attackAnimCleared;
+	string _lastAttackAnimParam;
 	float _moveStartTimer;
 	bool _wasMovingLastFrame;
 	float _deathAnimTimer;
@@ -262,8 +264,16 @@ public sealed class Boss : Component
 		public Vector3 LocalOffset;
 		public Vector3 Size;
 		public float TimeRemaining;
+		public Color Tint;
 	}
 	List<DebugHitboxDraw> _debugHitboxes = new();
+
+	struct DebugHitMarker
+	{
+		public GameObject Player;
+		public float TimeRemaining;
+	}
+	List<DebugHitMarker> _debugHitMarkers = new();
 
 	protected override void OnStart()
 	{
@@ -296,6 +306,7 @@ public sealed class Boss : Component
 	{
 		UpdatePillarTint();
 		UpdateDebugHitboxes();
+		DrawRuntimeHitboxDebug();
 		UpdateActiveBeams();
 
 		if ( !Networking.IsHost )
@@ -459,25 +470,29 @@ public sealed class Boss : Component
 		if ( distanceToTarget <= MeleeRange )
 		{
 			var chosen = RollMeleeAttack();
-			if ( IsAttackReady( chosen ) )
-				return StartAttackByType( chosen );
-
-			if ( chosen != BossAttackType.Downward && IsAttackReady( BossAttackType.Downward ) )
-				return StartAttackByType( BossAttackType.Downward );
+			if ( chosen != null )
+				return StartAttackByType( chosen.Value );
 		}
 
 		return false;
 	}
 
-	BossAttackType RollMeleeAttack()
+	BossAttackType? RollMeleeAttack()
 	{
-		int total = Math.Max( 1, DownwardWeight + ThreeSixtyWeight + ComboWeight );
+		int combo = IsAttackReady( BossAttackType.Combo ) ? Math.Max( 0, ComboWeight ) : 0;
+		int threeSixty = IsAttackReady( BossAttackType.ThreeSixtyLow ) ? Math.Max( 0, ThreeSixtyWeight ) : 0;
+		int downward = IsAttackReady( BossAttackType.Downward ) ? Math.Max( 0, DownwardWeight ) : 0;
+
+		int total = combo + threeSixty + downward;
+		if ( total <= 0 )
+			return null;
+
 		int roll = Game.Random.Int( 0, total - 1 );
 
-		if ( roll < ComboWeight )
+		if ( roll < combo )
 			return BossAttackType.Combo;
 
-		if ( roll < ComboWeight + ThreeSixtyWeight )
+		if ( roll < combo + threeSixty )
 			return BossAttackType.ThreeSixtyLow;
 
 		return BossAttackType.Downward;
@@ -513,8 +528,13 @@ public sealed class Boss : Component
 		_currentAttack = def;
 		_currentAttackTime = 0f;
 		_currentAttackHitsFired = 0;
+		_attackAnimCleared = false;
 		_animationLockRemaining = def.AnimLengthFrames / (float)AnimFrameRate;
 		_state = BossState.Attacking;
+
+		if ( !string.IsNullOrEmpty( _lastAttackAnimParam ) && _lastAttackAnimParam != def.AnimParam )
+			BroadcastAnimBool( _lastAttackAnimParam, false );
+		_lastAttackAnimParam = def.AnimParam;
 
 		BroadcastAnimBool( "b_is_attacking", true );
 		BroadcastAnimBool( def.AnimParam, true );
@@ -552,11 +572,14 @@ public sealed class Boss : Component
 			_currentAttackHitsFired++;
 		}
 
+		if ( _animationLockRemaining <= 0f && !_attackAnimCleared )
+		{
+			_attackAnimCleared = true;
+			BroadcastAnimBool( "b_is_attacking", false );
+		}
+
 		if ( _animationLockRemaining <= -PostAttackBuffer )
 		{
-			BroadcastAnimBool( _currentAttack.AnimParam, false );
-			BroadcastAnimBool( "b_is_attacking", false );
-
 			if ( _currentAttack.Type == BossAttackType.Kick )
 				_forceBeamNext = true;
 
@@ -584,9 +607,6 @@ public sealed class Boss : Component
 
 		var hitPlayers = ScanHitbox( hit );
 
-		if ( PrimaryTarget != null && PrimaryTarget.IsValid() && !hitPlayers.Contains( PrimaryTarget ) )
-			hitPlayers.Add( PrimaryTarget );
-
 		foreach ( var playerObj in hitPlayers )
 			ApplyDamageToPlayer( playerObj, attack );
 
@@ -597,7 +617,12 @@ public sealed class Boss : Component
 		}
 
 		if ( ShowHitboxDebug )
-			_debugHitboxes.Add( new DebugHitboxDraw { LocalOffset = hit.HitboxLocalOffset, Size = hit.HitboxSize, TimeRemaining = DebugHitboxFlashDuration } );
+		{
+			_debugHitboxes.Add( new DebugHitboxDraw { LocalOffset = hit.HitboxLocalOffset, Size = hit.HitboxSize, TimeRemaining = DebugHitboxFlashDuration, Tint = GizmoColorForAttack( attack.Type ) } );
+
+			foreach ( var playerObj in hitPlayers )
+				_debugHitMarkers.Add( new DebugHitMarker { Player = playerObj, TimeRemaining = DebugHitboxFlashDuration } );
+		}
 	}
 
 	List<GameObject> ScanHitbox( AttackHitFrame hit )
@@ -663,6 +688,40 @@ public sealed class Boss : Component
 
 		playerHealth.TakeDamage( finalDamage );
 		DamagePopupBroadcaster.Broadcast( playerObj.WorldPosition + Vector3.Up * 60f, finalDamage, playerHealth.MaxHealth, false );
+		DismountRider( playerObj );
+	}
+
+	void DismountRider( GameObject playerObj )
+	{
+		ulong steamId = playerObj?.Network?.Owner?.SteamId ?? 0ul;
+		if ( steamId == 0ul )
+			return;
+
+		BroadcastDismountRider( steamId );
+	}
+
+	[Rpc.Broadcast]
+	void BroadcastDismountRider( ulong targetSteamId )
+	{
+		if ( Connection.Local == null || Connection.Local.SteamId != targetSteamId )
+			return;
+
+		var player = PlayerHelper.GetLocalPlayer();
+		if ( player == null || !player.IsValid() )
+			return;
+
+		var pc = player.Components.Get<PlayerController>();
+		if ( pc == null )
+			return;
+
+		foreach ( var chair in Scene.GetAllComponents<BaseChair>() )
+		{
+			if ( chair == null || !chair.IsOccupied )
+				continue;
+
+			if ( chair.GetOccupant() == pc )
+				chair.AskToLeave( pc );
+		}
 	}
 
 	void ApplyKnockbackToPlayer( GameObject playerObj, BossAttackDefinition attack )
@@ -921,6 +980,7 @@ public sealed class Boss : Component
 
 		playerHealth.TakeDamage( finalDamage );
 		DamagePopupBroadcaster.Broadcast( playerObj.WorldPosition + Vector3.Up * 60f, finalDamage, playerHealth.MaxHealth, false );
+		DismountRider( playerObj );
 	}
 
 	void UpdateReturning()
@@ -1183,6 +1243,16 @@ public sealed class Boss : Component
 		Respawn();
 	}
 
+	static readonly string[] RespawnLines =
+	{
+		"{0} has stirred once more...",
+		"{0} rises again from the depths...",
+		"A cold wind blows... {0} has returned.",
+		"The abyss releases its champion. {0} walks again.",
+		"Steel scrapes stone... {0} has awakened.",
+		"The darkness takes shape. {0} stands once more."
+	};
+
 	void Respawn()
 	{
 		IsDead = false;
@@ -1195,7 +1265,8 @@ public sealed class Boss : Component
 		_contributors.Clear();
 		BroadcastAnimBool( "b_death", false );
 		BroadcastRespawn();
-		GameManager.Instance?.BroadcastServerNotice( $"{BossName} has stirred once more..." );
+		string line = RespawnLines[Game.Random.Int( 0, RespawnLines.Length - 1 )];
+		GameManager.Instance?.BroadcastServerNotice( string.Format( line, BossName ) );
 	}
 
 	[Rpc.Broadcast]
@@ -1520,9 +1591,6 @@ public sealed class Boss : Component
 
 	void UpdateDebugHitboxes()
 	{
-		if ( _debugHitboxes.Count == 0 )
-			return;
-
 		for ( int i = _debugHitboxes.Count - 1; i >= 0; i-- )
 		{
 			var d = _debugHitboxes[i];
@@ -1530,6 +1598,69 @@ public sealed class Boss : Component
 			_debugHitboxes[i] = d;
 			if ( d.TimeRemaining <= 0f )
 				_debugHitboxes.RemoveAt( i );
+		}
+
+		for ( int i = _debugHitMarkers.Count - 1; i >= 0; i-- )
+		{
+			var m = _debugHitMarkers[i];
+			m.TimeRemaining -= Time.Delta;
+			_debugHitMarkers[i] = m;
+			if ( m.TimeRemaining <= 0f )
+				_debugHitMarkers.RemoveAt( i );
+		}
+	}
+
+	static readonly int[] BoxEdges = { 0, 1, 2, 3, 4, 5, 6, 7, 0, 2, 1, 3, 4, 6, 5, 7, 0, 4, 1, 5, 2, 6, 3, 7 };
+
+	void DrawOrientedHitbox( Vector3 localOffset, Vector3 size, Color color )
+	{
+		var rot = WorldRotation;
+		var origin = WorldPosition;
+		var half = size * 0.5f;
+
+		var corners = new Vector3[8];
+		for ( int i = 0; i < 8; i++ )
+		{
+			var sign = new Vector3(
+				( i & 1 ) == 0 ? -1f : 1f,
+				( i & 2 ) == 0 ? -1f : 1f,
+				( i & 4 ) == 0 ? -1f : 1f );
+			corners[i] = origin + rot * ( localOffset + half * sign );
+		}
+
+		Gizmo.Draw.Color = color;
+		Gizmo.Draw.LineThickness = 2f;
+		for ( int e = 0; e < BoxEdges.Length; e += 2 )
+			Gizmo.Draw.Line( corners[BoxEdges[e]], corners[BoxEdges[e + 1]] );
+	}
+
+	void DrawRuntimeHitboxDebug()
+	{
+		if ( !ShowHitboxDebug )
+			return;
+
+		if ( _state == BossState.Attacking && _currentAttack != null && _currentAttack.Hits != null )
+		{
+			var baseColor = GizmoColorForAttack( _currentAttack.Type );
+			for ( int i = 0; i < _currentAttack.Hits.Count; i++ )
+			{
+				var hit = _currentAttack.Hits[i];
+				bool fired = i < _currentAttackHitsFired;
+				DrawOrientedHitbox( hit.HitboxLocalOffset, hit.HitboxSize, baseColor.WithAlpha( fired ? 0.55f : 0.2f ) );
+			}
+		}
+
+		foreach ( var d in _debugHitboxes )
+			DrawOrientedHitbox( d.LocalOffset, d.Size, d.Tint.WithAlpha( 0.95f ) );
+
+		foreach ( var m in _debugHitMarkers )
+		{
+			if ( m.Player == null || !m.Player.IsValid() )
+				continue;
+
+			Gizmo.Draw.Color = Color.Green.WithAlpha( 0.9f );
+			Gizmo.Draw.LineThickness = 2f;
+			Gizmo.Draw.LineSphere( m.Player.WorldPosition + Vector3.Up * 40f, 30f );
 		}
 	}
 

@@ -29,6 +29,14 @@
             Frontend helpers for request security metadata used by encrypted Network Storage calls.
             </summary>
         </member>
+        <member name="M:Sandbox.NetworkStorage.ResolvePlayerName">
+            <summary>
+            Resolves the local player's display name for analytics payloads.
+            Prefers <see cref="!:Connection.Local.DisplayName"/> (active networking
+            session); falls back to the Steam persona name (solo/menu play where
+            Connection.Local is null). Returns null when neither is available.
+            </summary>
+        </member>
         <member name="M:Sandbox.NetworkStorage.GetAuthTokenWithRetry(System.String,System.Int32,System.Int32)">
             <summary>
             Auth tokens can lag briefly behind startup, especially in editor flows.
@@ -400,6 +408,12 @@
             <summary>
             Lightweight managed analytics runtime. Created automatically after NetworkStorage.Configure().
             Sends join/leave and a 30 second heartbeat with privacy-safe s&amp;box/runtime telemetry.
+            </summary>
+        </member>
+        <member name="P:Sandbox.NetworkStorageAnalyticsRuntime.CurrentSessionId">
+            <summary>
+            The current process-stable session id (for analytics event enrichment).
+            Null until the runtime has initialized.
             </summary>
         </member>
         <member name="T:Sandbox.JsonHelpers">

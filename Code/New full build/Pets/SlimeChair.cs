@@ -32,6 +32,9 @@ public sealed class SlimeChair : BaseChair
 		if ( state != null && state.InArena )
 			return false;
 
+		if ( !player.IsProxy && InteractPriority.StationWantsUse() )
+			return false;
+
 		return true;
 	}
 }

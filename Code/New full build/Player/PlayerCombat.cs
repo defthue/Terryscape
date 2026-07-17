@@ -122,7 +122,7 @@ public sealed class PlayerCombat : Component
 		if ( targetHealth == null )
 			return;
 
-		int applied = targetHealth.TakeDamage( finalDamage );
+		int applied = targetHealth.TakeDamage( finalDamage, triggerHitFeedback: false );
 
 		NotifyPvpHit( target, applied, isCrit, true );
 	}

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 public sealed class HitFlash : Component
 {
-	[Property] public float Duration { get; set; } = 0.1f;
+	[Property] public float Duration { get; set; } = 0.15f;
 	[Property] public Color FlashColor { get; set; } = new Color( 1f, 0.3f, 0.3f );
 
 	float _timer;

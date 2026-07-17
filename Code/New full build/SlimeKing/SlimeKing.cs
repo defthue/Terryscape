@@ -71,6 +71,41 @@ public sealed class SlimeKing : Component
 		}
 	}
 
+	public float BodyWorldRadius => _modelHalf * WorldScale.x;
+
+	public Vector3 BodyWorldCenter => WorldPosition + Vector3.Up * ( 0.7f * _modelHalf * WorldScale.x );
+
+	public static SlimeKing FindAlongPath( Scene scene, Vector3 from, Vector3 to, float extraRadius )
+	{
+		if ( scene == null )
+			return null;
+
+		var seg = to - from;
+		float len = seg.Length;
+		var dir = len > 0.01f ? seg / len : Vector3.Zero;
+
+		foreach ( var slime in scene.GetAllComponents<SlimeKing>() )
+		{
+			if ( slime == null || !slime.IsValid() || slime.IsDead || slime.IsHiddenRoot )
+				continue;
+
+			var center = slime.BodyWorldCenter;
+			float range = slime.BodyWorldRadius + extraRadius;
+
+			Vector3 closest = from;
+			if ( len > 0.01f )
+			{
+				float along = MathX.Clamp( Vector3.Dot( center - from, dir ), 0f, len );
+				closest = from + dir * along;
+			}
+
+			if ( ( center - closest ).LengthSquared <= range * range )
+				return slime;
+		}
+
+		return null;
+	}
+
 	float ScaleFactor => Generation == 0 ? 1f : Generation == 1 ? 0.55f : 0.3f;
 
 	float GenerationMultiplier => Generation == 0 ? 1f : Generation == 1 ? 0.5f : 0.25f;
@@ -106,6 +141,11 @@ public sealed class SlimeKing : Component
 	Vector3 _velSmooth;
 	int _lastBurstCounter;
 	float _burstFxRemaining;
+	float _landFxRemaining;
+	float _landFxDuration;
+	Vector3 _landFxCenter;
+	float _landFxRadius;
+	int _landFxSeed;
 
 	readonly GizmoPaint _paint = new GizmoPaint();
 
@@ -190,7 +230,12 @@ public sealed class SlimeKing : Component
 		}
 
 		if ( _visualsSetUp && !_metricsCaptured )
-			_metricsCaptured = TryCaptureModelMetrics();
+		{
+			if ( _visualRenderer == null || !_visualRenderer.IsValid() )
+				SetupVisuals();
+			else
+				_metricsCaptured = TryCaptureModelMetrics();
+		}
 
 		TrackVelocity();
 		ApplyTint();
@@ -199,6 +244,7 @@ public sealed class SlimeKing : Component
 		DrawCrown();
 		DrawTelegraph();
 		UpdateBurstFx();
+		UpdateLandFx();
 		DrawRangeRings();
 		_paint.Flush( Scene );
 
@@ -377,6 +423,7 @@ public sealed class SlimeKing : Component
 			VisualSquash = -0.6f;
 			_pauseTimer = Game.Random.Float( HopPauseMin, HopPauseMax );
 			BroadcastSquish( WorldPosition );
+			BroadcastLandImpact( WorldPosition, LandRadiusBase * ScaleFactor );
 		}
 	}
 
@@ -444,6 +491,7 @@ public sealed class SlimeKing : Component
 				continue;
 
 			ApplyDamageToPlayer( playerObj, ScaledSpikeDamage );
+			DismountRider( playerObj );
 		}
 	}
 
@@ -679,6 +727,7 @@ public sealed class SlimeKing : Component
 			var go = SplitPrefab.Clone( WorldPosition + offset + Vector3.Up * 10f );
 			go.Name = $"SlimeKing_Gen{childGeneration}";
 			go.WorldScale = childScale;
+			EnsureMembraneOn( go, childGeneration );
 
 			var child = go.Components.Get<SlimeKing>();
 			if ( child != null )
@@ -712,6 +761,43 @@ public sealed class SlimeKing : Component
 
 			go.NetworkSpawn();
 		}
+	}
+
+	void EnsureMembraneOn( GameObject go, int childGeneration )
+	{
+		GameObject visual = null;
+		foreach ( var c in go.Children )
+		{
+			if ( c.Name == "Visual" )
+			{
+				visual = c;
+				break;
+			}
+		}
+
+		bool visualExisted = visual != null;
+		if ( visual == null )
+		{
+			visual = new GameObject();
+			visual.Name = "Visual";
+			visual.Parent = go;
+			visual.LocalPosition = Vector3.Zero;
+		}
+
+		visual.Enabled = true;
+
+		var mr = visual.Components.Get<ModelRenderer>();
+		bool rendererExisted = mr != null;
+		if ( mr == null )
+			mr = visual.Components.Create<ModelRenderer>();
+
+		if ( mr.Model == null )
+			mr.Model = Model.Load( "models/dev/sphere.vmdl" );
+
+		mr.Enabled = true;
+		mr.Tint = SlimeColor.WithAlpha( 0.66f );
+
+		Log.Info( $"[SlimeKing] Split spawn Gen={childGeneration} scale={go.WorldScale.x}: visualExisted={visualExisted} rendererExisted={rendererExisted} model={mr.Model?.Name ?? "null"}" );
 	}
 
 	void OnFamilyMemberDied( bool split )
@@ -768,8 +854,18 @@ public sealed class SlimeKing : Component
 		WorldPosition = _spawnPosition;
 		WorldScale = _baseWorldScale;
 		BroadcastSetBodyVisible( true );
-		GameManager.Instance?.BroadcastServerNotice( "The Slime King has reformed..." );
+		GameManager.Instance?.BroadcastServerNotice( ReformLines[Game.Random.Int( 0, ReformLines.Length - 1 )] );
 	}
+
+	static readonly string[] ReformLines =
+	{
+		"The Slime King has reformed...",
+		"A thousand droplets gather... the Slime King rises.",
+		"The ground squelches. The Slime King has returned.",
+		"Long live the Slime King. He bubbles back into being...",
+		"Something gelatinous stirs in the distance...",
+		"The Slime King wobbles once more. All hail."
+	};
 
 	[Rpc.Broadcast]
 	void BroadcastSetBodyVisible( bool visible )
@@ -787,6 +883,60 @@ public sealed class SlimeKing : Component
 	void BroadcastSquish( Vector3 position )
 	{
 		SoundLibrary.PlaySlimeSquish( position );
+	}
+
+	[Rpc.Broadcast]
+	void BroadcastLandImpact( Vector3 center, float radius )
+	{
+		_landFxCenter = center;
+		_landFxRadius = radius;
+		_landFxDuration = MathF.Max( 0.2f, 0.5f * ScaleFactor );
+		_landFxRemaining = _landFxDuration;
+		_landFxSeed = ( _landFxSeed + 1 ) % 1000;
+		SoundLibrary.PlaySlimeKingLand( center, Generation );
+	}
+
+	void UpdateLandFx()
+	{
+		if ( _landFxRemaining <= 0f )
+			return;
+
+		_landFxRemaining -= Time.Delta;
+
+		float dur = MathF.Max( 0.05f, _landFxDuration );
+		float t = MathX.Clamp( 1f - _landFxRemaining / dur, 0f, 1f );
+
+		float ringT = MathF.Min( 1f, t / 0.7f );
+		float ringAlpha = 0.7f * ( 1f - ringT );
+		if ( ringAlpha > 0.02f )
+		{
+			float ringRadius = _landFxRadius * ( 0.2f + 0.8f * ringT );
+			SpellGizmo.SoftRing( _landFxCenter + Vector3.Up * 4f, ringRadius, 4f * ScaleFactor + 2f, SlimeColor.WithAlpha( ringAlpha ), 32 );
+		}
+
+		float dropletAlpha = 0.8f * ( 1f - t );
+		if ( dropletAlpha <= 0.02f )
+			return;
+
+		float elapsed = t * dur;
+		Gizmo.Draw.Color = SlimeColor.WithAlpha( dropletAlpha );
+
+		for ( int i = 0; i < 7; i++ )
+		{
+			float seed = _landFxSeed * 7.31f + i * 2.39f;
+			float ang = seed % ( MathF.PI * 2f );
+			float outSpeed = ( 90f + ( seed * 37f ) % 120f ) * ScaleFactor;
+			float upSpeed = ( 160f + ( seed * 53f ) % 140f ) * ScaleFactor;
+
+			float px = _landFxCenter.x + MathF.Cos( ang ) * outSpeed * elapsed;
+			float py = _landFxCenter.y + MathF.Sin( ang ) * outSpeed * elapsed;
+			float pz = _landFxCenter.z + upSpeed * elapsed - 0.5f * Gravity * elapsed * elapsed;
+			if ( pz < _landFxCenter.z )
+				pz = _landFxCenter.z;
+
+			float size = ( 2.5f + seed % 2f ) * ScaleFactor;
+			Gizmo.Draw.SolidSphere( new Vector3( px, py, pz ), size );
+		}
 	}
 
 	void AwardLootToContributors()
@@ -950,23 +1100,51 @@ public sealed class SlimeKing : Component
 			return;
 
 		_visualRenderer = _visual.Components.Get<ModelRenderer>();
-		if ( _visualRenderer != null )
-			_visualRenderer.Tint = SlimeColor.WithAlpha( 0.66f );
+		if ( _visualRenderer == null )
+		{
+			_visualRenderer = _visual.Components.Create<ModelRenderer>();
+			_visualRenderer.Model = Model.Load( "models/dev/sphere.vmdl" );
+		}
+
+		if ( _visualRenderer.Model == null )
+			_visualRenderer.Model = Model.Load( "models/dev/sphere.vmdl" );
+
+		if ( !IsDead && !IsHiddenRoot )
+		{
+			_visual.Enabled = true;
+			_visualRenderer.Enabled = true;
+		}
+
+		_visualRenderer.Tint = SlimeColor.WithAlpha( 0.66f );
+
+		Log.Info( $"[SlimeKing] SetupVisuals: Gen={Generation} scale={WorldScale.x} proxy={IsProxy} visual={_visual.Name} visualEnabled={_visual.Enabled} model={_visualRenderer.Model?.Name ?? "null"}" );
 
 		_metricsCaptured = TryCaptureModelMetrics();
 		EnsureBubbles();
 	}
 
+	bool _metricsFailLogged;
+
 	bool TryCaptureModelMetrics()
 	{
 		if ( _visualRenderer == null || !_visualRenderer.IsValid() || _visualRenderer.Model == null )
+		{
+			if ( !_metricsFailLogged )
+			{
+				_metricsFailLogged = true;
+				Log.Info( $"[SlimeKing] Metrics pending: Gen={Generation} rendererValid={_visualRenderer != null && _visualRenderer.IsValid()} modelLoaded={_visualRenderer?.Model != null}" );
+			}
 			return false;
+		}
 
 		float h = _visualRenderer.Model.Bounds.Size.z * 0.5f;
 		if ( h <= 0.1f )
 			return false;
 
 		_modelHalf = h;
+
+		Log.Info( $"[SlimeKing] Metrics captured: Gen={Generation} WorldScale={WorldScale.x} modelHalf={_modelHalf} worldBoundsZ={_visualRenderer.Bounds.Size.z}" );
+
 		AlignCollider();
 		return true;
 	}
@@ -1178,6 +1356,12 @@ public sealed class SlimeKing : Component
 		Color dark = new Color( SlimeColor.r * 0.45f, SlimeColor.g * 0.45f, SlimeColor.b * 0.45f, 0.95f );
 
 		SpellGizmo.SoftRing( WorldPosition, maxRadius, 5f, dark.WithAlpha( 0.35f + 0.4f * TelegraphFraction ), 32 );
+
+		Color warn = Color.Lerp( SlimeColor, new Color( 1f, 0.15f, 0.1f ), TelegraphFraction );
+		SpellGizmo.SoftRing( WorldPosition + Vector3.Up * 3f, maxRadius, 7f, warn.WithAlpha( 0.15f + 0.55f * TelegraphFraction ), 40 );
+
+		if ( TelegraphFraction > 0.05f )
+			SpellGizmo.SoftRing( WorldPosition + Vector3.Up * 3f, maxRadius * TelegraphFraction, 3f, warn.WithAlpha( 0.5f * TelegraphFraction ), 28 );
 	}
 
 	void UpdateBurstFx()
@@ -1187,6 +1371,7 @@ public sealed class SlimeKing : Component
 			_lastBurstCounter = BurstCounter;
 			_burstFxRemaining = 0.45f;
 			SoundLibrary.PlaySlimeSquish( WorldPosition );
+			SoundLibrary.PlaySlimeKingSpikeBurst( WorldPosition );
 		}
 
 		if ( _burstFxRemaining <= 0f )
@@ -1205,6 +1390,22 @@ public sealed class SlimeKing : Component
 		Color burst = new Color( SlimeColor.r * 0.45f, SlimeColor.g * 0.45f, SlimeColor.b * 0.45f, alpha );
 		SpellGizmo.SoftRing( bodyCenter, radius, 8f * alpha + 2f, burst.WithAlpha( alpha * 0.6f ), 32 );
 		DrawSpikes( extension, burst );
+
+		if ( t < 0.667f )
+		{
+			float st = t * 1.5f;
+			float bodyR = _modelHalf * WorldScale.x;
+			Color spikeCol = SlimeColor.WithAlpha( 1f - st );
+
+			for ( int i = 0; i < 9; i++ )
+			{
+				float ang = ( i / 9f ) * MathF.PI * 2f;
+				Vector3 dir = new Vector3( MathF.Cos( ang ), MathF.Sin( ang ), 0.55f ).Normal;
+				Vector3 basePos = bodyCenter + dir * ( bodyR * 0.6f );
+				float len = bodyR * 0.5f + 90f * ScaleFactor * st;
+				_paint.ShadedCone( basePos, dir, len, 6f * ScaleFactor + bodyR * 0.08f, spikeCol );
+			}
+		}
 	}
 
 	void DrawCrown()

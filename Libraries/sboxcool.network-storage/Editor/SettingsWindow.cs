@@ -10,8 +10,7 @@ using Editor;
 ///
 /// Access via Editor menu → Network Storage → Settings.
 /// </summary>
-[Dock( "Editor", "Network Storage Settings", "settings" )]
-public class SettingsWindow : DockWindow
+public class SettingsWindow : PaintedWindow
 {
 	private bool _proxyEnabled;
 	private SyncToolConfig.SourceExportMode _sourceExportMode;
@@ -93,9 +92,9 @@ public class SettingsWindow : DockWindow
 	//  Rendering
 	// ──────────────────────────────────────────────────────
 
-	protected override void OnPaint()
+	protected override void OnContentPaint()
 	{
-		base.OnPaint();
+		base.OnContentPaint();
 		_buttons.Clear();
 
 		var pad = 20f;
@@ -244,7 +243,7 @@ public class SettingsWindow : DockWindow
 		Paint.SetDefaultFont( size: 9 );
 		Paint.SetPen( Color.White.WithAlpha( 0.45f ) );
 		DrawWrappedText( ref y, pad, w, lineH + 2,
-			"The Sync Tool writes YAML source only. Legacy JSON export and local JSON fallback are no longer supported." );
+			"The Sync Tool writes YAML source. Existing JSON resources remain readable and pushable for compatibility." );
 		y += 8;
 
 		DrawReadonlyStatusRow( ref y, pad, w, "Export Format", "YAML Source Only", true );
@@ -660,7 +659,7 @@ public class SettingsWindow : DockWindow
 
 	private LineEdit CreateLineEdit( string value, string placeholder )
 	{
-		var input = new LineEdit( this );
+		var input = new LineEdit( Content );
 		input.Text = value ?? "";
 		input.PlaceholderText = placeholder;
 		input.Visible = true;
@@ -797,9 +796,9 @@ public class SettingsWindow : DockWindow
 	//  Input handling
 	// ──────────────────────────────────────────────────────
 
-	protected override void OnMousePress( MouseEvent e )
+	protected override void OnContentMousePress( MouseEvent e )
 	{
-		base.OnMousePress( e );
+		base.OnContentMousePress(e);
 
 		foreach ( var btn in _buttons )
 		{
@@ -811,16 +810,16 @@ public class SettingsWindow : DockWindow
 		}
 	}
 
-	protected override void OnMouseMove( MouseEvent e )
+	protected override void OnContentMouseMove( MouseEvent e )
 	{
-		base.OnMouseMove( e );
+		base.OnContentMouseMove(e);
 		_mousePos = e.LocalPosition;
 		Update();
 	}
 
-	protected override void OnMouseWheel( WheelEvent e )
+	protected override void OnContentMouseWheel( WheelEvent e )
 	{
-		base.OnMouseWheel( e );
+		base.OnContentMouseWheel(e);
 
 		var maxScroll = Math.Max( 0f, _contentHeight - Height );
 		_scrollY = Math.Clamp( _scrollY - e.Delta * 30f, 0f, maxScroll );

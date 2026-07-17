@@ -122,7 +122,7 @@ public sealed class PoisonEffect : Component
 			var health = pvpTarget.Components.Get<PlayerHealth>();
 			if ( health != null )
 			{
-				int applied = health.TakeDamage( dealt );
+				int applied = health.TakeDamage( dealt, triggerHitFeedback: false );
 				_source?.Components.Get<PlayerCombat>()?.NotifyPvpHit( pvpTarget, applied, false, false );
 			}
 			return;

@@ -110,6 +110,14 @@ public sealed class PetManager : Component
 
 	public void ReapplyColor()
 	{
+		var slime = ActiveSlime?.Components.Get<PetSlime>();
+		if ( slime != null )
+		{
+			slime.RefreshColorFromState();
+			_colorIndex = slime.ColorIndex;
+			return;
+		}
+
 		RefreshSlime();
 	}
 

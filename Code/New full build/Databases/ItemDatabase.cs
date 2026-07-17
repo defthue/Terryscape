@@ -482,7 +482,7 @@ public static class ItemDatabase
 
 		Add( Define( ItemId.GlassVial, "Empty Vial", ItemType.Misc, tier: 0, maxStack: 1000, baseSellPrice: 1 ) );
 		Add( Define( ItemId.CrystalVial, "Crystal Vial", ItemType.Misc, tier: 4, maxStack: 1000, baseSellPrice: 8 ) );
-		Add( Define( ItemId.GoldCoin, "Gold Coin", ItemType.Misc, tier: 0, maxStack: 99999, baseSellPrice: 0 ) );
+		Add( Define( ItemId.GoldCoin, "Gold Coin", ItemType.Misc, tier: 0, maxStack: 100000, baseSellPrice: 0 ) );
 		Add( Define( ItemId.MonsterBone, "Monster Bone", ItemType.Misc, tier: 0, maxStack: 1000, baseSellPrice: 1 ) );
 		Add( Define( ItemId.MonsterHide, "Monster Hide", ItemType.Misc, tier: 0, maxStack: 1000, baseSellPrice: 2 ) );
 		Add( Define( ItemId.Nugget, "Nugget", ItemType.Misc, tier: 0, maxStack: 1000, baseSellPrice: 3 ) );

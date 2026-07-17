@@ -303,6 +303,66 @@ public sealed class PlayerGatherResource : Component
 			BodyRenderer.Set( "holdtype", 0 );
 	}
 
+	bool TrySlimeKingFallback( Vector3 forward, PlayerCombat combat )
+	{
+		if ( combat == null )
+			return false;
+
+		var slime = FindNearbySlimeKing( forward );
+		if ( slime == null )
+			return false;
+
+		var inventory = GameObject.Components.Get<Inventory>();
+		var skills = GameObject.Components.Get<Skills>();
+		if ( inventory == null || skills == null )
+			return false;
+
+		_autoGatherNode = null;
+		TriggerSwingAnimation( false );
+		combat.DoSlimeKingHit( slime, inventory, skills );
+		return true;
+	}
+
+	SlimeKing FindNearbySlimeKing( Vector3 forward )
+	{
+		var playerPos = GameObject.WorldPosition;
+		float reach = ForwardOffset + TraceDistance + TraceRadius + 10f;
+
+		var flatFwd = forward.WithZ( 0f );
+		bool hasFwd = flatFwd.Length > 0.01f;
+		if ( hasFwd )
+			flatFwd = flatFwd.Normal;
+
+		SlimeKing best = null;
+		float bestDist = float.MaxValue;
+
+		foreach ( var slime in Scene.GetAllComponents<SlimeKing>() )
+		{
+			if ( slime == null || !slime.IsValid() || slime.IsDead || slime.IsHiddenRoot )
+				continue;
+
+			var to = ( slime.WorldPosition - playerPos ).WithZ( 0f );
+			float dist = to.Length;
+			if ( dist > reach + slime.BodyWorldRadius )
+				continue;
+
+			bool inRange = dist <= slime.BodyWorldRadius + 40f;
+			if ( !inRange && hasFwd && dist > 0.01f && Vector3.Dot( flatFwd, to.Normal ) > 0.5f )
+				inRange = true;
+
+			if ( !inRange )
+				continue;
+
+			if ( dist < bestDist )
+			{
+				bestDist = dist;
+				best = slime;
+			}
+		}
+
+		return best;
+	}
+
 	void Punch()
 	{
 		if ( NpcInteract.ActiveNpc != null )
@@ -354,6 +414,9 @@ public sealed class PlayerGatherResource : Component
 				return;
 			}
 
+			if ( TrySlimeKingFallback( forward, combatMiss ) )
+				return;
+
 			_autoGatherNode = null;
 			TriggerSwingAnimation( false );
 			GameLog.Add( "You swing but hit nothing.", "#6a6a6a" );
@@ -400,6 +463,9 @@ public sealed class PlayerGatherResource : Component
 					combatMiss.DoPvpHit( arcTarget, GameObject.Components.Get<Inventory>(), GameObject.Components.Get<Skills>() );
 					return;
 				}
+
+				if ( TrySlimeKingFallback( forward, combatMiss ) )
+					return;
 
 				_autoGatherNode = null;
 				TriggerSwingAnimation( false );

@@ -7,7 +7,6 @@
 <root>
 	@if ( IsOpen )
 	{
-		<div class="shop-backdrop" onclick="@(() => Close())"></div>
 		<div class="crafting-overlay">
 			<div class="crafting-popup" style="width: 720px; height: 520px;">
 				<div class="crafting-header">
@@ -25,9 +24,13 @@
 									<img class="color-wheel-img" src="/UI/PetColorWheel.vtex" />
 									<div class="color-wheel-cursor" style="left: @(CursorXPct.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%; top: @(CursorYPct.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%;"></div>
 								</div>
-								<div class="color-value-bar" @ref="ValuePanel" onclick="@(() => OnValueClick())" style="background-color: @(ToHex( HsvToRgb( Hue, Sat, 1f ) ));">
-								<div class="color-value-overlay"></div>
-							</div>
+								<div class="color-value-bar" @ref="ValuePanel" onclick="@(() => OnValueClick())">
+									<div class="color-value-marker" style="top: @(((1f - Val) * 100f).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%;"></div>
+									@for ( int i = 0; i < 24; i++ )
+									{
+										<div class="color-value-band" style="background-color: @(BandColor( i ));"></div>
+									}
+								</div>
 							</div>
 							<div class="color-preview-row">
 								<div class="color-preview" style="background-color: @(ToHex( ComposedColor ));"></div>
@@ -186,6 +189,11 @@
 	static string ToHex( Color c )
 	{
 		return $"#{(int)( c.r * 255f ):X2}{(int)( c.g * 255f ):X2}{(int)( c.b * 255f ):X2}";
+	}
+
+	static string BandColor( int i )
+	{
+		return ToHex( Color.Lerp( Color.White, Color.Black, i / 23f ) );
 	}
 
 	void Summon( PetKind kind )

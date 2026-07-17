@@ -324,6 +324,28 @@
 								@foreach ( var entry in EquippableItems )
 								{
 									var ec = entry;
+									@if ( ec.IsArrowStack )
+									{
+										<div class="equippable-slot" onclick="@(() => OnGearArrowClick( ec.SlotIndex ))">
+											<div class="item-icon" style="background: @ec.Color;">
+												<img class="item-icon-img" src="@GetIconPath( ec.ItemId )" />
+											</div>
+											@if ( ec.Count > 1 )
+											{
+												<div class="item-count">@ec.Count</div>
+											}
+											<div class="use-button arrow-button" style="display: flex;"
+												 onclick="@(() => OnGearArrowClick( ec.SlotIndex ))">🏹</div>
+											<div class="eq-tooltip">
+												<div class="tt-name" style="color: @ec.Color;">@ec.Name</div>
+												<div class="tt-sub">@ec.TypeLabel — @ec.SlotLabel</div>
+												<div class="tt-sell">Sell @ec.SellPrice g</div>
+												<div class="tt-hint">Click to equip</div>
+											</div>
+										</div>
+									}
+									else
+									{
 									<div class="equippable-slot @(ec.ReqMet ? "" : "locked")" onclick="@(() => OnEquippableItemClick( ec.SlotIndex ))">
 										<div class="item-icon" style="background: @ec.Color;">
 											<img class="item-icon-img" src="@GetIconPath( ec.ItemId )" />
@@ -357,6 +379,7 @@
 											<div class="tt-hint">Click to equip</div>
 										</div>
 									</div>
+									}
 								}
 							</div>
 						</div>
@@ -713,6 +736,8 @@
 		public int CompareDelta;
 		public string EnchantText;
 		public int SellPrice;
+		public bool IsArrowStack;
+		public int Count;
 	}
 
 	public class EnchantLine
@@ -836,6 +861,15 @@
 			return;
 
 		inventory.EquipUniqueAtSlot( slotIndex );
+	}
+
+	void OnGearArrowClick( int slotIndex )
+	{
+		var inventory = PlayerHelper.GetLocalInventory();
+		if ( inventory == null )
+			return;
+
+		inventory.EquipAmmoFromSlot( slotIndex );
 	}
 
 	void OnEquipSlotClick( EquipSlotDisplay slot )
@@ -1157,6 +1191,28 @@
 					var def = ItemDatabase.Get( inst.ItemId );
 					if ( def != null && def.Slot != EquipSlot.None )
 						EquippableItems.Add( BuildEquippableEntry( i, inst, def, inventory, skills ) );
+				}
+				else if ( src.IsStack )
+				{
+					var stackDef = ItemDatabase.Get( src.ItemId );
+					if ( stackDef != null && stackDef.Type == ItemType.Arrow )
+					{
+						EquippableItems.Add( new EquippableEntry
+						{
+							SlotIndex = i,
+							ItemId = src.ItemId,
+							Name = $"{stackDef.Name} x{src.Count}",
+							Color = GetItemColor( src.ItemId, stackDef ),
+							TypeLabel = GetTypeLabel( stackDef.Type ),
+							SlotLabel = GetSlotLabel( stackDef.Slot ),
+							ReqLabel = "",
+							ReqMet = true,
+							SellPrice = stackDef.BaseSellPrice,
+							EnchantText = "",
+							IsArrowStack = true,
+							Count = src.Count
+						} );
+					}
 				}
 			}
 

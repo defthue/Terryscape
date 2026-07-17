@@ -36,6 +36,9 @@ public sealed class KnockbackReceiver : Component
 		ApplyKnockbackOnOwner( ownerSteamId, impulse );
 	}
 
+	Vector3 _pendingImpulse;
+	float _pendingTimeout;
+
 	[Rpc.Broadcast]
 	void ApplyKnockbackOnOwner( ulong targetSteamId, Vector3 impulse )
 	{
@@ -43,8 +46,62 @@ public sealed class KnockbackReceiver : Component
 			return;
 
 		var pc = GetPlayerController();
-		if ( pc != null )
-			pc.Jump( impulse );
+		if ( pc == null )
+			return;
+
+		if ( IsSeated( pc ) )
+		{
+			LeaveChairs( pc );
+			_pendingImpulse = impulse;
+			_pendingTimeout = 0.6f;
+			return;
+		}
+
+		pc.Jump( impulse );
+	}
+
+	bool IsSeated( PlayerController pc )
+	{
+		foreach ( var chair in Scene.GetAllComponents<BaseChair>() )
+		{
+			if ( chair != null && chair.IsOccupied && chair.GetOccupant() == pc )
+				return true;
+		}
+
+		return false;
+	}
+
+	void LeaveChairs( PlayerController pc )
+	{
+		foreach ( var chair in Scene.GetAllComponents<BaseChair>() )
+		{
+			if ( chair == null || !chair.IsOccupied )
+				continue;
+
+			if ( chair.GetOccupant() == pc )
+				chair.AskToLeave( pc );
+		}
+	}
+
+	protected override void OnUpdate()
+	{
+		if ( IsProxy || _pendingTimeout <= 0f )
+			return;
+
+		_pendingTimeout -= Time.Delta;
+
+		var pc = GetPlayerController();
+		if ( pc == null )
+		{
+			_pendingTimeout = 0f;
+			return;
+		}
+
+		if ( !IsSeated( pc ) )
+		{
+			pc.Jump( _pendingImpulse );
+			_pendingTimeout = 0f;
+		}
 	}
 
 	protected override void OnFixedUpdate()

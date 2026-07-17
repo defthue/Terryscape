@@ -97,6 +97,8 @@ public sealed class Skills : Component
 		if ( !_skills.TryGetValue( skill, out var data ) )
 			return;
 
+		int oldTotal = TotalLevel;
+
 		bool firstXp = data.Xp == 0 && data.Level == 1;
 		data.Xp += amount;
 
@@ -139,10 +141,58 @@ public sealed class Skills : Component
 
 		RecomputeTotalLevel();
 
+		if ( !IsProxy )
+		{
+			if ( TotalLevel / 100 > oldTotal / 100 )
+			{
+				int milestone = ( TotalLevel / 100 ) * 100;
+				GameManager.Instance?.BroadcastServerNotice( $"{ResolvePlayerName()} has reached total level {milestone}!" );
+			}
+
+			if ( leveledUp )
+				CheckAllSkills50Milestone();
+		}
+
 		if ( leveledUp )
 			PlayerPersistence.Local?.SaveNow( SaveSection.Skills | SaveSection.Stats );
 		else
 			PlayerPersistence.Local?.MarkDirty( SaveSection.Skills | SaveSection.Stats );
+	}
+
+	const string AllSkills50Key = "milestone:all_skills_50";
+
+	static readonly SkillType[] MilestoneSkills = new[]
+	{
+		SkillType.Woodcutting, SkillType.Mining, SkillType.Enchanting,
+		SkillType.Smithing, SkillType.Crafting, SkillType.Attack,
+		SkillType.Defence, SkillType.Archery, SkillType.Magic
+	};
+
+	string ResolvePlayerName()
+	{
+		var pc = Components.Get<PlayerController>();
+		if ( pc != null )
+			return pc.Network.Owner?.DisplayName ?? "Player";
+		return "Player";
+	}
+
+	void CheckAllSkills50Milestone()
+	{
+		foreach ( var skill in MilestoneSkills )
+		{
+			if ( GetLevel( skill ) < 50 )
+				return;
+		}
+
+		var inv = Components.Get<Inventory>();
+		if ( inv == null )
+			return;
+
+		if ( inv.GetProgressValue( AllSkills50Key ) == "1" )
+			return;
+
+		GameManager.Instance?.BroadcastServerNotice( $"{ResolvePlayerName()} has reached level 50 in every skill!" );
+		inv.SetProgressValue( AllSkills50Key, "1" );
 	}
 
 	void AnnounceSpellUnlocksForLevel( int magicLevel )

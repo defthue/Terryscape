@@ -44,6 +44,8 @@ public sealed class SoundLibrary : Component
 	const string SINGULARITY = "Sounds/Singularity.sound";
 	const string LEVEL_UP = "Sounds/LevelUp.sound";
 	const string SEND_TO_BANK = "Sounds/SendToBank.sound";
+	const string SLIME_KING_LAND = "Sounds/SlimeKingLand.sound";
+	const string SLIME_KING_SPIKE_BURST = "Sounds/SlimeKingSpikeBurst.sound";
 
 	const float FireballVolume = 0.5f;
 
@@ -68,6 +70,18 @@ public sealed class SoundLibrary : Component
 		go.Name = "SoundLibrary";
 		_instance = go.Components.Create<SoundLibrary>();
 		return _instance;
+	}
+
+	static readonly Dictionary<string, float> _oneShotLastPlayed = new();
+	const float OneShotThrottle = 0.1f;
+
+	static bool ThrottledRecently( string soundPath )
+	{
+		if ( _oneShotLastPlayed.TryGetValue( soundPath, out float last ) && Time.Now - last < OneShotThrottle )
+			return true;
+
+		_oneShotLastPlayed[soundPath] = Time.Now;
+		return false;
 	}
 
 	static Vector3 GetLocalListenerPosition()
@@ -120,12 +134,11 @@ public sealed class SoundLibrary : Component
 
 	static void PlayPlayerActionSound( string soundPath, Vector3 position )
 	{
-		var instance = GetInstance();
-		if ( instance == null )
+		if ( GetInstance() == null )
 			return;
 
 		PlayLocked( soundPath );
-		instance.BroadcastWorldSoundForOthers( soundPath, position );
+		BroadcastWorldSoundForOthers( soundPath, position );
 	}
 
 	public static void PlayChop( Vector3 position )
@@ -163,6 +176,18 @@ public sealed class SoundLibrary : Component
 		Sound.Play( SLIME_SQUISH, position );
 	}
 
+	public static void PlaySlimeKingLand( Vector3 position, int generation )
+	{
+		var handle = Sound.Play( SLIME_KING_LAND, position );
+		if ( handle.IsValid() )
+			handle.Volume = generation == 0 ? 1f : generation == 1 ? 0.7f : 0.45f;
+	}
+
+	public static void PlaySlimeKingSpikeBurst( Vector3 position )
+	{
+		Sound.Play( SLIME_KING_SPIKE_BURST, position );
+	}
+
 	public static void PlayForage( Vector3 position )
 	{
 		PlayPlayerActionSound( FORAGE, position );
@@ -180,15 +205,14 @@ public sealed class SoundLibrary : Component
 
 	public static void PlayFireball( Vector3 position )
 	{
-		var instance = GetInstance();
-		if ( instance == null )
+		if ( GetInstance() == null )
 			return;
 
 		var handle = PlayLockedReturning( FIREBALL );
 		if ( handle.IsValid() )
 			handle.Volume = FireballVolume;
 
-		instance.BroadcastFireballForOthers( position );
+		BroadcastFireballForOthers( position );
 	}
 
 	public static void PlayIceShard( Vector3 position )
@@ -203,12 +227,11 @@ public sealed class SoundLibrary : Component
 
 	public static SoundHandle PlayLightningBoltLoop( Vector3 position )
 	{
-		var instance = GetInstance();
-		if ( instance == null )
+		if ( GetInstance() == null )
 			return default;
 
 		var handle = PlayLockedReturning( LIGHTNING_BOLT );
-		instance.BroadcastWorldSoundForOthers( LIGHTNING_BOLT, position );
+		BroadcastWorldSoundForOthers( LIGHTNING_BOLT, position );
 		return handle;
 	}
 
@@ -225,128 +248,72 @@ public sealed class SoundLibrary : Component
 
 	public static void PlayMonsterDeath( Vector3 position )
 	{
-		var instance = GetInstance();
-		if ( instance == null )
-			return;
-
-		instance.BroadcastWorldSoundForAll( MONSTER_DEATH, position );
+		BroadcastWorldSoundForAll( MONSTER_DEATH, position );
 	}
 
 	public static void PlaySwordBoss( Vector3 position )
 	{
-		var instance = GetInstance();
-		if ( instance == null )
-			return;
-
-		instance.BroadcastWorldSoundForAll( SWORD_BOSS, position );
+		BroadcastWorldSoundForAll( SWORD_BOSS, position );
 	}
 
 	public static void PlayBossRoar( Vector3 position )
 	{
-		var instance = GetInstance();
-		if ( instance == null )
-			return;
-
-		instance.BroadcastWorldSoundForAll( BOSS_ROAR, position );
+		BroadcastWorldSoundForAll( BOSS_ROAR, position );
 	}
 
 	public static void PlayBossKick( Vector3 position )
 	{
-		var instance = GetInstance();
-		if ( instance == null )
-			return;
-
-		instance.BroadcastWorldSoundForAll( BOSS_KICK, position );
+		BroadcastWorldSoundForAll( BOSS_KICK, position );
 	}
 
 	public static void PlayBossDeathGrasp( Vector3 position )
 	{
-		var instance = GetInstance();
-		if ( instance == null )
-			return;
-
-		instance.BroadcastWorldSoundForAll( BOSS_DEATH_GRASP, position );
+		BroadcastWorldSoundForAll( BOSS_DEATH_GRASP, position );
 	}
 
 	public static void PlayBossDeathKnees( Vector3 position )
 	{
-		var instance = GetInstance();
-		if ( instance == null )
-			return;
-
-		instance.BroadcastWorldSoundForAll( BOSS_DEATH_KNEES, position );
+		BroadcastWorldSoundForAll( BOSS_DEATH_KNEES, position );
 	}
 
 	public static void PlayBossDeathFall( Vector3 position )
 	{
-		var instance = GetInstance();
-		if ( instance == null )
-			return;
-
-		instance.BroadcastWorldSoundForAll( BOSS_DEATH_FALL, position );
+		BroadcastWorldSoundForAll( BOSS_DEATH_FALL, position );
 	}
 
 	public static void PlaySmallMonsterAttack( Vector3 position )
 	{
-		var instance = GetInstance();
-		if ( instance == null )
-			return;
-
-		instance.BroadcastWorldSoundForAll( SMALL_MONSTER_ATTACK, position );
+		BroadcastWorldSoundForAll( SMALL_MONSTER_ATTACK, position );
 	}
 
 	public static void PlayLargeMonsterAttack( Vector3 position )
 	{
-		var instance = GetInstance();
-		if ( instance == null )
-			return;
-
-		instance.BroadcastWorldSoundForAll( LARGE_MONSTER_ATTACK, position );
+		BroadcastWorldSoundForAll( LARGE_MONSTER_ATTACK, position );
 	}
 
 	public static void PlayCardShuffle( Vector3 position )
 	{
-		var instance = GetInstance();
-		if ( instance == null )
-			return;
-
-		instance.BroadcastWorldSoundForAll( CARD_SHUFFLE, position );
+		BroadcastWorldSoundForAll( CARD_SHUFFLE, position );
 	}
 
 	public static void PlayCardDealt( Vector3 position )
 	{
-		var instance = GetInstance();
-		if ( instance == null )
-			return;
-
-		instance.BroadcastWorldSoundForAll( CARD_DEALT, position );
+		BroadcastWorldSoundForAll( CARD_DEALT, position );
 	}
 
 	public static void PlayAcidSpitImpact( Vector3 position )
 	{
-		var instance = GetInstance();
-		if ( instance == null )
-			return;
-
-		instance.BroadcastWorldSoundForAll( ACID_SPIT_IMPACT, position );
+		BroadcastWorldSoundForAll( ACID_SPIT_IMPACT, position );
 	}
 
 	public static void PlayIceShardImpact( Vector3 position )
 	{
-		var instance = GetInstance();
-		if ( instance == null )
-			return;
-
-		instance.BroadcastWorldSoundForAll( ICE_SHARD_IMPACT, position );
+		BroadcastWorldSoundForAll( ICE_SHARD_IMPACT, position );
 	}
 
 	public static void PlayArrowImpact( Vector3 position )
 	{
-		var instance = GetInstance();
-		if ( instance == null )
-			return;
-
-		instance.BroadcastWorldSoundForAll( ARROW_IMPACT, position );
+		BroadcastWorldSoundForAll( ARROW_IMPACT, position );
 	}
 
 	public static void PlayMagicMissile( Vector3 position )
@@ -356,11 +323,7 @@ public sealed class SoundLibrary : Component
 
 	public static void PlaySingularity( Vector3 position )
 	{
-		var instance = GetInstance();
-		if ( instance == null )
-			return;
-
-		instance.BroadcastWorldSoundForAll( SINGULARITY, position );
+		BroadcastWorldSoundForAll( SINGULARITY, position );
 	}
 
 	public static void PlayHitNothing()
@@ -370,36 +333,57 @@ public sealed class SoundLibrary : Component
 
 	public static void PlayReceiveItem()
 	{
+		if ( ThrottledRecently( RECEIVE_ITEM ) )
+			return;
+
 		Sound.Play( RECEIVE_ITEM, GetLocalListenerPosition() );
 	}
 
 	public static void PlayLevelUp()
 	{
+		if ( ThrottledRecently( LEVEL_UP ) )
+			return;
+
 		PlayLocked( LEVEL_UP );
 	}
 
 	public static void PlaySendToBank()
 	{
+		if ( ThrottledRecently( SEND_TO_BANK ) )
+			return;
+
 		PlayLocked( SEND_TO_BANK );
 	}
 
 	public static void PlaySellBuy()
 	{
+		if ( ThrottledRecently( SELL_BUY ) )
+			return;
+
 		Sound.Play( SELL_BUY, GetLocalListenerPosition() );
 	}
 
 	public static void PlayWorkbenchCraft()
 	{
+		if ( ThrottledRecently( WORKBENCH_CRAFT ) )
+			return;
+
 		Sound.Play( WORKBENCH_CRAFT, GetLocalListenerPosition() );
 	}
 
 	public static void PlayAnvilCraft()
 	{
+		if ( ThrottledRecently( ANVIL_CRAFT ) )
+			return;
+
 		Sound.Play( ANVIL_CRAFT, GetLocalListenerPosition() );
 	}
 
 	public static void PlayUseFurnace()
 	{
+		if ( ThrottledRecently( USE_FURNACE ) )
+			return;
+
 		Sound.Play( USE_FURNACE, GetLocalListenerPosition() );
 	}
 
@@ -429,7 +413,7 @@ public sealed class SoundLibrary : Component
 	}
 
 	[Rpc.Broadcast]
-	void BroadcastWorldSoundForOthers( string soundPath, Vector3 position )
+	static void BroadcastWorldSoundForOthers( string soundPath, Vector3 position )
 	{
 		if ( Rpc.Caller != null && Connection.Local != null && Rpc.Caller.Id == Connection.Local.Id )
 			return;
@@ -438,7 +422,7 @@ public sealed class SoundLibrary : Component
 	}
 
 	[Rpc.Broadcast]
-	void BroadcastFireballForOthers( Vector3 position )
+	static void BroadcastFireballForOthers( Vector3 position )
 	{
 		if ( Rpc.Caller != null && Connection.Local != null && Rpc.Caller.Id == Connection.Local.Id )
 			return;
@@ -449,7 +433,7 @@ public sealed class SoundLibrary : Component
 	}
 
 	[Rpc.Broadcast]
-	void BroadcastWorldSoundForAll( string soundPath, Vector3 position )
+	static void BroadcastWorldSoundForAll( string soundPath, Vector3 position )
 	{
 		Sound.Play( soundPath, position );
 	}

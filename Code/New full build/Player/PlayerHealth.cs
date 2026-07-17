@@ -98,7 +98,7 @@ public sealed class PlayerHealth : Component
 			MaxHealth = NormalizedMaxOverride;
 	}
 
-	public int TakeDamage( int damage )
+	public int TakeDamage( int damage, bool triggerHitFeedback = true )
 	{
 		int reduced = damage;
 
@@ -108,6 +108,9 @@ public sealed class PlayerHealth : Component
 			reduced = (int)( reduced * stoneskin.DamageMultiplier );
 			if ( reduced < 1 ) reduced = 1;
 		}
+
+		if ( triggerHitFeedback && reduced > 0 && !IsDead )
+			PlayerHitFeedback.Broadcast( Network.Owner?.SteamId ?? 0ul );
 
 		ApplyDamage( reduced );
 		return reduced;

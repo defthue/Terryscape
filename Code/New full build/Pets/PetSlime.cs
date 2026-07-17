@@ -73,6 +73,10 @@ public sealed class PetSlime : Component
 
 	const float CamSmoothRate = 18f;
 
+	public const float MountPromptRange = 150f;
+	const float MountFacingLimitDeg = 40f;
+	const float MountMaxHeightDiff = 100f;
+
 	const float MountGravity = 620f;
 	const float MountJumpVel = 300f;
 	const float MountHopVel = 215f;
@@ -144,6 +148,9 @@ public sealed class PetSlime : Component
 
 					TickFollow( owner );
 					FollowHop( owner );
+
+					if ( Input.Pressed( "use" ) )
+						TryProximityMount( owner );
 				}
 			}
 		}
@@ -224,6 +231,56 @@ public sealed class PetSlime : Component
 		return MathF.Max( _modelHalf * _curScale * 2.5f, 28f );
 	}
 
+	public static bool MountProximityTest( PetSlime slime, Vector3 playerPos, Vector3 cameraForward )
+	{
+		if ( slime == null || !slime.IsValid() )
+			return false;
+
+		var center = slime.MountAimCenter();
+		if ( MathF.Abs( center.z - playerPos.z ) > MountMaxHeightDiff )
+			return false;
+
+		var flat = ( center - playerPos ).WithZ( 0f );
+		if ( flat.Length > MountPromptRange )
+			return false;
+
+		var fwd = cameraForward.WithZ( 0f );
+		if ( flat.Length < 1f || fwd.Length < 0.001f )
+			return true;
+
+		float dot = Vector3.Dot( fwd.Normal, flat.Normal );
+		float deg = MathF.Acos( Math.Clamp( dot, -1f, 1f ) ) * ( 180f / MathF.PI );
+		return deg <= MountFacingLimitDeg;
+	}
+
+	void TryProximityMount( GameObject owner )
+	{
+		var cam = Scene.Camera;
+		if ( cam == null )
+			return;
+
+		var conn = owner.Network.Owner;
+		ulong steamId = conn != null ? (ulong)conn.SteamId : 0ul;
+		if ( !MountAvailableFor( steamId ) )
+			return;
+
+		if ( !MountProximityTest( this, owner.WorldPosition, cam.WorldRotation.Forward ) )
+			return;
+
+		if ( InteractPriority.StationWantsUse() )
+			return;
+
+		var pc = owner.Components.Get<PlayerController>();
+		if ( pc == null )
+			return;
+
+		var chair = GetChair();
+		if ( chair == null || !chair.CanEnter( pc ) )
+			return;
+
+		chair.Press( new Component.IPressable.Event( pc, null ) );
+	}
+
 	CharacterController GetCC()
 	{
 		if ( _cc == null || !_cc.IsValid() )
@@ -285,7 +342,20 @@ public sealed class PetSlime : Component
 		if ( !_driving )
 		{
 			_driving = true;
-			_mountYaw = WorldRotation.Yaw();
+			var cam = Scene.Camera;
+			if ( cam != null )
+			{
+				var ang = cam.WorldRotation.Angles();
+				_mountYaw = ang.yaw;
+				var occ = GetChair()?.GetOccupant();
+				if ( occ.IsValid() )
+					occ.EyeAngles = new Angles( ang.pitch, ang.yaw, occ.EyeAngles.roll );
+			}
+			else
+			{
+				_mountYaw = WorldRotation.Yaw();
+			}
+			WorldRotation = Rotation.FromYaw( _mountYaw );
 			_jumpQueued = false;
 			_mIdle = Game.Random.Float( MountGroundPauseMin, MountGroundPauseMax );
 			_wasGroundedMounted = true;
@@ -549,6 +619,57 @@ public sealed class PetSlime : Component
 			float size = ( 0.6f + MathF.Sin( time * 4f + seed ) * 0.3f ) * _curScale;
 			Gizmo.Draw.Color = new Color( MathF.Min( color.r + 0.05f, 1f ), MathF.Min( color.g + 0.15f, 1f ), MathF.Min( color.b + 0.1f, 1f ), alpha );
 			Gizmo.Draw.SolidSphere( new Vector3( bx, by, bz ), size );
+		}
+	}
+
+	public void RefreshColorFromState()
+	{
+		if ( IsProxy )
+			return;
+
+		var overrideColor = PetColorState.GetColor();
+		if ( overrideColor != null )
+		{
+			HasOverrideColor = true;
+			OverrideColor = overrideColor.Value;
+		}
+		else
+		{
+			HasOverrideColor = false;
+		}
+
+		ApplyTintBroadcast( ResolveColor( 0.66f ) );
+	}
+
+	[Rpc.Broadcast]
+	void ApplyTintBroadcast( Color tint )
+	{
+		if ( _visualRenderer == null || !_visualRenderer.IsValid() )
+		{
+			ResolveVisual();
+			if ( _visual != null && _visual.IsValid() )
+				_visualRenderer = _visual.Components.Get<ModelRenderer>();
+		}
+
+		if ( _visualRenderer != null && _visualRenderer.IsValid() )
+			_visualRenderer.Tint = tint;
+
+		RetintBubbles( tint );
+	}
+
+	void RetintBubbles( Color baseColor )
+	{
+		if ( _visual == null || !_visual.IsValid() )
+			return;
+
+		foreach ( var c in _visual.Children )
+		{
+			if ( !c.IsValid() || c.Name != "PetBubble" )
+				continue;
+
+			var br = c.Components.Get<ModelRenderer>();
+			if ( br != null )
+				br.Tint = new Color( baseColor.r + 0.1f, baseColor.g + 0.1f, baseColor.b + 0.1f, 0.3f );
 		}
 	}
 

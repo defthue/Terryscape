@@ -654,13 +654,24 @@ public sealed class Inventory : Component
 		if ( def == null || def.Type != ItemType.Arrow )
 			return false;
 
-		var skills = Components.Get<Skills>();
-		if ( skills != null && !skills.CanEquip( def ) )
+		if ( slot.ItemId == _equippedAmmoId )
 		{
-			GameLog.Add( $"You need {def.SkillRequired} level {def.LevelRequired} to equip {def.Name}.", "#c86464" );
-			GameLog.RequestFocusAllTab();
-			SoundLibrary.PlayCantUse();
-			return false;
+			int space = def.MaxStack - _equippedAmmoCount;
+			int moved = slot.Count < space ? slot.Count : space;
+			if ( moved <= 0 )
+				return false;
+
+			_equippedAmmoCount += moved;
+
+			if ( moved >= slot.Count )
+				ClearSlot( slotIndex );
+			else
+				slot.Count -= moved;
+
+			GameLog.Add( $"Added {moved}x {def.Name} to your quiver.", "#c9a84c" );
+			SoundLibrary.PlayEquip();
+			PlayerPersistence.Local?.MarkDirty( SaveSection.Inventory | SaveSection.Stats );
+			return true;
 		}
 
 		var newAmmoId = slot.ItemId;

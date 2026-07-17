@@ -100,7 +100,12 @@ public sealed class SpellProjectile : Component
 			.Run();
 
 		if ( !trace.Hit )
+		{
+			var slimeNear = SlimeKing.FindAlongPath( Scene, previousPos, currentPos, TraceRadius );
+			if ( slimeNear != null )
+				ApplyImpact( slimeNear.GameObject, currentPos );
 			return;
+		}
 
 		ApplyImpact( trace.GameObject, trace.HitPosition );
 	}
@@ -114,7 +119,7 @@ public sealed class SpellProjectile : Component
 			var targetHealth = pvpTarget.Components.Get<PlayerHealth>();
 			if ( targetHealth != null )
 			{
-				int applied = targetHealth.TakeDamage( finalDamage );
+				int applied = targetHealth.TakeDamage( finalDamage, triggerHitFeedback: false );
 				Shooter?.Components.Get<PlayerCombat>()?.NotifyPvpHit( pvpTarget, applied, IsCrit, true );
 			}
 			PlayImpactSound( hitPos );

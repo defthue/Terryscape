@@ -21,6 +21,9 @@ public sealed class ArrowProjectile : Component
 
 	protected override void OnUpdate()
 	{
+		if ( IsProxy )
+			return;
+
 		if ( _stuck )
 		{
 			_stickTimer -= Time.Delta;
@@ -61,7 +64,25 @@ public sealed class ArrowProjectile : Component
 			.Run();
 
 		if ( !trace.Hit )
+		{
+			if ( _impacted )
+				return;
+
+			var slimeNear = SlimeKing.FindAlongPath( Scene, previousPos, currentPos, TraceRadius );
+			if ( slimeNear != null )
+			{
+				_impacted = true;
+				float slimeMult = CombatTriangle.GetDealMultiplier( Style, slimeNear.CombatStyle );
+				int slimeDamage = (int)( Damage * slimeMult );
+				if ( slimeDamage < 1 ) slimeDamage = 1;
+
+				slimeNear.TakeDamage( slimeDamage, Shooter );
+				DamagePopupBroadcaster.Broadcast( currentPos, slimeDamage, slimeNear.MaxHealth, IsCrit );
+				SoundLibrary.PlayArrowImpact( currentPos );
+				GameObject.Destroy();
+			}
 			return;
+		}
 
 		if ( _impacted )
 			return;
@@ -74,7 +95,7 @@ public sealed class ArrowProjectile : Component
 			var targetHealth = pvpTarget.Components.Get<PlayerHealth>();
 			if ( targetHealth != null )
 			{
-				int applied = targetHealth.TakeDamage( finalDamage );
+				int applied = targetHealth.TakeDamage( finalDamage, triggerHitFeedback: false );
 				Shooter?.Components.Get<PlayerCombat>()?.NotifyPvpHit( pvpTarget, applied, IsCrit, true );
 			}
 			SoundLibrary.PlayArrowImpact( trace.HitPosition );
