@@ -1,0 +1,129 @@
+{
+  "RootObject": {
+    "__guid": "dc576bc7-e5cb-429b-8eb9-d1d14a50eb4d",
+    "__version": 2,
+    "Flags": 0,
+    "Name": "RiverSpline",
+    "Position": "0,0,0",
+    "Rotation": "0,0,0,1",
+    "Scale": "1,1,1",
+    "Tags": "water",
+    "Enabled": true,
+    "NetworkMode": 2,
+    "NetworkFlags": 0,
+    "NetworkOrphaned": 0,
+    "NetworkTransmit": true,
+    "OwnerTransfer": 1,
+    "Components": [
+      {
+        "__type": "RiverWater",
+        "__guid": "4594bbe6-c384-4440-a688-b8513566a934",
+        "__enabled": true,
+        "Flags": 0,
+        "CurveDetail": "High",
+        "DeepColor": "0.1,0.45,0.75,1",
+        "DeepOpacity": 0.9,
+        "DepthFade": 140,
+        "FlowSpeed": 300,
+        "FoamColor": "0.97,0.99,1,1",
+        "FoamDetail": 10,
+        "FoamSize": 13,
+        "FoamSpeed": 1,
+        "FoamWobble": 0.5,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "ShallowColor": "0.25,0.85,0.95,1",
+        "ShallowOpacity": 0.6,
+        "SparkleDensity": 0.5855856,
+        "SparkleParallax": 0.15675676,
+        "SparkleSize": 125,
+        "SparkleSpeed": 1,
+        "SparkleStrength": 0.12,
+        "StreakCoverage": 0.18018018,
+        "StreakLength": 219.81982,
+        "StreakSpacing": 21.44144,
+        "StreakSpeedVariation": 0.8018018,
+        "StreakStrength": 0.7,
+        "StreakWarp": 7.927928,
+        "StreakWidth": 4,
+        "SwimDepth": 183.33334,
+        "WaterMaterial": "materials/riverwater.vmat",
+        "WaveHeight": 6,
+        "WaveIrregularity": 0.5,
+        "WaveLength": 238.28828,
+        "WaveSpeed": 1,
+        "Width": 648.6486
+      },
+      {
+        "__type": "Sandbox.SplineComponent",
+        "__guid": "42f359d4-581f-4eeb-b56b-d5b00fb2a365",
+        "__enabled": true,
+        "Flags": 0,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "Spline": {
+          "Points": [
+            {
+              "Pos": "0,0,0",
+              "In": "-16.6666679,-0,-0",
+              "Out": "16.6666679,0,0"
+            },
+            {
+              "Pos": "100,0,0",
+              "In": "-124.81356,-10.9377089,-0",
+              "Out": "124.81356,10.9377089,0"
+            },
+            {
+              "Pos": "748.881348,65.6262512,0",
+              "In": "-108.146896,-10.9377089,-0",
+              "Out": "108.146896,10.9377089,0"
+            }
+          ]
+        }
+      },
+      {
+        "__type": "Sandbox.ModelRenderer",
+        "__guid": "3754787a-7e29-4d80-abcd-dd19e771f860",
+        "__enabled": true,
+        "Flags": 0,
+        "BodyGroups": 18446744073709551615,
+        "CreateAttachments": false,
+        "LodOverride": null,
+        "MaterialGroup": null,
+        "MaterialOverride": null,
+        "Materials": null,
+        "Model": "sbox_procedural_model.vmdl",
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "RenderOptions": {
+          "GameLayer": true,
+          "OverlayLayer": false,
+          "BloomLayer": false,
+          "AfterUILayer": false
+        },
+        "RenderType": "On",
+        "Tint": "1,1,1,1"
+      }
+    ],
+    "Children": []
+  },
+  "ResourceVersion": 2,
+  "ShowInMenu": false,
+  "MenuPath": null,
+  "MenuIcon": null,
+  "DontBreakAsTemplate": false,
+  "__references": [],
+  "__version": 2
+}

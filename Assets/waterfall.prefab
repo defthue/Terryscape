@@ -1,0 +1,125 @@
+{
+  "RootObject": {
+    "__guid": "02c7e59f-0ff1-49f3-b9ba-73c439facb93",
+    "__version": 2,
+    "Flags": 0,
+    "Name": "WaterFall",
+    "Position": "0,0,0",
+    "Rotation": "0,0,0.259481251,0.965748191",
+    "Scale": "1,1,1",
+    "Tags": "water",
+    "Enabled": true,
+    "NetworkMode": 2,
+    "NetworkFlags": 0,
+    "NetworkOrphaned": 0,
+    "NetworkTransmit": true,
+    "OwnerTransfer": 1,
+    "Components": [
+      {
+        "__type": "WaterfallWater",
+        "__guid": "c3c10f89-f9de-4c32-95e7-5fc9f89b4eb8",
+        "__enabled": true,
+        "Flags": 0,
+        "Aggressiveness": 1,
+        "BaseColor": "0.16,0.55,0.85,1",
+        "BottomFroth": 0.36036035,
+        "BrightColor": "0.35,0.8,0.97,1",
+        "ContactFoam": 71.29995,
+        "Detail": "Medium",
+        "EdgeFoam": 0.3153153,
+        "FlowSpeed": 200,
+        "FoamColor": "0.97,0.99,1,1",
+        "Foaminess": 0.1,
+        "LipFoam": 12.612613,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "Opacity": 1,
+        "RippleNoise": 1,
+        "RippleReach": 1.9099972,
+        "Ripples": 0,
+        "RippleSpacing": 37.837837,
+        "RippleSpeed": 1.6594595,
+        "RippleThickness": 5.6500044,
+        "RippleWidth": 1.2300899,
+        "Thickness": 76.75676,
+        "WaterMaterial": "materials/waterfall.vmat",
+        "WaveHeight": 5,
+        "WaveLength": 150,
+        "Width": 402.7027
+      },
+      {
+        "__type": "Sandbox.SplineComponent",
+        "__guid": "5503323e-3c78-4e6a-b33b-57c2615dc008",
+        "__enabled": true,
+        "Flags": 0,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "Spline": {
+          "Points": [
+            {
+              "Pos": "0,0,0",
+              "In": "-257.546265,-1.1460886,-0",
+              "Out": "53.7865944,0.263874769,0",
+              "Mode": "Split"
+            },
+            {
+              "Pos": "154.4254,-1.54972076E-06,0",
+              "In": "-202.994812,1.9017607E-06,0",
+              "Out": "194.674744,-2.12527812E-06,0",
+              "Mode": "Split"
+            },
+            {
+              "Pos": "634.307312,6.8765626,-1372.17249",
+              "In": "-3.13250732,-0.86400795,241.160278",
+              "Out": "3.19851947,0.882218122,-246.242996",
+              "Mode": "Split"
+            }
+          ]
+        }
+      },
+      {
+        "__type": "Sandbox.ModelRenderer",
+        "__guid": "f295bbc8-28f0-4dba-8dcc-984e8cd185e3",
+        "__enabled": true,
+        "Flags": 0,
+        "BodyGroups": 18446744073709551615,
+        "CreateAttachments": false,
+        "LodOverride": null,
+        "MaterialGroup": null,
+        "MaterialOverride": null,
+        "Materials": null,
+        "Model": "sbox_procedural_model.vmdl",
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "RenderOptions": {
+          "GameLayer": true,
+          "OverlayLayer": false,
+          "BloomLayer": false,
+          "AfterUILayer": false
+        },
+        "RenderType": "On",
+        "Tint": "1,1,1,1"
+      }
+    ],
+    "Children": []
+  },
+  "ResourceVersion": 2,
+  "ShowInMenu": false,
+  "MenuPath": null,
+  "MenuIcon": null,
+  "DontBreakAsTemplate": false,
+  "__references": [],
+  "__version": 2
+}

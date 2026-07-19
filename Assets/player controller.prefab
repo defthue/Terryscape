@@ -643,6 +643,18 @@
           "_type": "gameobject",
           "prefab": "petslime.prefab"
         }
+      },
+      {
+        "__type": "SwimDuckGuard",
+        "__guid": "2a52e029-dbcf-4fd1-9d4f-c9fafb8d865f",
+        "__enabled": true,
+        "Flags": 0,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null
       }
     ],
     "Children": [
