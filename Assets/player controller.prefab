@@ -655,6 +655,18 @@
         "OnComponentFixedUpdate": null,
         "OnComponentStart": null,
         "OnComponentUpdate": null
+      },
+      {
+        "__type": "SpawnFacing",
+        "__guid": "6b742b17-3b22-4d4f-9a20-8cc010461c7d",
+        "__enabled": true,
+        "Flags": 0,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null
       }
     ],
     "Children": [
@@ -1096,6 +1108,12 @@
                 "Model": "models/tools/knightoftheabysssword.vmdl",
                 "PositionOffset": "0,0,4",
                 "RotationOffset": "0,90,0"
+              },
+              {
+                "ItemId": "SlimerootStaff",
+                "Model": "models/tools/staffs/slimerootstaff/slimerootstaff.vmdl",
+                "PositionOffset": "-1,0,-13",
+                "RotationOffset": "0,0,0"
               }
             ],
             "ToolRenderer": {

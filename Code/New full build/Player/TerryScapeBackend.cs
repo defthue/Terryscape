@@ -427,7 +427,8 @@ public static class TerryScapeBackend
 				Socket1Percent = entry.Float( "socket1Percent", 0f ),
 				Socket2ItemId = entry.Str( "socket2Id", "None" ),
 				Socket2Enchantment = entry.Str( "socket2Enchantment", "None" ),
-				Socket2Percent = entry.Float( "socket2Percent", 0f )
+				Socket2Percent = entry.Float( "socket2Percent", 0f ),
+				CustomName = entry.Str( "customName", "" )
 			};
 
 			if ( entry.TryGetProperty( "isUnique", out var uProp ) )
@@ -465,7 +466,8 @@ public static class TerryScapeBackend
 				Socket1Percent = prop.Value.Float( "socket1Percent", 0f ),
 				Socket2ItemId = prop.Value.Str( "socket2Id", "None" ),
 				Socket2Enchantment = prop.Value.Str( "socket2Enchantment", "None" ),
-				Socket2Percent = prop.Value.Float( "socket2Percent", 0f )
+				Socket2Percent = prop.Value.Float( "socket2Percent", 0f ),
+				CustomName = prop.Value.Str( "customName", "" )
 			};
 		}
 	}
@@ -523,7 +525,8 @@ public static class TerryScapeBackend
 				Socket1Percent = entry.Float( "socket1Percent", 0f ),
 				Socket2ItemId = entry.Str( "socket2Id", "None" ),
 				Socket2Enchantment = entry.Str( "socket2Enchantment", "None" ),
-				Socket2Percent = entry.Float( "socket2Percent", 0f )
+				Socket2Percent = entry.Float( "socket2Percent", 0f ),
+				CustomName = entry.Str( "customName", "" )
 			} );
 		}
 	}
@@ -610,7 +613,8 @@ public static class TerryScapeBackend
 				socket1Percent = item.Socket1Percent,
 				socket2Id = item.Socket2ItemId ?? "None",
 				socket2Enchantment = item.Socket2Enchantment ?? "None",
-				socket2Percent = item.Socket2Percent
+				socket2Percent = item.Socket2Percent,
+				customName = item.CustomName ?? ""
 			} );
 		}
 		return result;
@@ -634,7 +638,8 @@ public static class TerryScapeBackend
 				socket1Percent = kv.Value.Socket1Percent,
 				socket2Id = kv.Value.Socket2ItemId ?? "None",
 				socket2Enchantment = kv.Value.Socket2Enchantment ?? "None",
-				socket2Percent = kv.Value.Socket2Percent
+				socket2Percent = kv.Value.Socket2Percent,
+				customName = kv.Value.CustomName ?? ""
 			};
 		}
 		return result;
@@ -661,7 +666,8 @@ public static class TerryScapeBackend
 				socket1Percent = entry.Socket1Percent,
 				socket2Id = entry.Socket2ItemId ?? "None",
 				socket2Enchantment = entry.Socket2Enchantment ?? "None",
-				socket2Percent = entry.Socket2Percent
+				socket2Percent = entry.Socket2Percent,
+				customName = entry.CustomName ?? ""
 			} );
 		}
 		return result;

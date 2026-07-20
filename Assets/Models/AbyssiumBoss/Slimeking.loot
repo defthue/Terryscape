@@ -55,6 +55,12 @@
       "MinAmount": 1,
       "MaxAmount": 1,
       "ChancePercent": 1
+    },
+    {
+      "Item": "SlimerootStaff",
+      "MinAmount": 1,
+      "MaxAmount": 1,
+      "ChancePercent": 0.5
     }
   ],
   "__references": [],

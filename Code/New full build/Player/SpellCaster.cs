@@ -615,7 +615,9 @@ public sealed class SpellCaster : Component
 		if ( mana != null )
 			sicknessMult = mana.GetManaDamageMultiplier();
 
-		float totalPower = staffPower * spell.DamageMultiplier * skillBonus * buffMult * sicknessMult;
+		float enchantMult = 1f + inventory.GetEnchantmentBonus( EnchantmentType.Arcana ) / 100f;
+
+		float totalPower = staffPower * spell.DamageMultiplier * skillBonus * buffMult * sicknessMult * enchantMult;
 		int damage = (int)totalPower;
 		if ( damage < 1 ) damage = 1;
 
@@ -1161,7 +1163,9 @@ public sealed class SpellCaster : Component
 		if ( mana != null )
 			sicknessMult = mana.GetManaDamageMultiplier();
 
-		return staffPower * skillBonus * buffMult * sicknessMult;
+		float enchantMult = 1f + inventory.GetEnchantmentBonus( EnchantmentType.Arcana ) / 100f;
+
+		return staffPower * skillBonus * buffMult * sicknessMult * enchantMult;
 	}
 
 	int ComputeSpellDamage( SpellDefinition spell )

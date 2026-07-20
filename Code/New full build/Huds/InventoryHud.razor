@@ -163,12 +163,16 @@
 								}
 								@if ( inst.IsEnchanted || ( inst.IsSocketable && inst.SocketsUsed > 0 ) )
 								{
-									<div class="item-enchant">@inst.GetShortStat()</div>
+									<div class="item-enchant">@GetBadgeText( inst )</div>
 								}
 								<div class="use-button equip-button"
 									 onclick="@(() => OnUseButtonClick( slotIndex ))">⚡</div>
 								<div class="item-tooltip">
-									@inst.GetDisplayName()
+									<div class="tt-title" style="color: @GetNameColor( inst );">@inst.GetDisplayName()</div>
+									@foreach ( var line in GetTooltipLines( inst ) )
+									{
+										<div class="tt-ench-line" style="color: @line.Color;">@line.Text</div>
+									}
 									<div class="tooltip-hint">Click slot to move · Click ⚡ to equip</div>
 								</div>
 							</div>
@@ -274,6 +278,10 @@
 										}
 										<div class="equip-tree-tooltip">
 											<div class="tt-name" style="color: @e.Color;">@e.ItemName</div>
+											@foreach ( var line in GetTooltipLines( e.Instance ) )
+											{
+												<div class="tt-ench-line" style="color: @line.Color;">@line.Text</div>
+											}
 											<div class="tt-hint">Click to unequip</div>
 										</div>
 									}
@@ -306,6 +314,10 @@
 										}
 										<div class="equip-tree-tooltip">
 											<div class="tt-name" style="color: @e.Color;">@e.ItemName</div>
+											@foreach ( var line in GetTooltipLines( e.Instance ) )
+											{
+												<div class="tt-ench-line" style="color: @line.Color;">@line.Text</div>
+											}
 											<div class="tt-hint">Click to unequip</div>
 										</div>
 									}
@@ -371,9 +383,9 @@
 													}
 												</div>
 											}
-											@if ( !string.IsNullOrEmpty( ec.EnchantText ) )
+											@foreach ( var line in GetTooltipLines( ec.Instance ) )
 											{
-												<div class="tt-enchant">@ec.EnchantText</div>
+												<div class="tt-ench-line" style="color: @line.Color;">@line.Text</div>
 											}
 											<div class="tt-sell">Sell @ec.SellPrice g</div>
 											<div class="tt-hint">Click to equip</div>
@@ -717,6 +729,71 @@
 		public EquipSlot Slot;
 		public string EnchantStat;
 		public ItemId ItemId;
+		public ItemInstance Instance;
+	}
+
+	public class TooltipLine
+	{
+		public string Text;
+		public string Color;
+	}
+
+	string GetNameColor( ItemInstance inst )
+	{
+		return inst != null && inst.HasCustomName ? "#a080d0" : "#d4cfc0";
+	}
+
+	string GetBadgeText( ItemInstance inst )
+	{
+		if ( inst == null )
+			return "";
+
+		if ( inst.IsSocketable )
+		{
+			if ( inst.SocketsUsed >= 2 )
+				return "2⬦";
+
+			if ( inst.SocketsUsed == 1 )
+			{
+				var rune = inst.Socket1 != null ? inst.Socket1 : inst.Socket2;
+				return $"+{rune.EnchantmentPercent:F1}% {rune.Enchantment}";
+			}
+
+			return "";
+		}
+
+		return inst.GetShortStat();
+	}
+
+	List<TooltipLine> GetTooltipLines( ItemInstance inst )
+	{
+		var lines = new List<TooltipLine>();
+		if ( inst == null )
+			return lines;
+
+		if ( inst.HasCustomName )
+			lines.Add( new TooltipLine { Text = inst.GetBaseName(), Color = "#c9bc9c" } );
+
+		if ( inst.IsRune && inst.IsEnchanted )
+		{
+			lines.Add( new TooltipLine { Text = $"+{inst.EnchantmentPercent:F1}% {inst.Enchantment}", Color = EnchantmentTypes.GetColor( inst.Enchantment ) } );
+			lines.Add( new TooltipLine { Text = EnchantmentTypes.GetDescription( inst.Enchantment ), Color = "#8a7a5c" } );
+			return lines;
+		}
+
+		if ( inst.IsSocketable && inst.SocketsUsed > 0 )
+		{
+			for ( int i = 0; i < inst.MaxSockets; i++ )
+			{
+				var rune = inst.GetSocket( i );
+				if ( rune != null && rune.IsEnchanted )
+					lines.Add( new TooltipLine { Text = $"+{rune.EnchantmentPercent:F1}% {rune.Enchantment}", Color = EnchantmentTypes.GetColor( rune.Enchantment ) } );
+				else
+					lines.Add( new TooltipLine { Text = "Empty socket", Color = "#8a7a5c" } );
+			}
+		}
+
+		return lines;
 	}
 
 	public class EquippableEntry
@@ -957,7 +1034,7 @@
 		if ( slot.IsUnique )
 		{
 			var def = ItemDatabase.Get( slot.Unique.ItemId );
-			bool ghostMagic = slot.Unique.IsEnchanted || ( slot.Unique.IsSocketable && slot.Unique.SocketsUsed > 0 );
+			bool ghostMagic = slot.Unique.IsEnchanted || ( slot.Unique.IsSocketable && slot.Unique.SocketsUsed > 0 ) || slot.Unique.HasCustomName;
 			string color = ghostMagic ? "#a080d0" : GetItemColor( slot.Unique.ItemId, def );
 			PickedUpGhost = new GhostDisplay
 			{
@@ -1170,7 +1247,7 @@
 					data.Count = 1;
 					var def = ItemDatabase.Get( src.Unique.ItemId );
 					data.Name = def != null ? def.Name : src.Unique.ItemId.ToString();
-					bool srcMagic = src.Unique.IsEnchanted || ( src.Unique.IsSocketable && src.Unique.SocketsUsed > 0 );
+					bool srcMagic = src.Unique.IsEnchanted || ( src.Unique.IsSocketable && src.Unique.SocketsUsed > 0 ) || src.Unique.HasCustomName;
 					data.Color = srcMagic ? "#a080d0" : GetItemColor( src.Unique.ItemId, def );
 				}
 				else if ( src.IsStack )
@@ -1255,18 +1332,19 @@
 				if ( equippedUnique != null )
 				{
 					var uDef = ItemDatabase.Get( equippedUnique.ItemId );
-					bool eqMagic = equippedUnique.IsEnchanted || ( equippedUnique.IsSocketable && equippedUnique.SocketsUsed > 0 );
+					bool eqMagic = equippedUnique.IsEnchanted || ( equippedUnique.IsSocketable && equippedUnique.SocketsUsed > 0 ) || equippedUnique.HasCustomName;
 					string color = eqMagic ? "#a080d0" : GetItemColor( equippedUnique.ItemId, uDef );
-					string baseName = uDef != null ? uDef.Name : equippedUnique.ItemId.ToString();
+					string shownName = equippedUnique.HasCustomName ? equippedUnique.CustomName : ( uDef != null ? uDef.Name : equippedUnique.ItemId.ToString() );
 
 					EquipmentSlots.Add( new EquipSlotDisplay
 					{
 						Label = GetSlotLabel( slot ),
-						ItemName = baseName,
+						ItemName = shownName,
 						Color = color,
 						Slot = slot,
-						EnchantStat = ( slot == EquipSlot.Ring || slot == EquipSlot.Amulet ) ? "" : equippedUnique.GetShortStat(),
-						ItemId = equippedUnique.ItemId
+						EnchantStat = ( slot == EquipSlot.Ring || slot == EquipSlot.Amulet ) ? GetBadgeText( equippedUnique ) : equippedUnique.GetShortStat(),
+						ItemId = equippedUnique.ItemId,
+						Instance = equippedUnique
 					} );
 					continue;
 				}
@@ -1335,14 +1413,14 @@
 		entry.Instance = inst;
 		entry.Name = inst.GetDisplayName();
 
-		bool magic = inst.IsEnchanted || ( inst.IsSocketable && inst.SocketsUsed > 0 );
+		bool magic = inst.IsEnchanted || ( inst.IsSocketable && inst.SocketsUsed > 0 ) || inst.HasCustomName;
 		entry.Color = magic ? "#a080d0" : GetItemColor( inst.ItemId, def );
 		entry.TypeLabel = GetTypeLabel( def.Type );
 		entry.SlotLabel = GetSlotLabel( def.Slot );
 		entry.ReqLabel = def.LevelRequired > 0 ? $"Requires {def.SkillRequired} {def.LevelRequired}" : "";
 		entry.ReqMet = skills == null || skills.CanEquip( def );
 		entry.SellPrice = def.BaseSellPrice;
-		entry.EnchantText = inst.GetShortStat();
+		entry.EnchantText = GetBadgeText( inst );
 
 		if ( def.WeaponPower > 0f )
 		{
@@ -1546,7 +1624,7 @@
 		{
 			var slot = CachedSlots[i];
 			if ( slot.IsUnique )
-				slotHash = HashCode.Combine( slotHash, slot.ItemId, (int)( slot.Unique.EnchantmentPercent * 10 ), i, 1 );
+				slotHash = HashCode.Combine( slotHash, slot.ItemId, (int)( slot.Unique.EnchantmentPercent * 10 ), slot.Unique.CustomName ?? "", i, 1 );
 			else if ( slot.IsStack )
 				slotHash = HashCode.Combine( slotHash, slot.ItemId, slot.Count, i, 0 );
 			else

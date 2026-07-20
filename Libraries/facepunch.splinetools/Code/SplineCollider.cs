@@ -151,7 +151,9 @@ public sealed class SplineCollider : ModelCollider, Component.ExecuteInEditor
 	}
 
 	// This is internal hack it for now
+#pragma warning disable CS0618
 	private PhysicsBody _PhysicsBody => Rigidbody.IsValid() ? Rigidbody.PhysicsBody : KeyframeBody;
+#pragma warning restore CS0618
 
 	private BBox? _physicPartBounds = null;
 

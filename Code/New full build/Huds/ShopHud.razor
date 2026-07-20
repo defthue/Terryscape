@@ -63,7 +63,7 @@
 								<div class="recipe-icon" style="background: @color;">
 									<img class="recipe-icon-img" src="@GetIconPath( entry.Instance.ItemId )" />
 								</div>
-								<div class="recipe-name">@entry.Instance.GetDisplayName()</div>
+								<div class="recipe-name" style="@(entry.Instance.HasCustomName ? "color: #a080d0;" : "")">@entry.Instance.GetDisplayName()</div>
 								<div class="recipe-amount">1</div>
 							</div>
 						}
@@ -79,7 +79,28 @@
 								var shop = ShopStation.ActiveShop;
 								int sellPrice = shop != null ? shop.GetBuyPriceFromPlayer( instance.ItemId ) : 0;
 
-								<div class="detail-header">@instance.GetDisplayName()</div>
+								<div class="detail-header" style="@(instance.HasCustomName ? "color: #a080d0;" : "")">@instance.GetDisplayName()</div>
+
+								@if ( instance.HasCustomName )
+								{
+									<div style="color: #c9bc9c; font-size: 14px;">@instance.GetBaseName()</div>
+								}
+
+								@if ( instance.IsSocketable && instance.SocketsUsed > 0 )
+								{
+									@for ( int si = 0; si < instance.MaxSockets; si++ )
+									{
+										var rune = instance.GetSocket( si );
+										@if ( rune != null && rune.IsEnchanted )
+										{
+											<div style="color: @EnchantmentTypes.GetColor( rune.Enchantment ); font-size: 14px;">@($"+{rune.EnchantmentPercent:F1}% {rune.Enchantment}")</div>
+										}
+										else
+										{
+											<div style="color: #8a7a5c; font-size: 14px;">Empty socket</div>
+										}
+									}
+								}
 
 								@if ( sellPrice > 0 )
 								{

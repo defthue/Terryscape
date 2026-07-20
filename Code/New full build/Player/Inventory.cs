@@ -1365,7 +1365,8 @@ public sealed class Inventory : Component
 		{
 			ItemId = instance.ItemId.ToString(),
 			Enchantment = instance.Enchantment.ToString(),
-			EnchantmentPercent = instance.EnchantmentPercent
+			EnchantmentPercent = instance.EnchantmentPercent,
+			CustomName = instance.CustomName ?? ""
 		};
 
 		if ( instance.Socket1 != null )
@@ -1390,11 +1391,13 @@ public sealed class Inventory : Component
 		if ( !System.Enum.TryParse<ItemId>( entry.ItemId, out var id ) || id == ItemId.None )
 			return null;
 
-		var enchant = EnchantmentType.None;
-		System.Enum.TryParse<EnchantmentType>( entry.Enchantment, out enchant );
+		var enchant = EnchantmentTypes.Parse( entry.Enchantment );
 
 		var instance = new ItemInstance( id, enchant, entry.EnchantmentPercent );
 		WipeLegacyEnchantIfJewelry( instance );
+
+		if ( !string.IsNullOrEmpty( entry.CustomName ) )
+			instance.CustomName = entry.CustomName;
 
 		instance.Socket1 = BuildSocketRune( entry.Socket1ItemId, entry.Socket1Enchantment, entry.Socket1Percent );
 		instance.Socket2 = BuildSocketRune( entry.Socket2ItemId, entry.Socket2Enchantment, entry.Socket2Percent );
@@ -1409,8 +1412,7 @@ public sealed class Inventory : Component
 		if ( !System.Enum.TryParse<ItemId>( itemIdStr, out var id ) || id == ItemId.None )
 			return null;
 
-		var enchant = EnchantmentType.None;
-		System.Enum.TryParse<EnchantmentType>( enchantStr, out enchant );
+		var enchant = EnchantmentTypes.Parse( enchantStr );
 		if ( enchant == EnchantmentType.None || percent <= 0f )
 			return null;
 
@@ -1498,6 +1500,7 @@ public sealed class Inventory : Component
 				entry.ItemId = slot.Unique.ItemId.ToString();
 				entry.Enchantment = slot.Unique.Enchantment.ToString();
 				entry.EnchantmentPercent = slot.Unique.EnchantmentPercent;
+				entry.CustomName = slot.Unique.CustomName ?? "";
 				entry.Count = 1;
 
 				if ( slot.Unique.Socket1 != null )
@@ -1557,11 +1560,13 @@ public sealed class Inventory : Component
 
 				if ( entry.IsUnique )
 				{
-					var enchant = EnchantmentType.None;
-					System.Enum.TryParse<EnchantmentType>( entry.Enchantment, out enchant );
+					var enchant = EnchantmentTypes.Parse( entry.Enchantment );
 
 					var instance = new ItemInstance( id, enchant, entry.EnchantmentPercent );
 					WipeLegacyEnchantIfJewelry( instance );
+
+					if ( !string.IsNullOrEmpty( entry.CustomName ) )
+						instance.CustomName = entry.CustomName;
 
 					instance.Socket1 = BuildSocketRune( entry.Socket1ItemId, entry.Socket1Enchantment, entry.Socket1Percent );
 					instance.Socket2 = BuildSocketRune( entry.Socket2ItemId, entry.Socket2Enchantment, entry.Socket2Percent );

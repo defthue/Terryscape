@@ -5,10 +5,66 @@ public enum EnchantmentType
 	None,
 	Sharpness,
 	Piercing,
-	Power,
+	Arcana,
 	Toughness,
 	Vitality,
 	Focus
+}
+
+public static class EnchantmentTypes
+{
+	public static EnchantmentType Parse( string value )
+	{
+		if ( string.IsNullOrEmpty( value ) )
+			return EnchantmentType.None;
+
+		if ( value == "Power" )
+			return EnchantmentType.Arcana;
+
+		return System.Enum.TryParse<EnchantmentType>( value, out var parsed ) ? parsed : EnchantmentType.None;
+	}
+
+	public static string GetDescription( EnchantmentType type )
+	{
+		switch ( type )
+		{
+			case EnchantmentType.Sharpness: return "Increases melee damage dealt.";
+			case EnchantmentType.Piercing: return "Increases ranged damage dealt.";
+			case EnchantmentType.Arcana: return "Increases magic damage dealt.";
+			case EnchantmentType.Toughness: return "Reduces damage taken.";
+			case EnchantmentType.Vitality: return "Increases maximum health.";
+			case EnchantmentType.Focus: return "Increases maximum mana.";
+			default: return "";
+		}
+	}
+
+	public static string GetColor( EnchantmentType type )
+	{
+		switch ( type )
+		{
+			case EnchantmentType.Sharpness: return "#d08080";
+			case EnchantmentType.Piercing: return "#a0c080";
+			case EnchantmentType.Arcana: return "#8090d0";
+			case EnchantmentType.Toughness: return "#b0a080";
+			case EnchantmentType.Vitality: return "#d09090";
+			case EnchantmentType.Focus: return "#80c0d0";
+			default: return "#8a7a5c";
+		}
+	}
+
+	public static string GetGlyph( EnchantmentType type )
+	{
+		switch ( type )
+		{
+			case EnchantmentType.Sharpness: return "⚔";
+			case EnchantmentType.Piercing: return "➶";
+			case EnchantmentType.Arcana: return "✦";
+			case EnchantmentType.Toughness: return "🛡";
+			case EnchantmentType.Vitality: return "❤";
+			case EnchantmentType.Focus: return "◉";
+			default: return "ᛟ";
+		}
+	}
 }
 
 public class ItemInstance
@@ -18,6 +74,7 @@ public class ItemInstance
 	public float EnchantmentPercent;
 	public ItemInstance Socket1;
 	public ItemInstance Socket2;
+	public string CustomName;
 
 	public ItemInstance()
 	{
@@ -26,6 +83,7 @@ public class ItemInstance
 		EnchantmentPercent = 0f;
 		Socket1 = null;
 		Socket2 = null;
+		CustomName = null;
 	}
 
 	public ItemInstance( ItemId itemId )
@@ -35,6 +93,7 @@ public class ItemInstance
 		EnchantmentPercent = 0f;
 		Socket1 = null;
 		Socket2 = null;
+		CustomName = null;
 	}
 
 	public ItemInstance( ItemId itemId, EnchantmentType enchantment, float percent )
@@ -44,9 +103,12 @@ public class ItemInstance
 		EnchantmentPercent = percent;
 		Socket1 = null;
 		Socket2 = null;
+		CustomName = null;
 	}
 
 	public bool IsEnchanted => Enchantment != EnchantmentType.None && EnchantmentPercent > 0f;
+
+	public bool HasCustomName => !string.IsNullOrEmpty( CustomName );
 
 	public bool IsRune
 	{
@@ -101,10 +163,15 @@ public class ItemInstance
 		return false;
 	}
 
-	public string GetDisplayName()
+	public string GetBaseName()
 	{
 		var def = ItemDatabase.Get( ItemId );
-		string baseName = def != null ? def.Name : ItemId.ToString();
+		return def != null ? def.Name : ItemId.ToString();
+	}
+
+	public string GetDisplayName()
+	{
+		string baseName = HasCustomName ? CustomName : GetBaseName();
 
 		if ( IsRune && IsEnchanted )
 			return $"{baseName} (+{EnchantmentPercent:F1}% {Enchantment})";

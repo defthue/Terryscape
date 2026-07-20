@@ -29,17 +29,22 @@ public sealed class EnchantingStation : Component
 
 	[Property] public int ExtractDustCost { get; set; } = 75;
 
+	[Property] public int RenameDustCost { get; set; } = 1;
+
 	[Property] public int SkillCap { get; set; } = 50;
 
 	public const string RuneRecipeId = "rune";
+	public const int MaxCustomNameLength = 24;
 
 	public static EnchantingStation ActiveStation { get; private set; }
+
+	public int LastCombineResultSlot { get; private set; } = -1;
 
 	public static readonly EnchantmentType[] EnchantTypes = new[]
 	{
 		EnchantmentType.Sharpness,
 		EnchantmentType.Piercing,
-		EnchantmentType.Power,
+		EnchantmentType.Arcana,
 		EnchantmentType.Toughness,
 		EnchantmentType.Vitality,
 		EnchantmentType.Focus
@@ -130,6 +135,17 @@ public sealed class EnchantingStation : Component
 		if ( level < CombineCapLevelTier2 ) return CombineCapTier2;
 		if ( level < CombineCapLevelTier3 ) return CombineCapTier3;
 		return CombineCapTier3;
+	}
+
+	public float PreviewCombineResult( float pctA, float pctB, int level, out float waste )
+	{
+		float cap = GetCombineCap( level );
+		float hi = MathF.Max( pctA, pctB );
+		float lo = MathF.Min( pctA, pctB );
+		float raw = hi + lo * CombineLowerContribution;
+		float result = (float)Math.Round( MathF.Min( raw, cap ), 1 );
+		waste = MathF.Max( 0f, (float)Math.Round( raw - cap, 1 ) );
+		return result;
 	}
 
 	public int GetMaxSocketsForLevel( int level )
@@ -227,6 +243,8 @@ public sealed class EnchantingStation : Component
 
 	public bool TryCombine( int slotA, int slotB )
 	{
+		LastCombineResultSlot = -1;
+
 		var ctx = GetContext();
 		if ( ctx == null ) return false;
 
@@ -289,6 +307,16 @@ public sealed class EnchantingStation : Component
 		var combined = new ItemInstance( ItemId.Rune, a.Enchantment, result );
 		if ( !ctx.Inventory.AddUniqueItemOrBank( combined ) )
 			GameLog.Add( "Inventory full — combined rune sent to your bank.", "#c9a84c" );
+
+		for ( int i = 0; i < ctx.Inventory.MaxSlots; i++ )
+		{
+			var s = ctx.Inventory.GetSlot( i );
+			if ( s != null && s.IsUnique && ReferenceEquals( s.Unique, combined ) )
+			{
+				LastCombineResultSlot = i;
+				break;
+			}
+		}
 
 		ctx.Skills.AddXp( SkillType.Enchanting, CombineXp );
 		GameLog.Add( $"Combined into +{result:F1}% {a.Enchantment} Rune.", "#a080d0" );
@@ -384,6 +412,55 @@ public sealed class EnchantingStation : Component
 			GameLog.Add( "Inventory full — extracted rune sent to your bank.", "#c9a84c" );
 
 		GameLog.Add( $"Extracted +{rune.EnchantmentPercent:F1}% {rune.Enchantment} rune.", "#a080d0" );
+		return true;
+	}
+
+	public bool TryRename( int jewelrySlotIndex, string newName )
+	{
+		var ctx = GetContext();
+		if ( ctx == null ) return false;
+
+		var jSlot = ctx.Inventory.GetSlot( jewelrySlotIndex );
+		if ( jSlot == null || !jSlot.IsUnique )
+		{
+			GameLog.Add( "Select a ring or amulet to rename.", "#c86464" );
+			return false;
+		}
+
+		var jewelry = jSlot.Unique;
+		if ( !jewelry.IsSocketable )
+		{
+			GameLog.Add( "Only rings and amulets can be renamed.", "#c86464" );
+			return false;
+		}
+
+		string trimmed = newName?.Trim() ?? "";
+		if ( trimmed.Length == 0 )
+		{
+			GameLog.Add( "Enter a name first.", "#c86464" );
+			return false;
+		}
+		if ( trimmed.Length > MaxCustomNameLength )
+		{
+			GameLog.Add( $"Names can be at most {MaxCustomNameLength} characters.", "#c86464" );
+			return false;
+		}
+		if ( !NameFilter.IsAllowed( trimmed ) )
+		{
+			GameLog.Add( "That name is not allowed.", "#c86464" );
+			return false;
+		}
+		if ( !ctx.Inventory.HasItem( ItemId.ArcaneDust, RenameDustCost ) )
+		{
+			GameLog.Add( $"You need {RenameDustCost} Arcane Dust to rename.", "#c86464" );
+			return false;
+		}
+
+		ctx.Inventory.RemoveItem( ItemId.ArcaneDust, RenameDustCost );
+		jewelry.CustomName = trimmed;
+		PlayerPersistence.Local?.MarkDirty( SaveSection.Inventory );
+
+		GameLog.Add( $"Renamed to \"{trimmed}\".", "#a080d0" );
 		return true;
 	}
 

@@ -184,7 +184,7 @@ public class WaterVolume : Component, Component.ExecuteInEditor
 		try
 		{
 			var mesh = new Mesh( _waterMaterial );
-			mesh.CreateVertexBuffer( verts.Count, Vertex.Layout, verts );
+			mesh.CreateVertexBuffer( verts.Count, verts );
 			mesh.CreateIndexBuffer( indices.Count, indices );
 			mesh.Bounds = bounds;
 

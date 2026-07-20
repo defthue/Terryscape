@@ -53,6 +53,7 @@ public class PlayerSaveData
 		public string ItemId { get; set; } = "None";
 		public string Enchantment { get; set; } = "None";
 		public float EnchantmentPercent { get; set; } = 0f;
+		public string CustomName { get; set; } = "";
 
 		public string Socket1ItemId { get; set; } = "None";
 		public string Socket1Enchantment { get; set; } = "None";
@@ -71,6 +72,7 @@ public class PlayerSaveData
 		public bool IsUnique { get; set; } = false;
 		public string Enchantment { get; set; } = "None";
 		public float EnchantmentPercent { get; set; } = 0f;
+		public string CustomName { get; set; } = "";
 
 		public string Socket1ItemId { get; set; } = "None";
 		public string Socket1Enchantment { get; set; } = "None";

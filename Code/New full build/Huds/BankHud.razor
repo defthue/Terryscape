@@ -44,10 +44,10 @@
 								<div class="bank-slot" style="background: @bg;" onclick="@(() => ClickBankRow( r ))">
 									<img class="bank-slot-img" src="@GetIconPath( inst.ItemId )" />
 									<div class="bank-tt">
-										<div class="bank-tt-name">@inst.GetDisplayName()</div>
-										@if ( magic )
+										<div class="bank-tt-name" style="@(inst.HasCustomName ? "color: #a080d0;" : "")">@inst.GetDisplayName()</div>
+										@foreach ( var enchLine in EnchantTooltipLines( inst ) )
 										{
-											<div class="bank-tt-ench">@inst.GetShortStat()</div>
+											<div class="bank-tt-ench" style="color: @enchLine.Color;">@enchLine.Text</div>
 										}
 										@foreach ( var line in InspectorLines( udef, 1 ) )
 										{
@@ -128,10 +128,10 @@
 										<div class="bank-hotkey">@(view.SlotIndex + 1)</div>
 									}
 									<div class="bank-tt">
-										<div class="bank-tt-name">@inst.GetDisplayName()</div>
-										@if ( magic )
+										<div class="bank-tt-name" style="@(inst.HasCustomName ? "color: #a080d0;" : "")">@inst.GetDisplayName()</div>
+										@foreach ( var enchLine in EnchantTooltipLines( inst ) )
 										{
-											<div class="bank-tt-ench">@inst.GetShortStat()</div>
+											<div class="bank-tt-ench" style="color: @enchLine.Color;">@enchLine.Text</div>
 										}
 										@foreach ( var line in InspectorLines( udef, 1 ) )
 										{
@@ -463,6 +463,43 @@
 		Search = "";
 		BulkDeadline = 0f;
 		BankStation.Close();
+	}
+
+	public class EnchLine
+	{
+		public string Text;
+		public string Color;
+	}
+
+	List<EnchLine> EnchantTooltipLines( ItemInstance inst )
+	{
+		var lines = new List<EnchLine>();
+		if ( inst == null )
+			return lines;
+
+		if ( inst.HasCustomName )
+			lines.Add( new EnchLine { Text = inst.GetBaseName(), Color = "#c9bc9c" } );
+
+		if ( inst.IsRune && inst.IsEnchanted )
+		{
+			lines.Add( new EnchLine { Text = $"+{inst.EnchantmentPercent:F1}% {inst.Enchantment}", Color = EnchantmentTypes.GetColor( inst.Enchantment ) } );
+			lines.Add( new EnchLine { Text = EnchantmentTypes.GetDescription( inst.Enchantment ), Color = "#8a7a5c" } );
+			return lines;
+		}
+
+		if ( inst.IsSocketable && inst.SocketsUsed > 0 )
+		{
+			for ( int i = 0; i < inst.MaxSockets; i++ )
+			{
+				var rune = inst.GetSocket( i );
+				if ( rune != null && rune.IsEnchanted )
+					lines.Add( new EnchLine { Text = $"+{rune.EnchantmentPercent:F1}% {rune.Enchantment}", Color = EnchantmentTypes.GetColor( rune.Enchantment ) } );
+				else
+					lines.Add( new EnchLine { Text = "Empty socket", Color = "#8a7a5c" } );
+			}
+		}
+
+		return lines;
 	}
 
 	List<string> InspectorLines( ItemDefinition def, int count )

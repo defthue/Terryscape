@@ -7,6 +7,8 @@ public sealed class GameManager : Component, Component.INetworkListener
 {
 	[Property] public GameObject PlayerPrefab { get; set; }
 	[Property] public Vector3 SpawnPoint { get; set; } = new Vector3( 0f, 0f, 50f );
+	[Property] public float SpawnYawDegrees { get; set; } = 0f;
+	[Property] public float SpawnPitchDegrees { get; set; } = 0f;
 	[Property] public bool AutoCreateLobby { get; set; } = true;
 	[Property] public int MaxPlayers { get; set; } = 64;
 
@@ -204,7 +206,7 @@ public sealed class GameManager : Component, Component.INetworkListener
 			return;
 		}
 
-		var player = PlayerPrefab.Clone( SpawnPoint );
+		var player = PlayerPrefab.Clone( new Transform( SpawnPoint, Rotation.FromYaw( SpawnYawDegrees ) ) );
 		player.Name = $"Player - {connection.DisplayName}";
 		player.NetworkSpawn( connection );
 

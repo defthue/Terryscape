@@ -205,7 +205,7 @@ public sealed class WaterfallSplash : Component, Component.ExecuteInEditor
 		try
 		{
 			var mesh = new Mesh( _foamMaterial );
-			mesh.CreateVertexBuffer( verts.Count, Vertex.Layout, verts );
+			mesh.CreateVertexBuffer( verts.Count, verts );
 			mesh.CreateIndexBuffer( indices.Count, indices );
 			mesh.Bounds = bounds;
 

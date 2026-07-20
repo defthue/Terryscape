@@ -57,7 +57,7 @@ public sealed class UnderwaterEffect : Component
 		_isUnderwater = IsInsideWater( camPos );
 
 		float target = _isUnderwater ? 1f : 0f;
-		_submergence = _submergence.LerpTo( target, Time.Delta * 8f );
+		_submergence = _submergence.LerpTo( target, Time.Delta * 10f );
 
 		UpdateFog();
 		UpdateBubbles( camPos );
