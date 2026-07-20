@@ -523,7 +523,7 @@
         "OnComponentFixedUpdate": null,
         "OnComponentStart": null,
         "OnComponentUpdate": null,
-        "RunSpeedMultiplier": 1.25,
+        "RunSpeedMultiplier": 1,
         "WalkSpeedMultiplier": 1.5
       },
       {

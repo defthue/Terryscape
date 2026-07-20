@@ -1,6 +1,6 @@
 {
   "UI": false,
-  "Volume": "1",
+  "Volume": "0.699999988",
   "Pitch": "1",
   "Decibels": 70,
   "SelectionMode": "Random",
@@ -8,7 +8,10 @@
     "sounds/monsterdeath02.vsnd",
     "sounds/monsterdeath01.vsnd"
   ],
+  "OcclusionEnabled": true,
   "Occlusion": true,
+  "ReverbEnabled": true,
+  "Reflections": true,
   "AirAbsorption": true,
   "Transmission": true,
   "OcclusionRadius": 64,

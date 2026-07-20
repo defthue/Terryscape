@@ -1,0 +1,14 @@
+{
+  "GoldMin": 3,
+  "GoldMax": 15,
+  "Entries": [
+    {
+      "Item": "MonsterHide",
+      "MinAmount": 1,
+      "MaxAmount": 3,
+      "ChancePercent": 75
+    }
+  ],
+  "__references": [],
+  "__version": 0
+}

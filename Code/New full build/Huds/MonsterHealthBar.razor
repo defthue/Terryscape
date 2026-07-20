@@ -11,7 +11,7 @@
             var screenPos = GetScreenPosition( monster );
             <div class="health-bar-container" style="left: @(screenPos.x.ToString("0.##"))%; top: @(screenPos.y.ToString("0.##"))%;">
                 <div class="health-bar-bg">
-                    <div class="health-bar-fill" style="width: @(GetHealthPercent( monster ))%;"></div>
+                    <div class="health-bar-fill @( monster.IsEvading ? "evading" : "" )" style="width: @(GetHealthPercent( monster ))%;"></div>
                 </div>
             </div>
         }
@@ -66,7 +66,7 @@
         foreach ( var m in monsters )
         {
             var pos = GetScreenPosition( m );
-            hash = ( hash, m.CurrentHealth, m.IsDead, (int)pos.x, (int)pos.y ).GetHashCode();
+            hash = ( hash, m.CurrentHealth, m.IsDead, m.IsEvading, (int)pos.x, (int)pos.y ).GetHashCode();
         }
         return hash;
     }

@@ -41,6 +41,7 @@ public sealed class SlimeKing : Component
 	[Property, Group( "Respawn" )] public float RespawnDelayMax { get; set; } = 300f;
 
 	[Property, Group( "Loot" )] public GameObject SplitPrefab { get; set; }
+	[Property, Group( "Loot" )] public int SplitCount { get; set; } = 3;
 	[Property, Group( "Loot" )] public LootTable LootTable { get; set; }
 	[Property, Group( "Loot" ), Range( 0f, 1f )] public float GroupLootRetention { get; set; } = 0.9f;
 
@@ -297,8 +298,7 @@ public sealed class SlimeKing : Component
 
 		VisualSquash = -0.25f + MathF.Sin( Time.Now * 2.5f ) * 0.05f;
 
-		if ( !EnsureValidTarget() )
-			_target = FindNearestPlayerInAggroRange();
+		_target = FindNearestPlayerInAggroRange();
 
 		if ( _target != null && FlatDistance( _target.WorldPosition, _spawnPosition ) > LeashRadius )
 			_target = null;
@@ -719,10 +719,11 @@ public sealed class SlimeKing : Component
 		Vector3 childScale = root._baseWorldScale * GenerationScale( childGeneration );
 		float separation = 1.4f * _modelHalf * childScale.x;
 		float theta = Game.Random.Float( 0f, MathF.PI * 2f );
+		int count = Math.Max( 2, SplitCount );
 
-		for ( int i = 0; i < 2; i++ )
+		for ( int i = 0; i < count; i++ )
 		{
-			float angle = theta + i * MathF.PI;
+			float angle = theta + i * ( MathF.PI * 2f / count );
 			Vector3 offset = new Vector3( MathF.Cos( angle ), MathF.Sin( angle ), 0f ) * separation;
 			var go = SplitPrefab.Clone( WorldPosition + offset + Vector3.Up * 10f );
 			go.Name = $"SlimeKing_Gen{childGeneration}";
@@ -756,6 +757,7 @@ public sealed class SlimeKing : Component
 				child.SpikeTelegraphDuration = SpikeTelegraphDuration;
 				child.SpikeCooldown = SpikeCooldown;
 				child.SplitPrefab = SplitPrefab;
+				child.SplitCount = SplitCount;
 				child._familyRoot = root;
 			}
 
@@ -803,7 +805,7 @@ public sealed class SlimeKing : Component
 	void OnFamilyMemberDied( bool split )
 	{
 		if ( split )
-			_familyAlive += 2;
+			_familyAlive += Math.Max( 2, SplitCount );
 
 		_familyAlive--;
 

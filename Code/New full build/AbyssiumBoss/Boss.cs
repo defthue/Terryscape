@@ -93,6 +93,9 @@ public sealed class Boss : Component
 	[Property, Group( "Movement" )] public float RunSpeed { get; set; } = 180f;
 	[Property, Group( "Movement" )] public float TurnSpeedDegrees { get; set; } = 360f;
 	[Property, Group( "Movement" )] public float MoveStartDelay { get; set; } = 0.3f;
+	[Property, Group( "Movement" )] public float AnimBaseRunSpeed { get; set; } = 234f;
+	[Property, Group( "Movement" )] public float NavAgentHeight { get; set; } = 180f;
+	[Property, Group( "Movement" )] public float NavAgentRadius { get; set; } = 48f;
 
 	[Property, Group( "Target Switching" )] public float TargetSwitchMinInterval { get; set; } = 15f;
 	[Property, Group( "Target Switching" )] public float TargetSwitchMaxInterval { get; set; } = 30f;
@@ -249,6 +252,8 @@ public sealed class Boss : Component
 	bool _attackAnimCleared;
 	string _lastAttackAnimParam;
 	float _moveStartTimer;
+	MonsterMover _mover;
+	bool _navTilesRequested;
 	bool _wasMovingLastFrame;
 	float _deathAnimTimer;
 	bool _deathAnimFinished;
@@ -280,6 +285,14 @@ public sealed class Boss : Component
 		_spawnPosition = WorldPosition;
 		_spawnRotation = WorldRotation;
 		CurrentHealth = MaxHealth;
+
+		if ( Networking.IsHost )
+		{
+			_mover = Components.GetOrCreate<MonsterMover>();
+			_mover.AgentHeight = NavAgentHeight;
+			_mover.AgentRadius = NavAgentRadius;
+			_mover.Acceleration = 400f;
+		}
 
 		if ( ModelRenderer != null )
 		{
@@ -377,6 +390,9 @@ public sealed class Boss : Component
 		_battlecryRemaining = BattlecryDuration;
 		BroadcastAnimBool( BattlecryParam, true );
 		SetMoving( false, false );
+		StopMoving();
+		EnsureNavTiles();
+		_mover?.Teleport( WorldPosition );
 		SoundLibrary.PlayBossRoar( WorldPosition );
 	}
 
@@ -415,6 +431,7 @@ public sealed class Boss : Component
 
 		if ( _globalAttackTimer <= 0f && TryStartAttack( d ) )
 		{
+			StopMoving();
 			_wasMovingLastFrame = false;
 			return;
 		}
@@ -422,6 +439,7 @@ public sealed class Boss : Component
 		if ( _globalAttackTimer > 0f )
 		{
 			SetMoving( false, false );
+			StopMoving();
 			FaceTarget( targetPos );
 			_wasMovingLastFrame = false;
 			return;
@@ -432,6 +450,7 @@ public sealed class Boss : Component
 		if ( d <= MeleeRange )
 		{
 			SetMoving( false, false );
+			StopMoving();
 			_wasMovingLastFrame = false;
 			return;
 		}
@@ -990,9 +1009,9 @@ public sealed class Boss : Component
 		ApplyLeashHeal();
 
 		float d = FlatDistance( WorldPosition, _spawnPosition );
-		if ( d < 20f )
+		if ( d < 64f )
 		{
-			WorldPosition = _spawnPosition;
+			_mover?.Teleport( _spawnPosition );
 			WorldRotation = _spawnRotation;
 			SetMoving( false, false );
 			CurrentHealth = MaxHealth;
@@ -1275,6 +1294,9 @@ public sealed class Boss : Component
 		WorldPosition = _spawnPosition + RespawnOffset;
 		WorldRotation = _spawnRotation;
 
+		if ( Networking.IsHost )
+			_mover?.Teleport( _spawnPosition + RespawnOffset );
+
 		if ( BossCollider != null )
 			BossCollider.Enabled = true;
 
@@ -1325,6 +1347,7 @@ public sealed class Boss : Component
 		_deathAnimTimer = 0f;
 		_deathAnimFinished = false;
 		SetMoving( false, false );
+		StopMoving();
 		BroadcastAnimBool( "b_death", true );
 		AwardLootToContributors();
 		BroadcastDeathStart();
@@ -1545,25 +1568,27 @@ public sealed class Boss : Component
 		if ( _state == BossState.Attacking || _state == BossState.Battlecry || _state == BossState.Dead )
 			return;
 
-		var to = ( targetPos - WorldPosition ).WithZ( 0f );
-		if ( to.LengthSquared < 0.0001f )
+		if ( _mover == null )
 			return;
 
-		var step = to.Normal * speed * Time.Delta;
-		WorldPosition += step;
-		SnapToGround();
+		_mover.MoveTo( targetPos, speed );
 	}
 
-	void SnapToGround()
+	void StopMoving()
 	{
-		var trace = Scene.Trace
-			.Ray( WorldPosition + Vector3.Up * 50f, WorldPosition + Vector3.Down * 200f )
-			.IgnoreGameObjectHierarchy( GameObject )
-			.WithoutTags( "player", "boss", "monster", "pickup" )
-			.Run();
+		_mover?.Stop();
+	}
 
-		if ( trace.Hit )
-			WorldPosition = trace.HitPosition;
+	void EnsureNavTiles()
+	{
+		if ( _navTilesRequested )
+			return;
+
+		_navTilesRequested = true;
+
+		float half = DeaggroRange + 512f;
+		var bounds = BBox.FromPositionAndSize( _spawnPosition, half * 2f );
+		Scene.NavMesh.GenerateTiles( Scene.PhysicsWorld, bounds );
 	}
 
 	float FlatDistance( Vector3 a, Vector3 b )
@@ -1575,8 +1600,22 @@ public sealed class Boss : Component
 
 	void SetMoving( bool moving, bool running )
 	{
-		BroadcastAnimBool( "is_moving", moving );
-		BroadcastAnimBool( "is_running", running );
+		float rate = 1f;
+		if ( moving )
+			rate = ( RunSpeed * GlobalSpeedScale ) / MathF.Max( 1f, AnimBaseRunSpeed );
+
+		BroadcastMoveAnim( moving, running, rate );
+	}
+
+	[Rpc.Broadcast]
+	void BroadcastMoveAnim( bool moving, bool running, float rate )
+	{
+		if ( SkinnedRenderer == null )
+			return;
+
+		SkinnedRenderer.Set( "is_moving", moving );
+		SkinnedRenderer.Set( "is_running", running );
+		SkinnedRenderer.PlaybackRate = rate;
 	}
 
 	[Rpc.Broadcast]
@@ -1708,12 +1747,18 @@ public sealed class Boss : Component
 	{
 		switch ( type )
 		{
-			case BossAttackType.Downward: return Color.White;
-			case BossAttackType.ThreeSixtyLow: return Color.Cyan;
-			case BossAttackType.Combo: return Color.Magenta;
-			case BossAttackType.Kick: return Color.Red;
-			case BossAttackType.Horizontal: return Color.Yellow;
-			default: return Color.White;
+			case BossAttackType.Downward:
+				return Color.White;
+			case BossAttackType.ThreeSixtyLow:
+				return Color.Cyan;
+			case BossAttackType.Combo:
+				return Color.Magenta;
+			case BossAttackType.Kick:
+				return Color.Red;
+			case BossAttackType.Horizontal:
+				return Color.Yellow;
+			default:
+				return Color.White;
 		}
 	}
 }
