@@ -1,0 +1,74 @@
+{
+  "GoldMin": 200,
+  "GoldMax": 300,
+  "Entries": [
+    {
+      "Item": "MonsterHide",
+      "MinAmount": 20,
+      "MaxAmount": 22,
+      "ChancePercent": 74.666664
+    },
+    {
+      "Item": "RoughFiber",
+      "MinAmount": 20,
+      "MaxAmount": 30,
+      "ChancePercent": 100
+    },
+    {
+      "Item": "Coal",
+      "MinAmount": 1,
+      "MaxAmount": 30,
+      "ChancePercent": 31.333334
+    },
+    {
+      "Item": "GhostwoodLog",
+      "MinAmount": 5,
+      "MaxAmount": 10,
+      "ChancePercent": 18.666666
+    },
+    {
+      "Item": "ArcaneDust",
+      "MinAmount": 1,
+      "MaxAmount": 15,
+      "ChancePercent": 31.333334
+    },
+    {
+      "Item": "ManaPotion",
+      "MinAmount": 4,
+      "MaxAmount": 5,
+      "ChancePercent": 70
+    },
+    {
+      "Item": "ColdveinHeavyHelm",
+      "MinAmount": 1,
+      "MaxAmount": 1,
+      "ChancePercent": 2
+    },
+    {
+      "Item": "ColdveinHeavyChestplate",
+      "MinAmount": 1,
+      "MaxAmount": 1,
+      "ChancePercent": 2
+    },
+    {
+      "Item": "ColdveinOre",
+      "MinAmount": 4,
+      "MaxAmount": 5,
+      "ChancePercent": 4
+    },
+    {
+      "Item": "BlueMoss",
+      "MinAmount": 1,
+      "MaxAmount": 5,
+      "ChancePercent": 26
+    },
+    {
+      "Item": "AshsteelBar",
+      "MinAmount": 1,
+      "MaxAmount": 5,
+      "ChancePercent": 18.666666
+    }
+  ],
+  "__references": [],
+  "__version": 0
+}

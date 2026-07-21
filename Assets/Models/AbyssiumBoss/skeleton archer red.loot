@@ -1,0 +1,92 @@
+{
+  "GoldMin": 70,
+  "GoldMax": 160,
+  "Entries": [
+    {
+      "Item": "MonsterBone",
+      "MinAmount": 1,
+      "MaxAmount": 7,
+      "ChancePercent": 81.333336
+    },
+    {
+      "Item": "SolariumMediumHelm",
+      "MinAmount": 3,
+      "MaxAmount": 10,
+      "ChancePercent": 4
+    },
+    {
+      "Item": "Coal",
+      "MinAmount": 1,
+      "MaxAmount": 20,
+      "ChancePercent": 34.666668
+    },
+    {
+      "Item": "DuskoakLog",
+      "MinAmount": 2,
+      "MaxAmount": 10,
+      "ChancePercent": 12.666666
+    },
+    {
+      "Item": "SolariumOre",
+      "MinAmount": 1,
+      "MaxAmount": 11,
+      "ChancePercent": 13.333334
+    },
+    {
+      "Item": "CoppiteArrow",
+      "MinAmount": 1,
+      "MaxAmount": 20,
+      "ChancePercent": 52.666664
+    },
+    {
+      "Item": "AshsteelArrow",
+      "MinAmount": 1,
+      "MaxAmount": 17,
+      "ChancePercent": 23.333334
+    },
+    {
+      "Item": "ColdveinArrow",
+      "MinAmount": 1,
+      "MaxAmount": 16,
+      "ChancePercent": 12.666666
+    },
+    {
+      "Item": "SolariumArrow",
+      "MinAmount": 1,
+      "MaxAmount": 15,
+      "ChancePercent": 13.333334
+    },
+    {
+      "Item": "LunariteArrow",
+      "MinAmount": 1,
+      "MaxAmount": 12,
+      "ChancePercent": 8
+    },
+    {
+      "Item": "ArcheryPotion",
+      "MinAmount": 1,
+      "MaxAmount": 3,
+      "ChancePercent": 5.3333335
+    },
+    {
+      "Item": "IronbarkBow",
+      "MinAmount": 1,
+      "MaxAmount": 1,
+      "ChancePercent": 2.6666667
+    },
+    {
+      "Item": "DuskoakBow",
+      "MinAmount": 1,
+      "MaxAmount": 1,
+      "ChancePercent": 2
+    },
+    {
+      "Item": "SolariumOre",
+      "MinAmount": 1,
+      "MaxAmount": 9,
+      "ChancePercent": 16
+    }
+  ],
+  "__references": [],
+  "__version": 0
+}

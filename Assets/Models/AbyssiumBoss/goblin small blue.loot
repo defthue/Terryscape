@@ -1,0 +1,62 @@
+{
+  "GoldMin": 20,
+  "GoldMax": 35,
+  "Entries": [
+    {
+      "Item": "MonsterHide",
+      "MinAmount": 2,
+      "MaxAmount": 4,
+      "ChancePercent": 74.666664
+    },
+    {
+      "Item": "RoughFiber",
+      "MinAmount": 3,
+      "MaxAmount": 4,
+      "ChancePercent": 100
+    },
+    {
+      "Item": "Coal",
+      "MinAmount": 1,
+      "MaxAmount": 7,
+      "ChancePercent": 18.666666
+    },
+    {
+      "Item": "ElmheartLog",
+      "MinAmount": 1,
+      "MaxAmount": 3,
+      "ChancePercent": 14
+    },
+    {
+      "Item": "NightshadeStem",
+      "MinAmount": 1,
+      "MaxAmount": 3,
+      "ChancePercent": 26
+    },
+    {
+      "Item": "Spiralvine",
+      "MinAmount": 1,
+      "MaxAmount": 5,
+      "ChancePercent": 19.333332
+    },
+    {
+      "Item": "NightshadeStem",
+      "MinAmount": 1,
+      "MaxAmount": 5,
+      "ChancePercent": 14
+    },
+    {
+      "Item": "Whisperfern",
+      "MinAmount": 1,
+      "MaxAmount": 5,
+      "ChancePercent": 13.333334
+    },
+    {
+      "Item": "Liferoot",
+      "MinAmount": 1,
+      "MaxAmount": 5,
+      "ChancePercent": 10
+    }
+  ],
+  "__references": [],
+  "__version": 0
+}

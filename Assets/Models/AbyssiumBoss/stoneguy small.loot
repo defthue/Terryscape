@@ -1,0 +1,74 @@
+{
+  "GoldMin": 30,
+  "GoldMax": 90,
+  "Entries": [
+    {
+      "Item": "Rock",
+      "MinAmount": 1,
+      "MaxAmount": 4,
+      "ChancePercent": 77.33333
+    },
+    {
+      "Item": "LunaritePickaxe",
+      "MinAmount": 1,
+      "MaxAmount": 1,
+      "ChancePercent": 0.6666667
+    },
+    {
+      "Item": "Coal",
+      "MinAmount": 1,
+      "MaxAmount": 11,
+      "ChancePercent": 34.666668
+    },
+    {
+      "Item": "ArcaneDust",
+      "MinAmount": 1,
+      "MaxAmount": 4,
+      "ChancePercent": 55.333336
+    },
+    {
+      "Item": "LunariteOre",
+      "MinAmount": 1,
+      "MaxAmount": 3,
+      "ChancePercent": 8
+    },
+    {
+      "Item": "SolariumOre",
+      "MinAmount": 1,
+      "MaxAmount": 3,
+      "ChancePercent": 11.333334
+    },
+    {
+      "Item": "ColdveinOre",
+      "MinAmount": 1,
+      "MaxAmount": 4,
+      "ChancePercent": 14.666666
+    },
+    {
+      "Item": "AshsteelOre",
+      "MinAmount": 1,
+      "MaxAmount": 6,
+      "ChancePercent": 16.666668
+    },
+    {
+      "Item": "CoppiteOre",
+      "MinAmount": 1,
+      "MaxAmount": 9,
+      "ChancePercent": 38
+    },
+    {
+      "Item": "Gem",
+      "MinAmount": 1,
+      "MaxAmount": 3,
+      "ChancePercent": 6.666667
+    },
+    {
+      "Item": "Starbloom",
+      "MinAmount": 1,
+      "MaxAmount": 2,
+      "ChancePercent": 5.3333335
+    }
+  ],
+  "__references": [],
+  "__version": 0
+}

@@ -1,0 +1,62 @@
+{
+  "GoldMin": 30,
+  "GoldMax": 40,
+  "Entries": [
+    {
+      "Item": "MonsterHide",
+      "MinAmount": 1,
+      "MaxAmount": 5,
+      "ChancePercent": 74.666664
+    },
+    {
+      "Item": "RoughFiber",
+      "MinAmount": 1,
+      "MaxAmount": 5,
+      "ChancePercent": 100
+    },
+    {
+      "Item": "Coal",
+      "MinAmount": 1,
+      "MaxAmount": 10,
+      "ChancePercent": 14
+    },
+    {
+      "Item": "AshwoodLog",
+      "MinAmount": 1,
+      "MaxAmount": 8,
+      "ChancePercent": 22.307692
+    },
+    {
+      "Item": "Rock",
+      "MinAmount": 1,
+      "MaxAmount": 3,
+      "ChancePercent": 26
+    },
+    {
+      "Item": "SageLeaf",
+      "MinAmount": 1,
+      "MaxAmount": 5,
+      "ChancePercent": 17.692308
+    },
+    {
+      "Item": "AshsteelHeavyHelm",
+      "MinAmount": 1,
+      "MaxAmount": 1,
+      "ChancePercent": 1.3333334
+    },
+    {
+      "Item": "AshsteelHatchet",
+      "MinAmount": 1,
+      "MaxAmount": 1,
+      "ChancePercent": 3.846154
+    },
+    {
+      "Item": "AshsteelOre",
+      "MinAmount": 7,
+      "MaxAmount": 8,
+      "ChancePercent": 16.923077
+    }
+  ],
+  "__references": [],
+  "__version": 0
+}

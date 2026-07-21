@@ -1,0 +1,74 @@
+{
+  "GoldMin": 90,
+  "GoldMax": 150,
+  "Entries": [
+    {
+      "Item": "MonsterBone",
+      "MinAmount": 3,
+      "MaxAmount": 8,
+      "ChancePercent": 74.666664
+    },
+    {
+      "Item": "LunaritePickaxe",
+      "MinAmount": 1,
+      "MaxAmount": 1,
+      "ChancePercent": 1.5384616
+    },
+    {
+      "Item": "Coal",
+      "MinAmount": 1,
+      "MaxAmount": 40,
+      "ChancePercent": 34.666668
+    },
+    {
+      "Item": "DuskoakLog",
+      "MinAmount": 2,
+      "MaxAmount": 10,
+      "ChancePercent": 18.666666
+    },
+    {
+      "Item": "ColdveinBar",
+      "MinAmount": 3,
+      "MaxAmount": 10,
+      "ChancePercent": 13.333334
+    },
+    {
+      "Item": "SolariumOre",
+      "MinAmount": 1,
+      "MaxAmount": 5,
+      "ChancePercent": 13.076923
+    },
+    {
+      "Item": "LunariteShield",
+      "MinAmount": 1,
+      "MaxAmount": 3,
+      "ChancePercent": 2.3076923
+    },
+    {
+      "Item": "HealingPotion",
+      "MinAmount": 1,
+      "MaxAmount": 4,
+      "ChancePercent": 30.000002
+    },
+    {
+      "Item": "ColdveinOre",
+      "MinAmount": 1,
+      "MaxAmount": 3,
+      "ChancePercent": 4
+    },
+    {
+      "Item": "Gem",
+      "MinAmount": 1,
+      "MaxAmount": 3,
+      "ChancePercent": 20.769232
+    },
+    {
+      "Item": "SolariumShield",
+      "MinAmount": 1,
+      "MaxAmount": 1,
+      "ChancePercent": 4.6153846
+    }
+  ],
+  "__references": [],
+  "__version": 0
+}
