@@ -341,7 +341,7 @@ public static class ItemDatabase
 
 		Add( Define( ItemId.WildBerries, "Wild Berries", ItemType.Herb, tier: 1, baseSellPrice: 2 ) );
 		Add( Define( ItemId.BlueMoss, "Blue Moss", ItemType.Herb, tier: 2, baseSellPrice: 4 ) );
-		Add( Define( ItemId.Goldpetal, "Goldpetal", ItemType.Herb, tier: 3, baseSellPrice: 7 ) );
+		Add( Define( ItemId.Goldpetal, "Gold Petal", ItemType.Herb, tier: 3, baseSellPrice: 7 ) );
 		Add( Define( ItemId.Whisperfern, "Whisperfern", ItemType.Herb, tier: 4, baseSellPrice: 11 ) );
 		Add( Define( ItemId.NightshadeStem, "Nightshade Stem", ItemType.Herb, tier: 5, baseSellPrice: 16 ) );
 		Add( Define( ItemId.Liferoot, "Liferoot", ItemType.Herb, tier: 6, baseSellPrice: 22 ) );

@@ -77,7 +77,7 @@ public sealed class ArrowProjectile : Component
 				if ( slimeDamage < 1 ) slimeDamage = 1;
 
 				slimeNear.TakeDamage( slimeDamage, Shooter );
-				DamagePopupBroadcaster.Broadcast( currentPos, slimeDamage, slimeNear.MaxHealth, IsCrit );
+				DamagePopupBroadcaster.Broadcast( currentPos, slimeDamage, slimeNear.MaxHealth, IsCrit, DamagePopupBroadcaster.SteamIdOf( Shooter ), 0 );
 				SoundLibrary.PlayArrowImpact( currentPos );
 				GameObject.Destroy();
 			}
@@ -112,7 +112,7 @@ public sealed class ArrowProjectile : Component
 			if ( finalDamage < 1 ) finalDamage = 1;
 
 			monster.TakeDamage( finalDamage, Shooter );
-			DamagePopupBroadcaster.Broadcast( trace.HitPosition, finalDamage, monster.MaxHealth, IsCrit );
+			DamagePopupBroadcaster.Broadcast( trace.HitPosition, finalDamage, monster.MaxHealth, IsCrit, DamagePopupBroadcaster.SteamIdOf( Shooter ), 0 );
 			SoundLibrary.PlayArrowImpact( trace.HitPosition );
 			GameObject.Destroy();
 			return;
@@ -127,7 +127,7 @@ public sealed class ArrowProjectile : Component
 			if ( finalDamage < 1 ) finalDamage = 1;
 
 			boss.TakeDamage( finalDamage, Shooter );
-			DamagePopupBroadcaster.Broadcast( trace.HitPosition, finalDamage, boss.MaxHealth, IsCrit );
+			DamagePopupBroadcaster.Broadcast( trace.HitPosition, finalDamage, boss.MaxHealth, IsCrit, DamagePopupBroadcaster.SteamIdOf( Shooter ), 0 );
 			SoundLibrary.PlayArrowImpact( trace.HitPosition );
 			GameObject.Destroy();
 			return;
@@ -142,7 +142,7 @@ public sealed class ArrowProjectile : Component
 			if ( finalDamage < 1 ) finalDamage = 1;
 
 			slimeKing.TakeDamage( finalDamage, Shooter );
-			DamagePopupBroadcaster.Broadcast( trace.HitPosition, finalDamage, slimeKing.MaxHealth, IsCrit );
+			DamagePopupBroadcaster.Broadcast( trace.HitPosition, finalDamage, slimeKing.MaxHealth, IsCrit, DamagePopupBroadcaster.SteamIdOf( Shooter ), 0 );
 			SoundLibrary.PlayArrowImpact( trace.HitPosition );
 			GameObject.Destroy();
 			return;

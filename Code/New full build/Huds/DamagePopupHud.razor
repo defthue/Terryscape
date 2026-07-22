@@ -7,9 +7,11 @@
 <root>
 	@foreach ( var popup in GetVisiblePopups() )
 	{
-		<div class="popup-wrapper tier-@(popup.ColorTier) @(popup.IsCrit ? "crit" : "") @(popup.AgePercent > 0.7f ? "fading" : "")"
+		<div class="popup-wrapper tier-@(popup.ColorTier) @(popup.Incoming ? "incoming" : "") @(popup.IsCrit ? "crit" : "") @(popup.AgePercent > 0.7f ? "fading" : "")"
 			 style="left: @(popup.ScreenX.ToString("0.##"))%; top: @(popup.ScreenY.ToString("0.##"))%; transform: translate(-50%, @(popup.FloatY)px);">
-			@(popup.IsCrit ? "✦ " + popup.Damage + " ✦" : popup.Damage.ToString())
+			<div class="popup-inner" style="transform: scale(@(popup.Scale.ToString("0.##"))); opacity: @(popup.Opacity.ToString("0.##"));">
+				@(popup.IsCrit ? "✦ " + popup.Damage + " ✦" : popup.Damage.ToString())
+			</div>
 		</div>
 	}
 </root>
@@ -25,6 +27,9 @@
 		public int ColorTier;
 		public bool IsCrit;
 		public float AgePercent;
+		public bool Incoming;
+		public float Scale;
+		public float Opacity;
 	}
 
 	List<DrawPopup> GetVisiblePopups()
@@ -46,6 +51,7 @@
 
 		var camForward = camera.WorldRotation.Forward;
 		var camPos = camera.WorldPosition;
+		ulong localSteamId = Connection.Local?.SteamId ?? 0ul;
 
 		foreach ( var popup in broadcaster.ActivePopups )
 		{
@@ -63,6 +69,9 @@
 
 			var normal = camera.PointToScreenNormal( popup.WorldPosition );
 
+			bool own = localSteamId != 0ul && popup.AttackerSteamId == localSteamId;
+			bool incoming = !own && localSteamId != 0ul && popup.TargetSteamId == localSteamId;
+
 			list.Add( new DrawPopup
 			{
 				ScreenX = normal.x * 100f,
@@ -71,7 +80,10 @@
 				Damage = popup.Damage,
 				ColorTier = popup.ColorTier,
 				IsCrit = popup.IsCrit,
-				AgePercent = agePct
+				AgePercent = agePct,
+				Incoming = incoming,
+				Scale = own ? 1f : incoming ? 1.1f : 0.7f,
+				Opacity = own || incoming ? 1f : 0.7f
 			} );
 		}
 
@@ -91,7 +103,7 @@
 
 		int hash = broadcaster.ActivePopups.Count;
 		foreach ( var p in broadcaster.ActivePopups )
-			hash = ( hash, p.Damage, p.ColorTier, p.IsCrit, (int)(p.SpawnTime * 100f) ).GetHashCode();
+			hash = ( hash, p.Damage, p.ColorTier, p.IsCrit, (int)(p.SpawnTime * 100f), p.AttackerSteamId, p.TargetSteamId ).GetHashCode();
 
 		return ( hash, (int)( Time.Now * 30f ) ).GetHashCode();
 	}

@@ -17,6 +17,12 @@ root {
 	align-items: center;
 }
 
+.health-bar-taper {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
 .health-bar-bg {
 	width: 130px;
 	height: 14px;

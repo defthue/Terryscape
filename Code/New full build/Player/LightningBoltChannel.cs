@@ -369,7 +369,7 @@ public sealed class LightningBoltChannel : Component
 				if ( dealt < 1 ) dealt = 1;
 
 				monster.TakeDamage( dealt, _caster );
-				DamagePopupBroadcaster.Broadcast( monster.WorldPosition + Vector3.Up * 50f, dealt, monster.MaxHealth, false );
+				DamagePopupBroadcaster.Broadcast( monster.WorldPosition + Vector3.Up * 50f, dealt, monster.MaxHealth, false, DamagePopupBroadcaster.SteamIdOf( GameObject ), 0 );
 				continue;
 			}
 
@@ -381,7 +381,7 @@ public sealed class LightningBoltChannel : Component
 				if ( dealt < 1 ) dealt = 1;
 
 				boss.TakeDamage( dealt, _caster );
-				DamagePopupBroadcaster.Broadcast( boss.WorldPosition + Vector3.Up * 50f, dealt, boss.MaxHealth, false );
+				DamagePopupBroadcaster.Broadcast( boss.WorldPosition + Vector3.Up * 50f, dealt, boss.MaxHealth, false, DamagePopupBroadcaster.SteamIdOf( GameObject ), 0 );
 				continue;
 			}
 
@@ -393,7 +393,7 @@ public sealed class LightningBoltChannel : Component
 				if ( dealt < 1 ) dealt = 1;
 
 				slimeKing.TakeDamage( dealt, _caster );
-				DamagePopupBroadcaster.Broadcast( slimeKing.WorldPosition + Vector3.Up * 50f, dealt, slimeKing.MaxHealth, false );
+				DamagePopupBroadcaster.Broadcast( slimeKing.WorldPosition + Vector3.Up * 50f, dealt, slimeKing.MaxHealth, false, DamagePopupBroadcaster.SteamIdOf( GameObject ), 0 );
 			}
 		}
 

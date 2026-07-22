@@ -22,15 +22,22 @@
 
 		@if ( LogTab == 0 )
 		{
-			<div class="chat-entries">
+			<div class="chat-entries" @ref="ChatEntriesAllRef">
 				@foreach ( var entry in GetCombinedFeed().AsEnumerable().Reverse() )
 				{
 					@if ( entry.IsChat )
 					{
-						<div class="chat-entry chat-msg">
-							<div class="chat-sender">@entry.Sender</div>
-							<div class="chat-text">@entry.Text</div>
-						</div>
+						@if ( entry.SteamId == 0ul )
+						{
+							<div class="chat-entry chat-system" style="color: #f0c040;">@entry.Sender: @entry.Text</div>
+						}
+						else
+						{
+							<div class="chat-entry chat-msg">
+								<div class="chat-sender" style="@SenderStyle( entry.SteamId, entry.Prestige )">@entry.Sender</div>
+								<div class="chat-text">@entry.Text</div>
+							</div>
+						}
 					}
 					else
 					{
@@ -42,7 +49,7 @@
 
 		@if ( LogTab == 1 )
 		{
-			<div class="chat-entries">
+			<div class="chat-entries" @ref="ChatEntriesLogRef">
 				@foreach ( var msg in GetVisibleMessages().AsEnumerable().Reverse() )
 				{
 					<div class="chat-entry" style="color: @msg.Color;">@msg.Text</div>
@@ -52,15 +59,22 @@
 
 		@if ( LogTab == 2 )
 		{
-			<div class="chat-entries">
+			<div class="chat-entries" @ref="ChatEntriesChatRef">
 				@foreach ( var msg in GetChatMessages().AsEnumerable().Reverse() )
 				{
 					@if ( !string.IsNullOrEmpty( msg.Sender ) )
 					{
-						<div class="chat-entry chat-msg">
-							<div class="chat-sender">@msg.Sender</div>
-							<div class="chat-text">@msg.Text</div>
-						</div>
+						@if ( msg.SteamId == 0ul )
+						{
+							<div class="chat-entry chat-system" style="color: #f0c040;">@msg.Sender: @msg.Text</div>
+						}
+						else
+						{
+							<div class="chat-entry chat-msg">
+								<div class="chat-sender" style="@SenderStyle( msg.SteamId, msg.Prestige )">@msg.Sender</div>
+								<div class="chat-text">@msg.Text</div>
+							</div>
+						}
 					}
 					else
 					{
@@ -551,6 +565,9 @@
 	bool IsUIOpen => PlayerGatherResource.UIOpen;
 
 	TextEntry ChatInputRef { get; set; }
+	Panel ChatEntriesAllRef { get; set; }
+	Panel ChatEntriesLogRef { get; set; }
+	Panel ChatEntriesChatRef { get; set; }
 	string ChatText { get; set; } = "";
 
 	bool IsChatOpen
@@ -571,6 +588,15 @@
 		return gm.ChatMessages;
 	}
 
+	string SenderStyle( ulong steamId, bool prestige )
+	{
+		if ( prestige )
+			return $"color: {ChatColors.Prestige};";
+
+		var color = ChatColors.ForSteamId( steamId );
+		return color != null ? $"color: {color};" : "";
+	}
+
 	public class FeedEntry
 	{
 		public bool IsChat;
@@ -579,6 +605,8 @@
 		public string Sender;
 		public float CreatedValue;
 		public long Sequence;
+		public ulong SteamId;
+		public bool Prestige;
 	}
 
 	List<FeedEntry> GetCombinedFeed()
@@ -611,7 +639,9 @@
 				Color = null,
 				Sender = msg.Sender,
 				CreatedValue = (float)msg.Created,
-				Sequence = msg.Sequence
+				Sequence = msg.Sequence,
+				SteamId = msg.SteamId,
+				Prestige = msg.Prestige
 			} );
 		}
 
@@ -1540,6 +1570,10 @@
 
 	protected override void OnUpdate()
 	{
+		if ( ChatEntriesAllRef != null ) ChatEntriesAllRef.CanDragScroll = false;
+		if ( ChatEntriesLogRef != null ) ChatEntriesLogRef.CanDragScroll = false;
+		if ( ChatEntriesChatRef != null ) ChatEntriesChatRef.CanDragScroll = false;
+
 		GearTabExpanded = ActiveTab == 0;
 
 		TerryPreviewRenderer.Instance?.SetActive( ActiveTab == 0 );

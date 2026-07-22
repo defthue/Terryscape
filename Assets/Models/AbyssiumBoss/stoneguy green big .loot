@@ -45,18 +45,6 @@
       "ChancePercent": 24
     },
     {
-      "Item": "AshsteelOre",
-      "MinAmount": 1,
-      "MaxAmount": 15,
-      "ChancePercent": 34.666668
-    },
-    {
-      "Item": "CoppiteOre",
-      "MinAmount": 1,
-      "MaxAmount": 24,
-      "ChancePercent": 66.66667
-    },
-    {
       "Item": "Gem",
       "MinAmount": 1,
       "MaxAmount": 3,

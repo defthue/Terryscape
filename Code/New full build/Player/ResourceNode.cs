@@ -1,5 +1,6 @@
 using Sandbox;
 using System;
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -56,6 +57,8 @@ public sealed class ResourceNode : Component
 
 	Vector3 _originalScale;
 	bool _localBroken = false;
+
+	Dictionary<ulong, int> _contributors = new();
 
 	// Distance culling state. Tracks whether this node is currently culled
 	// for the local client based on distance to the local camera.
@@ -268,14 +271,105 @@ public sealed class ResourceNode : Component
 		if ( IsBroken )
 			return;
 
+		ulong harvesterId = Rpc.Caller?.SteamId ?? 0ul;
+		if ( harvesterId != 0ul && damage > 0 )
+		{
+			_contributors.TryGetValue( harvesterId, out int total );
+			_contributors[harvesterId] = total + damage;
+		}
+
 		CurrentHealth -= damage;
 
 		if ( CurrentHealth <= 0 )
 		{
 			IsBroken = true;
+			AwardHarvestToContributors();
 			BroadcastBreak();
 			StartRespawnTimer();
 		}
+	}
+
+	void AwardHarvestToContributors()
+	{
+		if ( _contributors.Count == 0 )
+			return;
+
+		long totalDamage = 0;
+		foreach ( var kv in _contributors )
+			totalDamage += kv.Value;
+
+		if ( totalDamage <= 0 )
+		{
+			_contributors.Clear();
+			return;
+		}
+
+		int amount = GetHarvestAmount();
+
+		foreach ( var kv in _contributors )
+		{
+			if ( kv.Value <= 0 )
+				continue;
+
+			int share = (int)Math.Ceiling( amount * (double)kv.Value / totalDamage );
+			if ( share <= 0 )
+				continue;
+
+			BroadcastHarvestReward( kv.Key, ResourceItem, share, GetDisplayName(), XpReward );
+		}
+
+		_contributors.Clear();
+	}
+
+	[Rpc.Broadcast]
+	void BroadcastHarvestReward( ulong recipientSteamId, ItemId itemId, int amount, string nodeName, int xpReward )
+	{
+		if ( Connection.Local == null || Connection.Local.SteamId != recipientSteamId )
+			return;
+
+		var localPlayer = FindLocalPlayer();
+		if ( localPlayer == null )
+			return;
+
+		var inventory = localPlayer.Components.Get<Inventory>();
+		var skills = localPlayer.Components.Get<Skills>();
+
+		if ( inventory != null )
+		{
+			var (placed, banked) = inventory.AddItemOrBank( itemId, amount );
+
+			if ( placed > 0 || banked > 0 )
+			{
+				SoundLibrary.PlayReceiveItem();
+				ItemPickupEffect.Trigger( itemId );
+			}
+
+			var def = ItemDatabase.Get( itemId );
+			string itemName = def != null ? def.Name : itemId.ToString();
+
+			if ( placed > 0 )
+				GameLog.Add( $"You collected {placed}x {itemName} from {nodeName}.", "#6db8f0" );
+
+			if ( banked > 0 )
+				GameLog.Add( $"Inventory full — {banked}x {itemName} sent to your bank.", "#c9a84c" );
+
+			inventory.AddNodeMined();
+			AchievementTracker.OnNodeGathered();
+		}
+
+		if ( skills != null && xpReward > 0 )
+			skills.AddXp( GetSkillType(), xpReward );
+	}
+
+	GameObject FindLocalPlayer()
+	{
+		foreach ( var pc in Scene.GetAllComponents<PlayerController>() )
+		{
+			var owner = pc.Network.Owner;
+			if ( owner != null && Connection.Local != null && owner.SteamId == Connection.Local.SteamId )
+				return pc.GameObject;
+		}
+		return null;
 	}
 
 	[Rpc.Broadcast]
@@ -295,6 +389,7 @@ public sealed class ResourceNode : Component
 
 		CurrentHealth = MaxHealth;
 		IsBroken = false;
+		_contributors.Clear();
 		BroadcastRespawn();
 	}
 

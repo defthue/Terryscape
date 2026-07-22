@@ -157,9 +157,9 @@ root {
 	font-size: 18px;
 	padding: 4px 0;
 	flex-shrink: 0;
-	word-break: break-all;
 	white-space: normal;
 	max-width: 100%;
+	overflow: hidden;
 }
 
 .chat-msg {
@@ -175,8 +175,9 @@ root {
 
 .chat-text {
 	color: #e8e8e8;
-	word-break: break-all;
 	white-space: normal;
+	max-width: 100%;
+	overflow: hidden;
 }
 
 .chat-system {

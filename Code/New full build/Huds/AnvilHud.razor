@@ -1,0 +1,648 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using System;
+@using System.Collections.Generic;
+@inherits PanelComponent
+
+<root>
+	@if ( IsOpen )
+	{
+		<div class="anvl-backdrop" onclick="@(() => CloseStation())"></div>
+		<div class="anvl-popup">
+			<div class="anvl-header">
+				<div class="anvl-title">⚒ @StationName</div>
+				<div class="anvl-chips">
+					<div class="anvl-chip level">Smithing Lvl @Level</div>
+				</div>
+				<div class="anvl-close" onclick="@(() => CloseStation())">✕</div>
+			</div>
+
+			<div class="anvl-body">
+				<div class="anvl-nav">
+					<div class="anvl-nav-label">MATERIAL</div>
+					<div class="anvl-rail">
+						@for ( int i = 0; i < Materials.Length; i++ )
+						{
+							int tierLocal = i;
+							var mat = Materials[tierLocal];
+							bool preview = Level < mat.LevelRequired;
+							<div class="anvl-chip-cell">
+								<div class="anvl-mat-chip @(SelectedTier == tierLocal ? "selected" : "") @(preview ? "preview" : "")" style="background-color: @mat.ChipColor;" onclick="@(() => SelectTier( tierLocal ))">
+									<div class="anvl-tip">
+										<div class="anvl-tip-name">@mat.Name</div>
+										<div class="anvl-tip-sub">Lv @mat.LevelRequired</div>
+									</div>
+								</div>
+								<div class="anvl-mat-tier">@(tierLocal + 1)</div>
+							</div>
+						}
+					</div>
+
+					<div class="anvl-mat-heading">
+						<div class="anvl-mat-name">@Materials[SafeTier].Name</div>
+						<div class="anvl-mat-lv">· Lv @Materials[SafeTier].LevelRequired</div>
+					</div>
+
+					<div class="anvl-grid">
+						@foreach ( var cell in GetGridCells() )
+						{
+							var cellLocal = cell;
+							@if ( cellLocal.RecipeId == null )
+							{
+								<div class="anvl-cell placeholder"></div>
+							}
+							else
+							{
+								<div class="anvl-cell @(SelectedKind == cellLocal.Kind ? "selected" : "") @(cellLocal.Locked ? "locked" : "")" onclick="@(() => SelectKind( cellLocal.Kind ))">
+									<div class="anvl-cell-iconwrap">
+										<div class="anvl-icon-glyph">❖</div>
+										<img class="anvl-cell-img" src="@IconPath( cellLocal.Output )" />
+									</div>
+									<div class="anvl-cell-name">@cellLocal.Label</div>
+									<div class="anvl-tip">
+										<div class="anvl-tip-name">@cellLocal.FullName</div>
+										<div class="anvl-tip-sub">Lv @cellLocal.LevelRequired</div>
+									</div>
+								</div>
+							}
+						}
+					</div>
+
+					<div class="anvl-nav-label acc">ACCESSORIES</div>
+					<div class="anvl-grid">
+						@foreach ( var cell in GetAccessoryCells() )
+						{
+							var cellLocal = cell;
+							<div class="anvl-cell @(SelectedKind == cellLocal.Kind ? "selected" : "") @(cellLocal.Locked ? "locked" : "")" onclick="@(() => SelectKind( cellLocal.Kind ))">
+								<div class="anvl-cell-iconwrap">
+									<div class="anvl-icon-glyph">❖</div>
+									<img class="anvl-cell-img" src="@IconPath( cellLocal.Output )" />
+								</div>
+								<div class="anvl-cell-name">@cellLocal.Label</div>
+								<div class="anvl-tip">
+									<div class="anvl-tip-name">@cellLocal.FullName</div>
+									<div class="anvl-tip-sub">Lv @cellLocal.LevelRequired</div>
+								</div>
+							</div>
+						}
+					</div>
+				</div>
+
+				<div class="anvl-circle-col">
+					<div class="anvl-ring-area">
+						@if ( Selected == null )
+						{
+							<div class="anvl-ring-outer dim"></div>
+							<div class="anvl-select-hint">Select an item</div>
+						}
+						else
+						{
+							<div class="anvl-ring-outer"></div>
+							<div class="anvl-ring-inner"></div>
+
+							@foreach ( var line in GetLineVms() )
+							{
+								<div class="anvl-line" style="@line.Style">
+									@if ( line.Have )
+									{
+										<div class="anvl-line-fill" style="background-color: @line.Color;"></div>
+									}
+									else
+									{
+										@for ( int d = 0; d < line.DashCount; d++ )
+										{
+											<div class="anvl-line-dash" style="background-color: @line.Color;"></div>
+										}
+									}
+								</div>
+							}
+
+							@foreach ( var node in GetNodeVms() )
+							{
+								<div class="anvl-node" style="left: @node.LeftPct%; top: @node.TopPct%;">
+									<div class="anvl-diamond @(node.Have ? "have" : "missing")" style="transform: rotate(45deg);">
+										<div class="anvl-diamond-inner" style="transform: rotate(-45deg);">
+											<div class="anvl-icon-glyph">❖</div>
+											<img class="anvl-node-img" src="@IconPath( node.Item )" />
+										</div>
+									</div>
+									<div class="anvl-node-label @(node.LabelAbove ? "above" : "below")">
+										<div class="anvl-node-name">@node.Name</div>
+										<div class="anvl-node-count @(node.Have ? "ok" : "bad")">@node.OwnedCount/@node.NeededCount</div>
+									</div>
+								</div>
+							}
+
+							<div class="anvl-center" style="@CenterStyle()">
+								<div class="anvl-spark s1"></div>
+								<div class="anvl-spark s2"></div>
+								<div class="anvl-spark s3"></div>
+								<div class="anvl-icon-glyph big">❖</div>
+								<img class="anvl-center-img" src="@IconPath( Selected.OutputItem )" />
+							</div>
+						}
+					</div>
+				</div>
+
+				<div class="anvl-info">
+					@if ( Selected == null )
+					{
+						<div class="anvl-info-empty">Pick an item from the grid to see its recipe.</div>
+					}
+					else
+					{
+						<div class="anvl-info-name">@Selected.Name</div>
+						<div class="anvl-info-stat">@StatText( Selected.OutputItem )</div>
+
+						<div class="anvl-info-divider"></div>
+
+						<div class="anvl-info-line">
+							<div class="anvl-il-label">Requires</div>
+							<div class="anvl-il-value @(MeetsLevel ? "" : "bad")">@Selected.SkillRequired Lv @Selected.LevelRequired</div>
+						</div>
+						<div class="anvl-info-line">
+							<div class="anvl-il-label">In bag</div>
+							<div class="anvl-il-value">@OwnedOfSelected</div>
+						</div>
+						<div class="anvl-info-line">
+							<div class="anvl-il-label">Can forge</div>
+							<div class="anvl-il-value">@MaxCrafts</div>
+						</div>
+						<div class="anvl-info-line">
+							<div class="anvl-il-label">Reward</div>
+							<div class="anvl-il-value">+@Selected.XpReward XP</div>
+						</div>
+
+						@if ( !RecipeLearned )
+						{
+							<div class="anvl-info-missing">Recipe not learned yet.</div>
+						}
+						else if ( MissingNames.Count > 0 )
+						{
+							<div class="anvl-info-missing">Missing: @(string.Join( ", ", MissingNames ))</div>
+						}
+
+						<div class="anvl-spacer"></div>
+
+						<div class="anvl-craft @(CanCraft ? "" : "disabled")" onclick="@(() => OnCraft())">Forge</div>
+						<div class="anvl-craft all @(CanCraft ? "" : "disabled")" onclick="@(() => OnCraftAll())">Forge all</div>
+					}
+				</div>
+			</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	CraftingStation Station
+	{
+		get
+		{
+			var s = CraftingStation.ActiveStation;
+			if ( s == null || s.Station != StationType.Anvil )
+				return null;
+			return s;
+		}
+	}
+
+	bool IsOpen => Station != null;
+	string StationName => Station?.StationName ?? "Anvil";
+
+	Inventory PlayerInventory => PlayerHelper.GetLocalInventory();
+	Skills PlayerSkills => PlayerHelper.GetSkills( PlayerHelper.GetLocalPlayer() );
+
+	int Level => PlayerSkills?.GetLevel( SkillType.Smithing ) ?? 1;
+
+	public class MaterialDef
+	{
+		public string Key;
+		public string Name;
+		public string ChipColor;
+		public int LevelRequired;
+	}
+
+	static readonly MaterialDef[] Materials =
+	{
+		new MaterialDef { Key = "coppite", Name = "Coppite", ChipColor = "#b87a4a", LevelRequired = 1 },
+		new MaterialDef { Key = "ashsteel", Name = "Ashsteel", ChipColor = "#8a8f8a", LevelRequired = 10 },
+		new MaterialDef { Key = "coldvein", Name = "Coldvein", ChipColor = "#8ab0c8", LevelRequired = 20 },
+		new MaterialDef { Key = "solarium", Name = "Solarium", ChipColor = "#e8d060", LevelRequired = 30 },
+		new MaterialDef { Key = "lunarite", Name = "Lunarite", ChipColor = "#8a6ab0", LevelRequired = 40 },
+		new MaterialDef { Key = "abyssium", Name = "Abyssium", ChipColor = "#3a4a5a", LevelRequired = 50 }
+	};
+
+	static readonly (string Label, string Suffix)[] GridSlots =
+	{
+		( "Sword", "sword" ),
+		( "Shield", "shield" ),
+		( "Hatchet", "hatchet" ),
+		( "Pickaxe", "pickaxe" ),
+		( "Heavy Helm", "heavy_helm" ),
+		( "Heavy Chest", "heavy_chestplate" ),
+		( "Heavy Legs", "heavy_legs" )
+	};
+
+	int SelectedTier { get; set; } = -1;
+	string SelectedKind { get; set; }
+
+	int SafeTier => SelectedTier >= 0 && SelectedTier < Materials.Length ? SelectedTier : 0;
+
+	string SelectedRecipeId
+	{
+		get
+		{
+			if ( SelectedKind == null )
+				return null;
+			if ( SelectedKind.StartsWith( "acc:" ) )
+				return SelectedKind.Substring( 4 );
+			return $"{Materials[SafeTier].Key}_{SelectedKind}";
+		}
+	}
+
+	RecipeDefinition Selected => SelectedRecipeId != null ? RecipeDatabase.GetById( SelectedRecipeId ) : null;
+
+	const float FxDuration = 0.6f;
+	const float RingSize = 460f;
+	const float RingRadius = 170f;
+	const float NodeRadius = 35f;
+	const float CenterRadius = 50f;
+
+	RealTimeSince _fxSince = 999f;
+	bool FxActive => (float)_fxSince < FxDuration;
+	float FxPulse => FxActive ? MathF.Sin( MathF.PI * ( (float)_fxSince / FxDuration ) ) : 0f;
+
+	public class CellVm
+	{
+		public string Kind;
+		public string Label;
+		public string FullName;
+		public string RecipeId;
+		public ItemId Output;
+		public int LevelRequired;
+		public bool Locked;
+	}
+
+	public class NodeVm
+	{
+		public ItemId Item;
+		public string Name;
+		public int OwnedCount;
+		public int NeededCount;
+		public bool Have;
+		public bool LabelAbove;
+		public string LeftPct;
+		public string TopPct;
+	}
+
+	public class LineVm
+	{
+		public bool Have;
+		public string Color;
+		public string Style;
+		public int DashCount;
+	}
+
+	static string Num( float value )
+	{
+		return value.ToString( "0.##", System.Globalization.CultureInfo.InvariantCulture );
+	}
+
+	string IconPath( ItemId id )
+	{
+		if ( id == ItemId.Gem ) return "/ItemIcons/FineGem.vtex";
+		if ( id == ItemId.Ring ) return "/ItemIcons/FineRing.vtex";
+		if ( id == ItemId.Amulet ) return "/ItemIcons/FineAmulet.vtex";
+		return $"/ItemIcons/{id}.vtex";
+	}
+
+	List<CellVm> GetGridCells()
+	{
+		var cells = new List<CellVm>();
+		var mat = Materials[SafeTier];
+
+		foreach ( var slot in GridSlots )
+		{
+			string id = $"{mat.Key}_{slot.Suffix}";
+			var recipe = RecipeDatabase.GetById( id );
+			if ( recipe == null )
+				continue;
+
+			cells.Add( new CellVm
+			{
+				Kind = slot.Suffix,
+				Label = slot.Label,
+				FullName = recipe.Name,
+				RecipeId = id,
+				Output = recipe.OutputItem,
+				LevelRequired = recipe.LevelRequired,
+				Locked = !( PlayerSkills?.MeetsRequirement( recipe.SkillRequired, recipe.LevelRequired ) ?? false )
+					|| !( PlayerInventory?.IsRecipeUnlocked( id ) ?? false )
+			} );
+		}
+
+		while ( cells.Count % 2 != 0 || cells.Count < 8 )
+			cells.Add( new CellVm { RecipeId = null } );
+
+		return cells;
+	}
+
+	List<CellVm> GetAccessoryCells()
+	{
+		var cells = new List<CellVm>();
+
+		foreach ( var id in new[] { "ring", "amulet" } )
+		{
+			var recipe = RecipeDatabase.GetById( id );
+			if ( recipe == null )
+				continue;
+
+			cells.Add( new CellVm
+			{
+				Kind = $"acc:{id}",
+				Label = recipe.Name,
+				FullName = recipe.Name,
+				RecipeId = id,
+				Output = recipe.OutputItem,
+				LevelRequired = recipe.LevelRequired,
+				Locked = !( PlayerSkills?.MeetsRequirement( recipe.SkillRequired, recipe.LevelRequired ) ?? false )
+					|| !( PlayerInventory?.IsRecipeUnlocked( id ) ?? false )
+			} );
+		}
+
+		return cells;
+	}
+
+	static float SlotAngle( int index, int count )
+	{
+		float start = count == 3 ? MathF.PI / 2f : -MathF.PI / 2f;
+		return start + index * ( MathF.PI * 2f / count );
+	}
+
+	List<NodeVm> GetNodeVms()
+	{
+		var nodes = new List<NodeVm>();
+		var recipe = Selected;
+		if ( recipe == null )
+			return nodes;
+
+		var inventory = PlayerInventory;
+		int count = recipe.Ingredients.Length;
+
+		for ( int i = 0; i < count; i++ )
+		{
+			var ing = recipe.Ingredients[i];
+			var def = ItemDatabase.Get( ing.Item );
+
+			float angle = SlotAngle( i, count );
+			float ux = MathF.Cos( angle );
+			float uy = MathF.Sin( angle );
+			float x = RingSize / 2f + RingRadius * ux;
+			float y = RingSize / 2f + RingRadius * uy;
+
+			int have = inventory?.GetItemCount( ing.Item ) ?? 0;
+
+			nodes.Add( new NodeVm
+			{
+				Item = ing.Item,
+				Name = def != null ? def.Name : ing.Item.ToString(),
+				OwnedCount = have,
+				NeededCount = ing.Amount,
+				Have = have >= ing.Amount,
+				LabelAbove = uy < -0.01f,
+				LeftPct = Num( x / RingSize * 100f ),
+				TopPct = Num( y / RingSize * 100f )
+			} );
+		}
+
+		return nodes;
+	}
+
+	List<LineVm> GetLineVms()
+	{
+		var lines = new List<LineVm>();
+		var recipe = Selected;
+		if ( recipe == null )
+			return lines;
+
+		var inventory = PlayerInventory;
+		int count = recipe.Ingredients.Length;
+		float center = RingSize / 2f;
+
+		for ( int i = 0; i < count; i++ )
+		{
+			var ing = recipe.Ingredients[i];
+			int have = inventory?.GetItemCount( ing.Item ) ?? 0;
+			bool haveEnough = have >= ing.Amount;
+
+			float angle = SlotAngle( i, count );
+			float ux = MathF.Cos( angle );
+			float uy = MathF.Sin( angle );
+
+			float startDist = CenterRadius;
+			float endDist = RingRadius - NodeRadius;
+			float length = endDist - startDist;
+			float midDist = ( startDist + endDist ) / 2f;
+
+			float midX = center + ux * midDist;
+			float midY = center + uy * midDist;
+			float degrees = angle * 180f / MathF.PI;
+
+			float height = haveEnough && FxActive ? 2f + FxPulse * 2f : 2f;
+
+			lines.Add( new LineVm
+			{
+				Have = haveEnough,
+				Color = haveEnough ? LerpLineColor( FxPulse ) : "#c86464",
+				DashCount = haveEnough ? 0 : 4,
+				Style = $"left: {Num( midX - length / 2f )}px; top: {Num( midY - height / 2f )}px; width: {Num( length )}px; height: {Num( height )}px; transform: rotate({Num( degrees )}deg);"
+			} );
+		}
+
+		return lines;
+	}
+
+	static string LerpLineColor( float pulse )
+	{
+		int r = (int)( 0xe8 + ( 0xf0 - 0xe8 ) * pulse );
+		int g = (int)( 0x78 + ( 0xc0 - 0x78 ) * pulse );
+		int b = (int)( 0x38 + ( 0x40 - 0x38 ) * pulse );
+		return $"#{r:x2}{g:x2}{b:x2}";
+	}
+
+	string CenterStyle()
+	{
+		if ( !FxActive )
+			return "";
+
+		return $"transform: scale({Num( 1f + 0.12f * FxPulse )});";
+	}
+
+	string StatText( ItemId id )
+	{
+		var def = ItemDatabase.Get( id );
+		if ( def == null )
+			return "";
+
+		switch ( def.Type )
+		{
+			case ItemType.MeleeWeapon:
+			case ItemType.RangedWeapon:
+			case ItemType.MagicWeapon:
+				return $"Weapon power {Num( def.WeaponPower )}";
+			case ItemType.Shield:
+			case ItemType.HeavyArmor:
+				return $"Armor {Num( def.ArmorValue )}";
+			case ItemType.Tool:
+				return $"Tool power {Num( def.ToolPower )}";
+			case ItemType.Ring:
+				return "Socketable ring";
+			case ItemType.Amulet:
+				return "Socketable amulet";
+			default:
+				return $"Tier {def.Tier}";
+		}
+	}
+
+	bool MeetsLevel => Selected != null && ( PlayerSkills?.MeetsRequirement( Selected.SkillRequired, Selected.LevelRequired ) ?? false );
+	bool RecipeLearned => Selected != null && ( PlayerInventory?.IsRecipeUnlocked( Selected.Id ) ?? false );
+	int OwnedOfSelected => Selected != null ? PlayerInventory?.GetItemCount( Selected.OutputItem ) ?? 0 : 0;
+
+	int MaxCrafts
+	{
+		get
+		{
+			var recipe = Selected;
+			var inventory = PlayerInventory;
+			if ( recipe == null || inventory == null )
+				return 0;
+
+			int min = int.MaxValue;
+			foreach ( var ing in recipe.Ingredients )
+			{
+				if ( ing.Amount <= 0 )
+					continue;
+
+				int possible = inventory.GetItemCount( ing.Item ) / ing.Amount;
+				if ( possible < min )
+					min = possible;
+			}
+
+			return min == int.MaxValue ? 0 : min;
+		}
+	}
+
+	List<string> MissingNames
+	{
+		get
+		{
+			var names = new List<string>();
+			var recipe = Selected;
+			var inventory = PlayerInventory;
+			if ( recipe == null || inventory == null )
+				return names;
+
+			foreach ( var ing in recipe.Ingredients )
+			{
+				if ( inventory.GetItemCount( ing.Item ) >= ing.Amount )
+					continue;
+
+				var def = ItemDatabase.Get( ing.Item );
+				names.Add( def != null ? def.Name : ing.Item.ToString() );
+			}
+
+			return names;
+		}
+	}
+
+	bool CanCraft => Selected != null && RecipeLearned && MeetsLevel && MissingNames.Count == 0;
+
+	void SelectTier( int tier )
+	{
+		SelectedTier = tier;
+		if ( SelectedKind != null && SelectedKind.StartsWith( "acc:" ) )
+			SelectedKind = "sword";
+	}
+
+	void SelectKind( string kind )
+	{
+		SelectedKind = kind;
+	}
+
+	void EnsureSelection()
+	{
+		if ( SelectedTier < 0 )
+		{
+			int best = 0;
+			for ( int i = 0; i < Materials.Length; i++ )
+			{
+				if ( Level >= Materials[i].LevelRequired )
+					best = i;
+			}
+			SelectedTier = best;
+		}
+
+		if ( SelectedKind == null )
+			SelectedKind = "sword";
+	}
+
+	void OnCraft()
+	{
+		var station = Station;
+		if ( station == null || Selected == null || !CanCraft )
+			return;
+
+		if ( station.TryCraft( Selected.Id ) )
+			PlayCraftFeedback();
+	}
+
+	void OnCraftAll()
+	{
+		var station = Station;
+		if ( station == null || Selected == null || !CanCraft )
+			return;
+
+		if ( station.TryCraftAll( Selected.Id ) > 0 )
+			PlayCraftFeedback();
+	}
+
+	void PlayCraftFeedback()
+	{
+		_fxSince = 0f;
+		SoundLibrary.PlayReceiveItem();
+
+		if ( Selected != null )
+			ItemPickupEffect.Trigger( Selected.OutputItem );
+	}
+
+	void CloseStation()
+	{
+		CraftingStation.Close();
+	}
+
+	protected override int BuildHash()
+	{
+		if ( !IsOpen )
+			return 0;
+
+		EnsureSelection();
+
+		var inventory = PlayerInventory;
+
+		int countsHash = 0;
+		var selected = Selected;
+		if ( selected != null && inventory != null )
+		{
+			countsHash = HashCode.Combine(
+				inventory.GetItemCount( selected.OutputItem ),
+				inventory.IsRecipeUnlocked( selected.Id ) );
+
+			foreach ( var ing in selected.Ingredients )
+				countsHash = HashCode.Combine( countsHash, inventory.GetItemCount( ing.Item ) );
+		}
+
+		int fxBucket = FxActive ? (int)( (float)_fxSince * 30f ) : -1;
+
+		return HashCode.Combine( IsOpen, SelectedTier, SelectedKind ?? "", Level, countsHash, fxBucket );
+	}
+}

@@ -10,9 +10,9 @@
     },
     {
       "Item": "SolariumMediumHelm",
-      "MinAmount": 3,
-      "MaxAmount": 10,
-      "ChancePercent": 2
+      "MinAmount": 1,
+      "MaxAmount": 1,
+      "ChancePercent": 1
     },
     {
       "Item": "Coal",
@@ -31,12 +31,6 @@
       "MinAmount": 1,
       "MaxAmount": 5,
       "ChancePercent": 13.333334
-    },
-    {
-      "Item": "CoppiteArrow",
-      "MinAmount": 1,
-      "MaxAmount": 10,
-      "ChancePercent": 52.666664
     },
     {
       "Item": "AshsteelArrow",
@@ -72,13 +66,13 @@
       "Item": "IronbarkBow",
       "MinAmount": 1,
       "MaxAmount": 1,
-      "ChancePercent": 2.6666667
+      "ChancePercent": 1
     },
     {
       "Item": "GhostwoodBow",
       "MinAmount": 1,
       "MaxAmount": 1,
-      "ChancePercent": 2
+      "ChancePercent": 1
     }
   ],
   "__references": [],

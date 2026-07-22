@@ -38,6 +38,10 @@
 							{
 								<span class="marker-glyph">@m.Glyph</span>
 							}
+							@if ( !string.IsNullOrEmpty( m.Label ) )
+							{
+								<span class="marker-label">@m.Label</span>
+							}
 						</div>
 					}
 
@@ -54,6 +58,10 @@
 										@if ( !string.IsNullOrEmpty( m.Glyph ) )
 										{
 											<span class="marker-glyph">@m.Glyph</span>
+										}
+										@if ( !string.IsNullOrEmpty( m.Label ) )
+										{
+											<span class="marker-label">@m.Label</span>
 										}
 									</div>
 								}
@@ -110,6 +118,7 @@
 		public string CssClass;
 		public string Glyph;
 		public int ZIndex;
+		public string Label;
 	}
 
 	List<Marker> MinimapMarkers { get; set; } = new();
@@ -207,12 +216,12 @@
 		return (xPercent, yPercent);
 	}
 
-	void AddMarker( List<Marker> list, float x, float y, string cssClass, string glyph, int zIndex )
+	void AddMarker( List<Marker> list, float x, float y, string cssClass, string glyph, int zIndex, string label = null )
 	{
 		if ( x < -5f || x > 105f || y < -5f || y > 105f )
 			return;
 
-		list.Add( new Marker { X = x, Y = y, CssClass = cssClass, Glyph = glyph, ZIndex = zIndex } );
+		list.Add( new Marker { X = x, Y = y, CssClass = cssClass, Glyph = glyph, ZIndex = zIndex, Label = label } );
 	}
 
 	(string cssClass, string glyph) ResolveStationMarker( GameObject obj )
@@ -363,8 +372,10 @@
 			var (mx, my) = MinimapMarkerPosition( pos, playerU, playerV );
 			var (fx, fy) = WorldToUV( pos );
 
+			string playerName = pc.Network.Owner?.DisplayName;
+
 			AddMarker( MinimapMarkers, mx, my, "marker-player", null, playerZ );
-			AddMarker( FullmapMarkers, fx * 100f, fy * 100f, "marker-player", null, playerZ );
+			AddMarker( FullmapMarkers, fx * 100f, fy * 100f, "marker-player", null, playerZ, string.IsNullOrEmpty( playerName ) ? null : playerName );
 			playerZ++;
 		}
 
@@ -398,6 +409,13 @@
 
 		RebuildMarkers();
 
-		return ((int)(u * 10000f), (int)(v * 10000f), IsFullMapOpen, MinimapMarkers.Count, FullmapMarkers.Count, QuestTracker.TrackedQuestId ?? "", (int)(HoverU * 10000f), (int)(HoverV * 10000f), LoupeVisible).GetHashCode();
+		int labelHash = 0;
+		foreach ( var m in FullmapMarkers )
+		{
+			if ( !string.IsNullOrEmpty( m.Label ) )
+				labelHash = HashCode.Combine( labelHash, m.Label );
+		}
+
+		return ((int)(u * 10000f), (int)(v * 10000f), IsFullMapOpen, MinimapMarkers.Count, FullmapMarkers.Count, QuestTracker.TrackedQuestId ?? "", (int)(HoverU * 10000f), (int)(HoverV * 10000f), LoupeVisible, labelHash).GetHashCode();
 	}
 }

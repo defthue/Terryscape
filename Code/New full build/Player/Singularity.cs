@@ -383,7 +383,7 @@ public sealed class Singularity : Component
 				continue;
 
 			monster.TakeDamage( dmg, Source );
-			DamagePopupBroadcaster.Broadcast( monster.WorldPosition + Vector3.Up * 60f, dmg, monster.MaxHealth, true );
+			DamagePopupBroadcaster.Broadcast( monster.WorldPosition + Vector3.Up * 60f, dmg, monster.MaxHealth, true, DamagePopupBroadcaster.SteamIdOf( Source ), 0 );
 		}
 
 		foreach ( var boss in Scene.GetAllComponents<Boss>() )
@@ -394,7 +394,7 @@ public sealed class Singularity : Component
 				continue;
 
 			boss.TakeDamage( dmg, Source );
-			DamagePopupBroadcaster.Broadcast( boss.WorldPosition + Vector3.Up * 60f, dmg, boss.MaxHealth, true );
+			DamagePopupBroadcaster.Broadcast( boss.WorldPosition + Vector3.Up * 60f, dmg, boss.MaxHealth, true, DamagePopupBroadcaster.SteamIdOf( Source ), 0 );
 		}
 
 		foreach ( var slimeKing in Scene.GetAllComponents<SlimeKing>() )
@@ -405,7 +405,7 @@ public sealed class Singularity : Component
 				continue;
 
 			slimeKing.TakeDamage( dmg, Source );
-			DamagePopupBroadcaster.Broadcast( slimeKing.WorldPosition + Vector3.Up * 60f, dmg, slimeKing.MaxHealth, true );
+			DamagePopupBroadcaster.Broadcast( slimeKing.WorldPosition + Vector3.Up * 60f, dmg, slimeKing.MaxHealth, true, DamagePopupBroadcaster.SteamIdOf( Source ), 0 );
 		}
 
 		foreach ( var player in PlayerHelper.GetAllPlayers() )

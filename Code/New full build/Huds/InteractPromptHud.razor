@@ -186,11 +186,12 @@
 			var localConn = player.Network.Owner;
 			ulong localSteam = localConn != null ? (ulong)localConn.SteamId : 0ul;
 			var camForward = Scene.Camera.WorldRotation.Forward;
+			var localPc = player.Components.Get<PlayerController>();
 
 			foreach ( var slime in Scene.GetAllComponents<PetSlime>() )
 			{
 				if ( !slime.IsValid() ) continue;
-				if ( !slime.MountAvailableFor( localSteam ) ) continue;
+				if ( !slime.MountAvailableFor( localSteam, localPc ) ) continue;
 				if ( !PetSlime.MountProximityTest( slime, playerPos, camForward ) ) continue;
 
 				float d = Vector3.DistanceBetween( slime.MountAimCenter(), playerPos );

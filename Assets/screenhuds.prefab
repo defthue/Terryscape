@@ -34,6 +34,54 @@
         "ZIndex": 100
       },
       {
+        "__type": "Sandbox.Huds.AlchemyHud",
+        "__guid": "5b3e9d17-42af-48c6-9f0e-8d21c7a4e6b3",
+        "__enabled": true,
+        "Flags": 0,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null
+      },
+      {
+        "__type": "Sandbox.Huds.FurnaceHud",
+        "__guid": "7c2f4a89-1d6b-4e3a-9c5d-2b8e0f647a91",
+        "__enabled": true,
+        "Flags": 0,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null
+      },
+      {
+        "__type": "Sandbox.Huds.AnvilHud",
+        "__guid": "e91b6d34-8a2c-47f5-b0e9-6d3c1a58f472",
+        "__enabled": true,
+        "Flags": 0,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null
+      },
+      {
+        "__type": "Sandbox.Huds.WorkbenchHud",
+        "__guid": "4d8a3f16-b5c7-49e2-a1f8-9e6b2d074c53",
+        "__enabled": true,
+        "Flags": 0,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null
+      },
+      {
         "__type": "Sandbox.Huds.CraftingHud",
         "__guid": "7d75723f-120c-4911-a659-c52974cc3b84",
         "__enabled": true,
@@ -132,6 +180,18 @@
       {
         "__type": "Sandbox.Huds.MonsterHealthBar",
         "__guid": "33e8da69-8a4e-47c3-b745-cff4d9984e57",
+        "__enabled": true,
+        "Flags": 0,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null
+      },
+      {
+        "__type": "Sandbox.Huds.PlayerNameplateHud",
+        "__guid": "5c2b9d40-8e1f-4a97-b3d6-77e04f1c82aa",
         "__enabled": true,
         "Flags": 0,
         "OnComponentDestroy": null,

@@ -292,7 +292,12 @@ public sealed class PlayerHealth : Component
 				continue;
 
 			if ( chair.GetOccupant() == pc )
-				chair.AskToLeave( pc );
+			{
+				if ( chair is SlimeChair sc )
+					sc.RequestDismount();
+				else
+					chair.AskToLeave( pc );
+			}
 		}
 	}
 

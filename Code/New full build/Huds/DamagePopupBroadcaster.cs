@@ -11,6 +11,8 @@ public sealed class DamagePopupBroadcaster : Component
 		public int ColorTier;
 		public bool IsCrit;
 		public float SpawnTime;
+		public ulong AttackerSteamId;
+		public ulong TargetSteamId;
 	}
 
 	static DamagePopupBroadcaster _instance;
@@ -52,23 +54,29 @@ public sealed class DamagePopupBroadcaster : Component
 		return _instance;
 	}
 
-	public static void Broadcast( Vector3 worldPos, int damage, int targetMaxHealth, bool isCrit )
+	public static ulong SteamIdOf( GameObject obj )
 	{
-		var instance = GetInstance();
-		if ( instance == null )
-			return;
-
-		int tier = ComputeColorTier( damage, targetMaxHealth );
-		instance.RpcSpawnPopup( worldPos, damage, tier, isCrit );
+		return obj?.Network?.Owner?.SteamId ?? 0ul;
 	}
 
-	public static void BroadcastPoison( Vector3 worldPos, int damage )
+	public static void Broadcast( Vector3 worldPos, int damage, int targetMaxHealth, bool isCrit, ulong attackerSteamId, ulong targetSteamId )
 	{
-		var instance = GetInstance();
-		if ( instance == null )
-			return;
+		int tier = ComputeColorTier( damage, targetMaxHealth );
 
-		instance.RpcSpawnPopup( worldPos, damage, TierPoison, false );
+		var gm = GameManager.Instance;
+		if ( gm != null )
+			gm.BroadcastDamagePopup( worldPos, damage, tier, isCrit, attackerSteamId, targetSteamId );
+		else
+			AddLocal( worldPos, damage, tier, isCrit, attackerSteamId, targetSteamId );
+	}
+
+	public static void BroadcastPoison( Vector3 worldPos, int damage, ulong attackerSteamId, ulong targetSteamId )
+	{
+		var gm = GameManager.Instance;
+		if ( gm != null )
+			gm.BroadcastDamagePopup( worldPos, damage, TierPoison, false, attackerSteamId, targetSteamId );
+		else
+			AddLocal( worldPos, damage, TierPoison, false, attackerSteamId, targetSteamId );
 	}
 
 	static int ComputeColorTier( int damage, int targetMaxHealth )
@@ -83,13 +91,16 @@ public sealed class DamagePopupBroadcaster : Component
 		return 3;
 	}
 
-	[Rpc.Broadcast]
-	void RpcSpawnPopup( Vector3 worldPos, int damage, int tier, bool isCrit )
+	public static void AddLocal( Vector3 worldPos, int damage, int tier, bool isCrit, ulong attackerSteamId, ulong targetSteamId )
 	{
-		AddPopup( worldPos, damage, tier, isCrit );
+		var instance = GetInstance();
+		if ( instance == null )
+			return;
+
+		instance.AddPopup( worldPos, damage, tier, isCrit, attackerSteamId, targetSteamId );
 	}
 
-	void AddPopup( Vector3 worldPos, int damage, int tier, bool isCrit )
+	void AddPopup( Vector3 worldPos, int damage, int tier, bool isCrit, ulong attackerSteamId, ulong targetSteamId )
 	{
 		ActivePopups.Add( new ActivePopup
 		{
@@ -97,18 +108,16 @@ public sealed class DamagePopupBroadcaster : Component
 			Damage = damage,
 			ColorTier = tier,
 			IsCrit = isCrit,
-			SpawnTime = Time.Now
+			SpawnTime = Time.Now,
+			AttackerSteamId = attackerSteamId,
+			TargetSteamId = targetSteamId
 		} );
 	}
 
-	public static void ShowLocal( Vector3 worldPos, int damage, int targetMaxHealth, bool isCrit )
+	public static void ShowLocal( Vector3 worldPos, int damage, int targetMaxHealth, bool isCrit, ulong attackerSteamId, ulong targetSteamId )
 	{
-		var instance = GetInstance();
-		if ( instance == null )
-			return;
-
 		int tier = ComputeColorTier( damage, targetMaxHealth );
-		instance.AddPopup( worldPos, damage, tier, isCrit );
+		AddLocal( worldPos, damage, tier, isCrit, attackerSteamId, targetSteamId );
 	}
 
 	protected override void OnUpdate()

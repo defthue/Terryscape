@@ -30,27 +30,27 @@ root {
 
 	&.tier-0 {
 		color: #9a9a9a;
-		font-size: 18px;
+		font-size: 24px;
 	}
 
 	&.tier-1 {
 		color: #ffffff;
-		font-size: 24px;
+		font-size: 30px;
 	}
 
 	&.tier-2 {
 		color: #f0c040;
-		font-size: 30px;
+		font-size: 35px;
 	}
 
 	&.tier-3 {
 		color: #e87838;
-		font-size: 36px;
+		font-size: 40px;
 	}
 
 	&.tier-4 {
 		color: #8cf028;
-		font-size: 22px;
+		font-size: 27px;
 		text-shadow:
 			-2px -2px 0 #000,
 			 0   -2px 0 #000,
@@ -61,6 +61,10 @@ root {
 			-2px  2px 0 #000,
 			-2px  0   0 #000,
 			0 0 10px #8cf02888;
+	}
+
+	&.incoming {
+		color: #e05050;
 	}
 
 	&.crit {

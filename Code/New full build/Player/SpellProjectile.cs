@@ -148,7 +148,7 @@ public sealed class SpellProjectile : Component
 			if ( SlowDuration > 0f )
 				monster.ApplySlow( SlowDuration, SlowMultiplier );
 
-			DamagePopupBroadcaster.Broadcast( hitPos, finalDamage, monster.MaxHealth, IsCrit );
+			DamagePopupBroadcaster.Broadcast( hitPos, finalDamage, monster.MaxHealth, IsCrit, DamagePopupBroadcaster.SteamIdOf( Shooter ), 0 );
 
 			PlayImpactSound( hitPos );
 
@@ -164,7 +164,7 @@ public sealed class SpellProjectile : Component
 			if ( finalDamage < 1 ) finalDamage = 1;
 
 			boss.TakeDamage( finalDamage, Shooter );
-			DamagePopupBroadcaster.Broadcast( hitPos, finalDamage, boss.MaxHealth, IsCrit );
+			DamagePopupBroadcaster.Broadcast( hitPos, finalDamage, boss.MaxHealth, IsCrit, DamagePopupBroadcaster.SteamIdOf( Shooter ), 0 );
 			PlayImpactSound( hitPos );
 			GameObject.Destroy();
 			return;
@@ -178,7 +178,7 @@ public sealed class SpellProjectile : Component
 			if ( finalDamage < 1 ) finalDamage = 1;
 
 			slimeKing.TakeDamage( finalDamage, Shooter );
-			DamagePopupBroadcaster.Broadcast( hitPos, finalDamage, slimeKing.MaxHealth, IsCrit );
+			DamagePopupBroadcaster.Broadcast( hitPos, finalDamage, slimeKing.MaxHealth, IsCrit, DamagePopupBroadcaster.SteamIdOf( Shooter ), 0 );
 			PlayImpactSound( hitPos );
 			GameObject.Destroy();
 			return;

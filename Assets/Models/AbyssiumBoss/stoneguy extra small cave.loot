@@ -23,7 +23,7 @@
     {
       "Item": "ArcaneDust",
       "MinAmount": 1,
-      "MaxAmount": 1,
+      "MaxAmount": 2,
       "ChancePercent": 16.666668
     },
     {
@@ -39,22 +39,16 @@
       "ChancePercent": 4
     },
     {
-      "Item": "ColdveinOre",
-      "MinAmount": 1,
-      "MaxAmount": 2,
-      "ChancePercent": 8
-    },
-    {
       "Item": "AshsteelOre",
       "MinAmount": 1,
       "MaxAmount": 6,
       "ChancePercent": 9.333333
     },
     {
-      "Item": "CoppiteOre",
+      "Item": "ColdveinOre",
       "MinAmount": 1,
       "MaxAmount": 5,
-      "ChancePercent": 22
+      "ChancePercent": 8.666667
     },
     {
       "Item": "Gem",

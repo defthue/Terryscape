@@ -40,7 +40,7 @@ public sealed class Monster : Component
 	[Property, Group( "Movement" )] public float PatrolSpeed { get; set; } = 100f;
 	[Property, Group( "Movement" )] public float ChaseSpeed { get; set; } = 150f;
 	[Property, Group( "Movement" )] public float SmoothTurnSpeed { get; set; } = 360f;
-	[Property, Group( "Movement" )] public float RoamRadius { get; set; } = 300f;
+	[Property, Group( "Movement" )] public float RoamRadius { get; set; } = 600f;
 	[Property, Group( "Movement" )] public float RoamExtentX { get; set; } = 300f;
 	[Property, Group( "Movement" )] public float RoamExtentY { get; set; } = 300f;
 	[Property, Group( "Movement" )] public float RoamIdleMin { get; set; } = 2f;
@@ -54,7 +54,7 @@ public sealed class Monster : Component
 	[Property, Group( "Combat Ranges" )] public float LeashNoExchangeTime { get; set; } = 8f;
 	[Property, Group( "Combat Ranges" )] public float LeashNoHitChaseTime { get; set; } = 30f;
 
-	[Property, Group( "Evade" )] public float EvadeGraceDuration { get; set; } = 4f;
+	[Property, Group( "Evade" )] public float EvadeGraceDuration { get; set; } = 10f;
 	[Property, Group( "Evade" )] public float EvadeHealPercentPerSecond { get; set; } = 9f;
 
 	[Property, Group( "Ranged" )] public bool IsRanged { get; set; } = false;
@@ -68,6 +68,7 @@ public sealed class Monster : Component
 	[Property, Group( "Ranged" )] public float ProjectileForwardOffset { get; set; } = 20f;
 
 	[Property, Group( "Loot" )] public LootTable LootTable { get; set; }
+	[Property, Group( "Loot" ), Range( 0f, 1f )] public float GroupLootRetention { get; set; } = 0.9f;
 
 	[Property, Group( "Respawn" )] public float RespawnMin { get; set; } = 5f;
 	[Property, Group( "Respawn" )] public float RespawnMax { get; set; } = 20f;
@@ -137,6 +138,15 @@ public sealed class Monster : Component
 
 	const float GlobalSpeedScale = 1.4f;
 	const float MovingSpeedThreshold = 5f;
+	const float ContributorMinDamagePercent = 0.10f;
+
+	struct ContributorInfo
+	{
+		public SkillType Skill;
+		public int Damage;
+	}
+
+	Dictionary<ulong, ContributorInfo> _contributors = new();
 
 	protected override void OnStart()
 	{
@@ -573,13 +583,29 @@ public sealed class Monster : Component
 		return false;
 	}
 
+	const float DeaggroGraceSeconds = 1f;
+	float _deaggroGrace;
+
 	bool TargetInvalidOrDead()
 	{
-		if ( _target == null || !_target.IsValid() )
-			return true;
+		if ( _target != null && _target.IsValid() )
+		{
+			var health = _target.Components.Get<PlayerHealth>();
+			if ( health != null && !health.IsDead )
+			{
+				_deaggroGrace = DeaggroGraceSeconds;
+				return false;
+			}
 
-		var health = _target.Components.Get<PlayerHealth>();
-		return health == null || health.IsDead;
+			if ( _deaggroGrace > 0f )
+			{
+				_deaggroGrace -= Time.Delta;
+				return false;
+			}
+		}
+
+		_deaggroGrace = 0f;
+		return true;
 	}
 
 	void UpdateChasing()
@@ -940,6 +966,19 @@ public sealed class Monster : Component
 		if ( FirstAttacker == null && attacker != null )
 			FirstAttacker = attacker;
 
+		if ( attacker != null && attacker.IsValid() )
+		{
+			var ownerConnection = attacker.Network.Owner;
+			if ( ownerConnection != null && ownerConnection.SteamId != 0L )
+			{
+				ulong steamId = ownerConnection.SteamId;
+				_contributors.TryGetValue( steamId, out var info );
+				info.Skill = GetAttackerSkill( attacker );
+				info.Damage += damage;
+				_contributors[steamId] = info;
+			}
+		}
+
 		CurrentHealth -= damage;
 
 		if ( CurrentHealth <= 0 )
@@ -1090,7 +1129,7 @@ public sealed class Monster : Component
 		_lastDamageExchangeTime = Time.Now;
 		_hasLandedHitDuringChase = true;
 
-		DamagePopupBroadcaster.Broadcast( playerHealth.WorldPosition + Vector3.Up * 60f, damage, playerHealth.MaxHealth, false );
+		DamagePopupBroadcaster.Broadcast( playerHealth.WorldPosition + Vector3.Up * 60f, damage, playerHealth.MaxHealth, false, 0, DamagePopupBroadcaster.SteamIdOf( playerHealth.GameObject ) );
 
 		if ( willKill )
 			StartVictory();
@@ -1112,7 +1151,7 @@ public sealed class Monster : Component
 		_lastDamageExchangeTime = Time.Now;
 		_hasLandedHitDuringChase = true;
 
-		DamagePopupBroadcaster.Broadcast( playerHealth.WorldPosition + Vector3.Up * 60f, damage, playerHealth.MaxHealth, false );
+		DamagePopupBroadcaster.Broadcast( playerHealth.WorldPosition + Vector3.Up * 60f, damage, playerHealth.MaxHealth, false, 0, DamagePopupBroadcaster.SteamIdOf( playerHealth.GameObject ) );
 
 		if ( willKill )
 			StartVictory();
@@ -1190,47 +1229,80 @@ public sealed class Monster : Component
 
 	void AwardLootAndXp()
 	{
-		if ( FirstAttacker == null || !FirstAttacker.IsValid() )
+		if ( _contributors.Count == 0 )
 			return;
 
-		ulong killerSteamId = 0;
-		var ownerConnection = FirstAttacker.Network.Owner;
-		if ( ownerConnection != null )
-			killerSteamId = ownerConnection.SteamId;
+		float minDamage = MaxHealth * ContributorMinDamagePercent;
 
-		if ( killerSteamId == 0 )
-			return;
-
-		SkillType killerSkill = GetKillerSkill();
-
-		var rng = new Random();
-		int gold = 0;
-		var rolledItems = new List<ItemId>();
-		var rolledAmounts = new List<int>();
-
-		if ( LootTable != null )
+		var qualified = new Dictionary<ulong, ContributorInfo>();
+		foreach ( var kv in _contributors )
 		{
-			gold = LootTable.RollGoldPool( rng );
-
-			var entries = LootTable.Entries ?? new List<LootEntry>();
-			foreach ( var entry in entries )
-			{
-				if ( entry == null || entry.Item == ItemId.None || entry.ChancePercent <= 0f )
-					continue;
-
-				if ( (float)( rng.NextDouble() * 100.0 ) >= entry.ChancePercent )
-					continue;
-
-				int amount = LootTable.RollEntryAmount( rng, entry );
-				if ( amount <= 0 )
-					continue;
-
-				rolledItems.Add( entry.Item );
-				rolledAmounts.Add( amount );
-			}
+			if ( kv.Value.Damage >= minDamage )
+				qualified[kv.Key] = kv.Value;
 		}
 
-		BroadcastReward( killerSteamId, MonsterType, killerSkill, CombatXpReward, gold, rolledItems.ToArray(), rolledAmounts.ToArray() );
+		if ( qualified.Count == 0 )
+		{
+			ulong bestId = 0ul;
+			ContributorInfo best = default;
+			foreach ( var kv in _contributors )
+			{
+				if ( bestId == 0ul || kv.Value.Damage > best.Damage )
+				{
+					bestId = kv.Key;
+					best = kv.Value;
+				}
+			}
+
+			if ( bestId != 0ul )
+				qualified[bestId] = best;
+		}
+
+		if ( qualified.Count == 0 )
+		{
+			_contributors.Clear();
+			return;
+		}
+
+		var rng = new Random();
+		int contributorCount = qualified.Count;
+
+		int goldPool = LootTable != null ? LootTable.RollGoldPool( rng ) : 0;
+		int goldPerPlayer = (int)Math.Ceiling( goldPool / (double)contributorCount );
+
+		float oddsScale = GroupLootRetention + ( 1f - GroupLootRetention ) / contributorCount;
+
+		var entries = LootTable?.Entries;
+
+		foreach ( var kv in qualified )
+		{
+			var rolledItems = new List<ItemId>();
+			var rolledAmounts = new List<int>();
+
+			if ( entries != null )
+			{
+				foreach ( var entry in entries )
+				{
+					if ( entry == null || entry.Item == ItemId.None || entry.ChancePercent <= 0f )
+						continue;
+
+					float scaledChance = entry.ChancePercent * oddsScale;
+					if ( (float)( rng.NextDouble() * 100.0 ) >= scaledChance )
+						continue;
+
+					int amount = LootTable.RollEntryAmount( rng, entry );
+					if ( amount <= 0 )
+						continue;
+
+					rolledItems.Add( entry.Item );
+					rolledAmounts.Add( amount );
+				}
+			}
+
+			BroadcastReward( kv.Key, MonsterType, kv.Value.Skill, CombatXpReward, goldPerPlayer, rolledItems.ToArray(), rolledAmounts.ToArray() );
+		}
+
+		_contributors.Clear();
 	}
 
 	[Rpc.Broadcast]
@@ -1300,12 +1372,12 @@ public sealed class Monster : Component
 		return null;
 	}
 
-	SkillType GetKillerSkill()
+	SkillType GetAttackerSkill( GameObject attacker )
 	{
-		if ( FirstAttacker == null || !FirstAttacker.IsValid() )
+		if ( attacker == null || !attacker.IsValid() )
 			return SkillType.Attack;
 
-		var inventory = FirstAttacker.Components.Get<Inventory>();
+		var inventory = attacker.Components.Get<Inventory>();
 		var weaponDef = inventory?.GetEquippedWeaponDef();
 
 		if ( weaponDef == null )
@@ -1369,6 +1441,7 @@ public sealed class Monster : Component
 			SlowTimeRemaining = 0f;
 			SlowMultiplier = 1f;
 			FirstAttacker = null;
+			_contributors.Clear();
 			_target = null;
 			_attackCooldownRemaining = 0f;
 			_attackAnimTimer = 0f;

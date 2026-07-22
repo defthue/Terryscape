@@ -259,7 +259,17 @@ public sealed class Boss : Component
 	bool _deathAnimFinished;
 	int _deathGeneration;
 
-	Dictionary<ulong, SkillType> _contributors = new();
+	const float ContributorMinDamagePercent = 0.03f;
+	const float ContributorRecencySeconds = 30f;
+
+	struct ContributorInfo
+	{
+		public SkillType Skill;
+		public int Damage;
+		public float LastHitTime;
+	}
+
+	Dictionary<ulong, ContributorInfo> _contributors = new();
 
 	List<ActiveBeam> _activeBeams = new();
 	List<ActiveBeamVisual> _activeBeamVisuals = new();
@@ -706,7 +716,7 @@ public sealed class Boss : Component
 			finalDamage = 1;
 
 		playerHealth.TakeDamage( finalDamage );
-		DamagePopupBroadcaster.Broadcast( playerObj.WorldPosition + Vector3.Up * 60f, finalDamage, playerHealth.MaxHealth, false );
+		DamagePopupBroadcaster.Broadcast( playerObj.WorldPosition + Vector3.Up * 60f, finalDamage, playerHealth.MaxHealth, false, 0, DamagePopupBroadcaster.SteamIdOf( playerObj ) );
 		DismountRider( playerObj );
 	}
 
@@ -739,7 +749,12 @@ public sealed class Boss : Component
 				continue;
 
 			if ( chair.GetOccupant() == pc )
-				chair.AskToLeave( pc );
+			{
+				if ( chair is SlimeChair sc )
+					sc.RequestDismount();
+				else
+					chair.AskToLeave( pc );
+			}
 		}
 	}
 
@@ -998,7 +1013,7 @@ public sealed class Boss : Component
 			finalDamage = 1;
 
 		playerHealth.TakeDamage( finalDamage );
-		DamagePopupBroadcaster.Broadcast( playerObj.WorldPosition + Vector3.Up * 60f, finalDamage, playerHealth.MaxHealth, false );
+		DamagePopupBroadcaster.Broadcast( playerObj.WorldPosition + Vector3.Up * 60f, finalDamage, playerHealth.MaxHealth, false, 0, DamagePopupBroadcaster.SteamIdOf( playerObj ) );
 		DismountRider( playerObj );
 	}
 
@@ -1071,20 +1086,34 @@ public sealed class Boss : Component
 		return (float)( TargetSwitchMinInterval + Game.Random.NextDouble() * ( TargetSwitchMaxInterval - TargetSwitchMinInterval ) );
 	}
 
+	const float DeaggroGraceSeconds = 1f;
+	float _deaggroGrace;
+
 	bool EnsureValidTarget()
 	{
-		if ( PrimaryTarget == null || !PrimaryTarget.IsValid() )
-			return false;
+		bool valid = false;
 
-		var health = PrimaryTarget.Components.Get<PlayerHealth>();
-		if ( health == null || health.IsDead )
-			return false;
+		if ( PrimaryTarget != null && PrimaryTarget.IsValid() )
+		{
+			var health = PrimaryTarget.Components.Get<PlayerHealth>();
+			if ( health != null && !health.IsDead && FlatDistance( WorldPosition, PrimaryTarget.WorldPosition ) <= DeaggroRange )
+				valid = true;
+		}
 
-		float d = FlatDistance( WorldPosition, PrimaryTarget.WorldPosition );
-		if ( d > DeaggroRange )
-			return false;
+		if ( valid )
+		{
+			_deaggroGrace = DeaggroGraceSeconds;
+			return true;
+		}
 
-		return true;
+		if ( PrimaryTarget != null && PrimaryTarget.IsValid() && _deaggroGrace > 0f )
+		{
+			_deaggroGrace -= Time.Delta;
+			return true;
+		}
+
+		_deaggroGrace = 0f;
+		return false;
 	}
 
 	GameObject FindNearestPlayerInAggroRange()
@@ -1317,7 +1346,14 @@ public sealed class Boss : Component
 		{
 			var ownerConnection = attacker.Network.Owner;
 			if ( ownerConnection != null && ownerConnection.SteamId != 0L )
-				_contributors[ownerConnection.SteamId] = GetAttackerSkill( attacker );
+			{
+				ulong steamId = ownerConnection.SteamId;
+				_contributors.TryGetValue( steamId, out var info );
+				info.Skill = GetAttackerSkill( attacker );
+				info.Damage += damage;
+				info.LastHitTime = Time.Now;
+				_contributors[steamId] = info;
+			}
 		}
 
 		CurrentHealth -= damage;
@@ -1402,9 +1438,16 @@ public sealed class Boss : Component
 			return;
 		}
 
+		var qualified = FilterContributors();
+		if ( qualified.Count == 0 )
+		{
+			_contributors.Clear();
+			return;
+		}
+
 		var rng = new Random();
 
-		int contributorCount = _contributors.Count;
+		int contributorCount = qualified.Count;
 
 		int goldPool = LootTable.RollGoldPool( rng );
 		int goldPerPlayer = contributorCount > 0
@@ -1415,10 +1458,10 @@ public sealed class Boss : Component
 
 		var entries = LootTable.Entries ?? new List<LootEntry>();
 
-		foreach ( var contributor in _contributors )
+		foreach ( var contributor in qualified )
 		{
 			ulong steamId = contributor.Key;
-			SkillType skill = contributor.Value;
+			SkillType skill = contributor.Value.Skill;
 
 			var rolledItems = new List<ItemId>();
 			var rolledAmounts = new List<int>();
@@ -1440,10 +1483,70 @@ public sealed class Boss : Component
 				rolledAmounts.Add( amount );
 			}
 
+			AnnounceRareDrop( steamId, rolledItems );
+
 			BroadcastLootReward( steamId, goldPerPlayer, rolledItems.ToArray(), rolledAmounts.ToArray(), skill, CombatXpReward );
 		}
 
 		_contributors.Clear();
+	}
+
+	Dictionary<ulong, ContributorInfo> FilterContributors()
+	{
+		float minDamage = MaxHealth * ContributorMinDamagePercent;
+		float cutoff = Time.Now - ContributorRecencySeconds;
+
+		var qualified = new Dictionary<ulong, ContributorInfo>();
+		foreach ( var kv in _contributors )
+		{
+			if ( kv.Value.Damage >= minDamage && kv.Value.LastHitTime >= cutoff )
+				qualified[kv.Key] = kv.Value;
+		}
+
+		if ( qualified.Count == 0 )
+		{
+			ulong bestId = 0ul;
+			ContributorInfo best = default;
+			foreach ( var kv in _contributors )
+			{
+				if ( bestId == 0ul || kv.Value.Damage > best.Damage )
+				{
+					bestId = kv.Key;
+					best = kv.Value;
+				}
+			}
+
+			if ( bestId != 0ul )
+				qualified[bestId] = best;
+		}
+
+		return qualified;
+	}
+
+	void AnnounceRareDrop( ulong steamId, List<ItemId> rolledItems )
+	{
+		if ( !rolledItems.Contains( ItemId.AbyssalBlade ) )
+			return;
+
+		if ( GameManager.Instance == null )
+			return;
+
+		var def = ItemDatabase.Get( ItemId.AbyssalBlade );
+		string itemName = def != null ? def.Name : ItemId.AbyssalBlade.ToString();
+		string bossName = string.IsNullOrWhiteSpace( BossName ) ? "the Abyssium Boss" : BossName;
+
+		GameManager.Instance.BroadcastServerNotice( $"{ResolveContributorName( steamId )} has received a rare drop: {itemName} from {bossName}!" );
+	}
+
+	string ResolveContributorName( ulong steamId )
+	{
+		foreach ( var pc in Scene.GetAllComponents<PlayerController>() )
+		{
+			var owner = pc.Network.Owner;
+			if ( owner != null && owner.SteamId == steamId )
+				return owner.DisplayName;
+		}
+		return "A player";
 	}
 
 	[Rpc.Broadcast]

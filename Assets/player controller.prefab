@@ -140,7 +140,7 @@
         "StepUpHeight": 18
       },
       {
-        "__type": "Sandbox.Movement.MoveModeSwim",
+        "__type": "SwimModeValidated",
         "__guid": "2ccdc192-4975-4982-8054-476f3da2c343",
         "__enabled": true,
         "Flags": 0,
@@ -296,12 +296,12 @@
           "_type": "gameobject",
           "go": "d4b06bbf-e7cd-4dcc-9b9c-ac5b758c3ea9"
         },
-        "AimTraceDistance": 5000,
+        "AimTraceDistance": 1500,
         "ArrowPrefab": {
           "_type": "gameobject",
           "prefab": "arrow.prefab"
         },
-        "ArrowSpeed": 2000,
+        "ArrowSpeed": 3000,
         "BodyRenderer": {
           "_type": "component",
           "component_id": "2795f401-4c71-4fd7-8575-b6259ef80de0",
@@ -313,7 +313,7 @@
         "FpForwardOffset": 50,
         "FpHeightOffset": 42,
         "FpLateralOffset": 8,
-        "MinDrawDuration": 0.6,
+        "MinDrawDuration": 0.5,
         "OnComponentDestroy": null,
         "OnComponentDisabled": null,
         "OnComponentEnabled": null,
@@ -357,8 +357,8 @@
           "_type": "gameobject",
           "go": "d4b06bbf-e7cd-4dcc-9b9c-ac5b758c3ea9"
         },
-        "AimTraceDistance": 5000,
-        "BarrierForwardOffset": 70,
+        "AimTraceDistance": 2000,
+        "BarrierForwardOffset": 80,
         "BarrierHeightOffset": 0,
         "BarrierLateralOffset": 0,
         "BarrierPrefab": {
@@ -527,25 +527,6 @@
         "WalkSpeedMultiplier": 1.5
       },
       {
-        "__type": "Sandbox.Huds.PlayerNameplatePanel",
-        "__guid": "18887de6-6fb4-4327-828d-72ee1f3a3dd0",
-        "__enabled": true,
-        "Flags": 0,
-        "MaxVisibleDistance": 2000,
-        "OnComponentDestroy": null,
-        "OnComponentDisabled": null,
-        "OnComponentEnabled": null,
-        "OnComponentFixedUpdate": null,
-        "OnComponentStart": null,
-        "OnComponentUpdate": null,
-        "PlayerController": {
-          "_type": "component",
-          "component_id": "b5cd6d4a-68d9-4364-84c3-c008b41ed1c9",
-          "go": "43dc9686-8264-42d7-9f3e-17be6bb1f957",
-          "component_type": "PlayerController"
-        }
-      },
-      {
         "__type": "HotbarInput",
         "__guid": "18c11968-b596-482d-b68a-73978d9249ee",
         "__enabled": true,
@@ -647,6 +628,18 @@
       {
         "__type": "SwimDuckGuard",
         "__guid": "2a52e029-dbcf-4fd1-9d4f-c9fafb8d865f",
+        "__enabled": true,
+        "Flags": 0,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null
+      },
+      {
+        "__type": "SeatExitHandoff",
+        "__guid": "9f3c1a77-4e28-4b5d-8a61-2f0d7c5b9e14",
         "__enabled": true,
         "Flags": 0,
         "OnComponentDestroy": null,
@@ -1231,68 +1224,6 @@
             "OnComponentFixedUpdate": null,
             "OnComponentStart": null,
             "OnComponentUpdate": null
-          }
-        ],
-        "Children": []
-      },
-      {
-        "__guid": "82a3581b-283c-4e75-a841-65bdebf99d05",
-        "__version": 2,
-        "Flags": 0,
-        "Name": "NameplateAnchor",
-        "Position": "0,0,89.5309067",
-        "Rotation": "0,0,0,1",
-        "Scale": "1,1,1",
-        "Tags": "",
-        "Enabled": true,
-        "NetworkMode": 1,
-        "NetworkFlags": 0,
-        "NetworkOrphaned": 0,
-        "NetworkTransmit": true,
-        "OwnerTransfer": 1,
-        "Components": [
-          {
-            "__type": "Sandbox.WorldPanel",
-            "__guid": "8c30b819-d741-4b85-af56-c972c2cc8dcb",
-            "__enabled": true,
-            "Flags": 0,
-            "HorizontalAlign": "Center",
-            "InteractionRange": 1000,
-            "LookAtCamera": true,
-            "OnComponentDestroy": null,
-            "OnComponentDisabled": null,
-            "OnComponentEnabled": null,
-            "OnComponentFixedUpdate": null,
-            "OnComponentStart": null,
-            "OnComponentUpdate": null,
-            "PanelSize": "1500,200",
-            "RenderOptions": {
-              "GameLayer": true,
-              "OverlayLayer": false,
-              "BloomLayer": false,
-              "AfterUILayer": false
-            },
-            "RenderScale": 1,
-            "VerticalAlign": "Center"
-          },
-          {
-            "__type": "Sandbox.Huds.PlayerNameplatePanel",
-            "__guid": "11bfc0cc-14e0-48b9-a891-cd915beeaf33",
-            "__enabled": true,
-            "Flags": 0,
-            "MaxVisibleDistance": 2000,
-            "OnComponentDestroy": null,
-            "OnComponentDisabled": null,
-            "OnComponentEnabled": null,
-            "OnComponentFixedUpdate": null,
-            "OnComponentStart": null,
-            "OnComponentUpdate": null,
-            "PlayerController": {
-              "_type": "component",
-              "component_id": "b5cd6d4a-68d9-4364-84c3-c008b41ed1c9",
-              "go": "43dc9686-8264-42d7-9f3e-17be6bb1f957",
-              "component_type": "PlayerController"
-            }
           }
         ],
         "Children": []

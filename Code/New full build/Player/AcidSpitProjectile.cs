@@ -22,6 +22,9 @@ public sealed class AcidSpitProjectile : Component
 
 	protected override void OnUpdate()
 	{
+		if ( IsProxy )
+			return;
+
 		_lifetime += Time.Delta;
 		if ( _lifetime >= MaxLifetime )
 		{
@@ -62,6 +65,9 @@ public sealed class AcidSpitProjectile : Component
 		SpawnPool( Scene, hitPos, Shooter, SplashRadius, SplashVisualDuration,
 			PoisonDamagePerTick, PoisonTickInterval, PoisonDuration, SplashColor );
 
+		if ( Shooter != null && Shooter.IsValid() )
+			Shooter.Components.Get<SpellCaster>()?.BroadcastAcidPool( hitPos, SplashRadius, SplashVisualDuration, SplashColor );
+
 		SoundLibrary.PlayAcidSpitImpact( hitPos );
 
 		GameObject.Destroy();
@@ -75,6 +81,8 @@ public sealed class AcidSpitProjectile : Component
 
 		float radiusSqr = radius * radius;
 
+		var caster = source != null && source.IsValid() ? source.Components.Get<SpellCaster>() : null;
+
 		foreach ( var monster in scene.GetAllComponents<Monster>() )
 		{
 			if ( monster == null || !monster.IsValid() || monster.IsDead )
@@ -83,6 +91,7 @@ public sealed class AcidSpitProjectile : Component
 				continue;
 
 			PoisonEffect.Apply( monster.GameObject, source, dmgPerTick, tickInterval, duration );
+			caster?.BroadcastPoisonIndicator( monster.GameObject, duration );
 		}
 
 		foreach ( var boss in scene.GetAllComponents<Boss>() )
@@ -93,6 +102,7 @@ public sealed class AcidSpitProjectile : Component
 				continue;
 
 			PoisonEffect.Apply( boss.GameObject, source, dmgPerTick, tickInterval, duration );
+			caster?.BroadcastPoisonIndicator( boss.GameObject, duration );
 		}
 
 		foreach ( var slimeKing in scene.GetAllComponents<SlimeKing>() )
@@ -103,6 +113,7 @@ public sealed class AcidSpitProjectile : Component
 				continue;
 
 			PoisonEffect.Apply( slimeKing.GameObject, source, dmgPerTick, tickInterval, duration );
+			caster?.BroadcastPoisonIndicator( slimeKing.GameObject, duration );
 		}
 
 		foreach ( var player in PlayerHelper.GetAllPlayers() )
@@ -115,7 +126,16 @@ public sealed class AcidSpitProjectile : Component
 				continue;
 
 			PoisonEffect.Apply( player, source, dmgPerTick, tickInterval, duration );
+			caster?.BroadcastPoisonIndicator( player, duration );
 		}
+
+		SpawnPoolVisual( scene, position, radius, visualDuration, color );
+	}
+
+	public static void SpawnPoolVisual( Scene scene, Vector3 position, float radius, float visualDuration, Color color )
+	{
+		if ( scene == null )
+			return;
 
 		var poolGo = scene.CreateObject();
 		poolGo.Name = "AcidPoolVisual";

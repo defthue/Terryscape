@@ -1,5 +1,6 @@
 @using Sandbox;
 @using Sandbox.UI;
+@using System;
 @using System.Linq;
 @using System.Collections.Generic;
 @inherits PanelComponent
@@ -7,110 +8,133 @@
 <root>
 	@if ( IsOpen )
 	{
-		<div class="shop-backdrop" onclick="@(() => CloseBook())"></div>
-		<div class="crafting-overlay">
-			<div class="crafting-popup" style="width: 820px; height: 600px;">
-				<div class="crafting-header">
-					<div class="crafting-title">Spellbook</div>
-					<div class="crafting-close" onclick="@(() => CloseBook())">✕</div>
+		<div class="sb-backdrop" onclick="@(() => CloseBook())"></div>
+		<div class="sb-popup">
+			<div class="sb-header">
+				<div class="sb-title">Spellbook</div>
+				<div class="sb-chips">
+					<div class="sb-chip level">@($"Magic Lvl {MagicLevel}")</div>
 				</div>
+				<div class="sb-close" onclick="@(() => CloseBook())">✕</div>
+			</div>
 
-				<div class="spellbook-body">
-					<div class="spellbook-list">
-						@foreach ( var spell in AllSpells )
-						{
-							bool unlocked = SpellbookState.IsUnlocked( spell.Id );
-							bool selected = SelectedSpell != null && SelectedSpell.Id == spell.Id;
+			<div class="sb-hands">
+				@foreach ( var slot in HandSlots )
+				{
+					int slotLocal = slot;
+					var boundId = BoundSpellId( slotLocal );
+					var boundDef = boundId != null ? SpellDatabase.Get( boundId.Value ) : null;
+					string element = boundId != null ? ElementColor( boundId.Value ) : "#3a3455";
+					bool fx = FxSlot == slotLocal && FxActive;
+					string midColor = fx ? LerpToWhite( element, FxPulse * 0.4f ) : element;
 
-							<div class="spell-row @(unlocked ? "unlocked" : "locked") @(selected ? "selected" : "")"
-								 onclick="@(() => SelectSpell( spell ))">
-								<div class="spell-row-name">@spell.Name</div>
-								@if ( !unlocked )
+					<div class="sb-hand">
+						<div class="sb-hand-rings" style="@(fx ? $"transform: scale({Num( 1f + 0.1f * FxPulse )});" : "")" onclick="@(() => BindHand( slotLocal ))">
+							<div class="sb-ring-outer"></div>
+							<div class="sb-ring-mid" style="border-color: @midColor;"></div>
+							<div class="sb-ring-inner" style="background-color: @(boundId != null ? DarkTint( element ) : "#16121e");">
+								@if ( boundId != null )
 								{
-									<div class="spell-row-lock">🔒 Lv @spell.RequiredLevel</div>
-								}
-								else
-								{
-									int boundSlot = GetBoundSlotFor( spell.Id );
-									@if ( boundSlot == 1 )
-									{
-										<div class="spell-row-slot">Left Click</div>
-									}
-									else if ( boundSlot == 2 )
-									{
-										<div class="spell-row-slot">Right Click</div>
-									}
+									<div class="sg-big-wrap">
+										<div class="sg big @SlugFor( boundId.Value )">
+											<div class="g1"></div>
+											<div class="g2"></div>
+											<div class="g3"></div>
+											<div class="g4"></div>
+										</div>
+									</div>
 								}
 							</div>
+						</div>
+						@if ( boundId != null )
+						{
+							<div class="sb-unbind" onclick="@(() => UnbindHand( slotLocal ))">✕</div>
+						}
+						<div class="sb-hand-label">@(slotLocal == 1 ? "🖱 Left Click" : "🖱 Right Click")</div>
+						@if ( boundDef != null )
+						{
+							<div class="sb-hand-spell" style="color: @element;">@boundDef.Name</div>
+						}
+						else
+						{
+							<div class="sb-hand-spell empty">— empty —</div>
 						}
 					</div>
 
-					<div class="spellbook-detail">
-						@if ( SelectedSpell != null )
+					@if ( slotLocal == 1 )
+					{
+						<div class="sb-hint">Select a spell, then choose a hand</div>
+					}
+				}
+			</div>
+
+			<div class="sb-detail">
+				@if ( SelectedSpell == null )
+				{
+					<div class="sb-detail-empty">Select a spell</div>
+				}
+				else if ( !SpellbookState.IsUnlocked( SelectedSpell.Id ) )
+				{
+					<div class="sb-detail-name" style="color: @ElementColor( SelectedSpell.Id );">@SelectedSpell.Name</div>
+					<div class="sb-detail-lock">@($"Unlocks at Magic Lv {SelectedSpell.RequiredLevel}")</div>
+				}
+				else
+				{
+					<div class="sb-detail-name" style="color: @ElementColor( SelectedSpell.Id );">@SelectedSpell.Name</div>
+					<div class="sb-detail-stats">@($"Mana {SelectedSpell.ManaCost} · Cast {Num( SelectedSpell.MinCastTime )}s · Magic Lv {SelectedSpell.RequiredLevel}")</div>
+					<div class="sb-detail-flavor">@SelectedSpell.Description</div>
+				}
+			</div>
+
+			<div class="sb-grid">
+				@for ( int row = 0; row < GridRows; row++ )
+				{
+					<div class="sb-grid-row">
+						@for ( int col = 0; col < GridColumns; col++ )
 						{
-							bool unlocked = SpellbookState.IsUnlocked( SelectedSpell.Id );
-							bool meetsLevel = MagicLevel >= SelectedSpell.RequiredLevel;
-							int boundSlot = GetBoundSlotFor( SelectedSpell.Id );
-
-							<div class="detail-name">@SelectedSpell.Name</div>
-							<div class="detail-desc">@SelectedSpell.Description</div>
-
-							<div class="detail-stats">
-								<div class="detail-stat">
-									<span class="stat-label">Mana Cost:</span>
-									<span class="stat-value">@SelectedSpell.ManaCost</span>
-								</div>
-								<div class="detail-stat">
-									<span class="stat-label">Cast Time:</span>
-									<span class="stat-value">@SelectedSpell.MinCastTime s</span>
-								</div>
-								<div class="detail-stat">
-									<span class="stat-label">Required Magic:</span>
-									<span class="stat-value @(meetsLevel ? "met" : "unmet")">Lv @SelectedSpell.RequiredLevel</span>
-								</div>
-								<div class="detail-stat">
-									<span class="stat-label">Bound To:</span>
-									<span class="stat-value">@GetBoundLabel( boundSlot )</span>
-								</div>
-							</div>
-
-							@if ( !unlocked )
+							int index = row * GridColumns + col;
+							@if ( index >= AllSpells.Count )
 							{
-								<div class="detail-locked">
-									<div class="locked-label">🔒 Locked</div>
-									<div class="locked-hint">Unlocks at Magic Lv @SelectedSpell.RequiredLevel</div>
-								</div>
+								<div class="sb-card placeholder"></div>
 							}
 							else
 							{
-								<div class="detail-bindings">
-									<div class="bindings-label">Bind to:</div>
-									<div class="bindings-row">
-										<div class="bind-button @(boundSlot == 1 ? "bound" : "")"
-											 onclick="@(() => BindToSlot( 1 ))">
-											Left Click
-										</div>
-										<div class="bind-button @(boundSlot == 2 ? "bound" : "")"
-											 onclick="@(() => BindToSlot( 2 ))">
-											Right Click
-										</div>
-										@if ( boundSlot > 0 )
-										{
-											<div class="bind-button unbind"
-												 onclick="@(() => UnbindCurrent( boundSlot ))">
-												Unbind
-											</div>
-										}
+								var spell = AllSpells[index];
+								bool unlocked = SpellbookState.IsUnlocked( spell.Id );
+								bool selected = SelectedSpell != null && SelectedSpell.Id == spell.Id;
+								int boundSlot = GetBoundSlotFor( spell.Id );
+								string element = ElementColor( spell.Id );
+								string borderStyle = selected ? "" : ( boundSlot > 0 ? $"border-color: {element};" : "" );
+
+								<div class="sb-card @(selected ? "selected" : "") @(unlocked ? "" : "locked")" style="background-color: @DarkTint( element ); @borderStyle" onclick="@(() => SelectSpell( spell ))">
+									<div class="sg @SlugFor( spell.Id )">
+										<div class="g1"></div>
+										<div class="g2"></div>
+										<div class="g3"></div>
+										<div class="g4"></div>
+									</div>
+									<div class="sb-card-name">@spell.Name</div>
+									@if ( boundSlot > 0 )
+									{
+										<div class="sb-card-tag bound">@(boundSlot == 1 ? "LMB" : "RMB")</div>
+									}
+									else if ( !unlocked )
+									{
+										<div class="sb-card-tag lock">@($"Lv {spell.RequiredLevel}")</div>
+									}
+									else
+									{
+										<div class="sb-card-tag">·</div>
+									}
+									<div class="sb-tip">
+										<div class="sb-tip-name">@spell.Name</div>
+										<div class="sb-tip-sub">@($"{spell.ManaCost} mana · Lv {spell.RequiredLevel}")</div>
 									</div>
 								</div>
 							}
 						}
-						else
-						{
-							<div class="detail-empty">Select a spell to view details.</div>
-						}
 					</div>
-				</div>
+				}
 			</div>
 		</div>
 	}
@@ -120,9 +144,77 @@
 {
 	bool IsOpen => SpellbookStation.IsOpen;
 
+	static readonly int[] HandSlots = { 1, 2 };
+
+	const int GridColumns = 6;
+
 	SpellDefinition SelectedSpell { get; set; }
 	int MagicLevel { get; set; } = 1;
 	List<SpellDefinition> AllSpells { get; set; } = new();
+
+	int GridRows => Math.Max( 1, ( AllSpells.Count + GridColumns - 1 ) / GridColumns );
+
+	const float FxDuration = 0.5f;
+	RealTimeSince _fxSince = 999f;
+	int FxSlot { get; set; } = -1;
+	bool FxActive => (float)_fxSince < FxDuration;
+	float FxPulse => FxActive ? MathF.Sin( MathF.PI * ( (float)_fxSince / FxDuration ) ) : 0f;
+
+	static string Num( float value )
+	{
+		return value.ToString( "0.##", System.Globalization.CultureInfo.InvariantCulture );
+	}
+
+	static string SlugFor( SpellId id )
+	{
+		return id.ToString().ToLower();
+	}
+
+	static string ElementColor( SpellId id )
+	{
+		switch ( id )
+		{
+			case SpellId.Fireball: return "#e87838";
+			case SpellId.MagicMissile: return "#b8a0e0";
+			case SpellId.IceShard: return "#8ac8e0";
+			case SpellId.DarkBlast: return "#7a5aaa";
+			case SpellId.ArcaneBarrier: return "#8aa0d0";
+			case SpellId.HealPulse: return "#7ad29e";
+			case SpellId.Stoneskin: return "#8a8a92";
+			case SpellId.AcidSpit: return "#5aeb6a";
+			case SpellId.LightningBolt: return "#c8d0ff";
+			case SpellId.Inferno: return "#e8a038";
+			case SpellId.Singularity: return "#a080d0";
+			default: return "#b8a0e0";
+		}
+	}
+
+	static string DarkTint( string hex )
+	{
+		int r = Convert.ToInt32( hex.Substring( 1, 2 ), 16 );
+		int g = Convert.ToInt32( hex.Substring( 3, 2 ), 16 );
+		int b = Convert.ToInt32( hex.Substring( 5, 2 ), 16 );
+		return $"#{(int)( r * 0.22f ):x2}{(int)( g * 0.22f ):x2}{(int)( b * 0.22f ):x2}";
+	}
+
+	static string LerpToWhite( string hex, float t )
+	{
+		int r = Convert.ToInt32( hex.Substring( 1, 2 ), 16 );
+		int g = Convert.ToInt32( hex.Substring( 3, 2 ), 16 );
+		int b = Convert.ToInt32( hex.Substring( 5, 2 ), 16 );
+		r = (int)( r + ( 255 - r ) * t );
+		g = (int)( g + ( 255 - g ) * t );
+		b = (int)( b + ( 255 - b ) * t );
+		return $"#{r:x2}{g:x2}{b:x2}";
+	}
+
+	SpellId? BoundSpellId( int slot )
+	{
+		var bindings = SpellbookState.GetSlotBindings();
+		if ( bindings.TryGetValue( slot, out var id ) )
+			return id;
+		return null;
+	}
 
 	void CloseBook()
 	{
@@ -134,24 +226,34 @@
 		SelectedSpell = def;
 	}
 
-	void BindToSlot( int slot )
+	void BindHand( int slot )
 	{
 		if ( SelectedSpell == null )
+			return;
+
+		if ( !SpellbookState.IsUnlocked( SelectedSpell.Id ) )
 			return;
 
 		SpellbookState.BindSlot( slot, SelectedSpell.Id );
+
 		string label = slot == 1 ? "Left Click" : "Right Click";
 		GameLog.Add( $"{SelectedSpell.Name} bound to {label}.", "#7a5aaa" );
+
+		FxSlot = slot;
+		_fxSince = 0f;
 	}
 
-	void UnbindCurrent( int slot )
+	void UnbindHand( int slot )
 	{
-		if ( SelectedSpell == null )
+		var boundId = BoundSpellId( slot );
+		if ( boundId == null )
 			return;
 
+		var def = SpellDatabase.Get( boundId.Value );
 		SpellbookState.UnbindSlot( slot );
+
 		string label = slot == 1 ? "Left Click" : "Right Click";
-		GameLog.Add( $"{SelectedSpell.Name} unbound from {label}.", "#7a5aaa" );
+		GameLog.Add( $"{def?.Name ?? "Spell"} unbound from {label}.", "#7a5aaa" );
 	}
 
 	int GetBoundSlotFor( SpellId id )
@@ -162,13 +264,6 @@
 				return kv.Key;
 		}
 		return 0;
-	}
-
-	string GetBoundLabel( int slot )
-	{
-		if ( slot == 1 ) return "Left Click";
-		if ( slot == 2 ) return "Right Click";
-		return "Not bound";
 	}
 
 	void RefreshData()
@@ -193,14 +288,16 @@
 		if ( IsOpen )
 			RefreshData();
 
-		int hash = ( IsOpen, MagicLevel, SelectedSpell != null ? (int)SelectedSpell.Id : -1 ).GetHashCode();
+		int hash = HashCode.Combine( IsOpen, MagicLevel, SelectedSpell != null ? (int)SelectedSpell.Id : -1 );
 
 		foreach ( var id in SpellbookState.GetUnlocked() )
-			hash = ( hash, (int)id ).GetHashCode();
+			hash = HashCode.Combine( hash, (int)id );
 
 		foreach ( var kv in SpellbookState.GetSlotBindings() )
-			hash = ( hash, kv.Key, (int)kv.Value ).GetHashCode();
+			hash = HashCode.Combine( hash, kv.Key, (int)kv.Value );
 
-		return hash;
+		int fxBucket = FxActive ? (int)( (float)_fxSince * 30f ) : -1;
+
+		return HashCode.Combine( hash, FxSlot, fxBucket );
 	}
 }

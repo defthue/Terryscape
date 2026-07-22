@@ -245,7 +245,7 @@ public sealed class FireTornado : Component
 				continue;
 
 			monster.TakeDamage( dmg, Source );
-			DamagePopupBroadcaster.Broadcast( monster.WorldPosition + Vector3.Up * 60f, dmg, monster.MaxHealth, false );
+			DamagePopupBroadcaster.Broadcast( monster.WorldPosition + Vector3.Up * 60f, dmg, monster.MaxHealth, false, DamagePopupBroadcaster.SteamIdOf( Source ), 0 );
 		}
 
 		foreach ( var boss in Scene.GetAllComponents<Boss>() )
@@ -256,7 +256,7 @@ public sealed class FireTornado : Component
 				continue;
 
 			boss.TakeDamage( dmg, Source );
-			DamagePopupBroadcaster.Broadcast( boss.WorldPosition + Vector3.Up * 60f, dmg, boss.MaxHealth, false );
+			DamagePopupBroadcaster.Broadcast( boss.WorldPosition + Vector3.Up * 60f, dmg, boss.MaxHealth, false, DamagePopupBroadcaster.SteamIdOf( Source ), 0 );
 		}
 
 		foreach ( var slimeKing in Scene.GetAllComponents<SlimeKing>() )
@@ -267,7 +267,7 @@ public sealed class FireTornado : Component
 				continue;
 
 			slimeKing.TakeDamage( dmg, Source );
-			DamagePopupBroadcaster.Broadcast( slimeKing.WorldPosition + Vector3.Up * 60f, dmg, slimeKing.MaxHealth, false );
+			DamagePopupBroadcaster.Broadcast( slimeKing.WorldPosition + Vector3.Up * 60f, dmg, slimeKing.MaxHealth, false, DamagePopupBroadcaster.SteamIdOf( Source ), 0 );
 		}
 
 		foreach ( var player in PlayerHelper.GetAllPlayers() )

@@ -123,7 +123,7 @@ public sealed class RecallSystem : Component
 
 		var health = player.Components.Get<PlayerHealth>();
 		bool dead = health != null && health.IsDead;
-		bool moved = Vector3.DistanceBetween( player.WorldPosition, _channelStartPos ) > MoveCancelThreshold;
+		bool moved = ( player.WorldPosition - _channelStartPos ).WithZ( 0f ).Length > MoveCancelThreshold;
 
 		if ( dead || moved || IsBlockedByArena( player ) )
 		{
@@ -193,7 +193,12 @@ public sealed class RecallSystem : Component
 				continue;
 
 			if ( chair.GetOccupant() == pc )
-				chair.AskToLeave( pc );
+			{
+				if ( chair is SlimeChair sc )
+					sc.RequestDismount();
+				else
+					chair.AskToLeave( pc );
+			}
 		}
 	}
 

@@ -94,7 +94,8 @@
 						<div class="bank-btn @(QuantityIndex == 2 ? "active" : "")" onclick="@(() => QuantityIndex = 2)">100</div>
 						<div class="bank-btn @(QuantityIndex == 3 ? "active" : "")" onclick="@(() => QuantityIndex = 3)">1K</div>
 						<div class="bank-btn @(QuantityIndex == 4 ? "active" : "")" onclick="@(() => QuantityIndex = 4)">10K</div>
-						<div class="bank-btn @(QuantityIndex == 5 ? "active" : "")" onclick="@(() => QuantityIndex = 5)">All</div>
+						<div class="bank-btn @(QuantityIndex == 5 ? "active" : "")" onclick="@(() => QuantityIndex = 5)">100K</div>
+						<div class="bank-btn @(QuantityIndex == 6 ? "active" : "")" onclick="@(() => QuantityIndex = 6)">All</div>
 						<div class="bank-spacer"></div>
 						<div class="bank-btn @(BulkArmed ? "danger" : "")" onclick="@(() => ClickDepositAll())">@(BulkArmed ? "Sure?" : "Deposit all")</div>
 					</div>
@@ -286,7 +287,15 @@
 		else if ( SortMode == 2 )
 			AllBankRows = AllBankRows.OrderByDescending( r => r.Count ).ThenBy( r => RowName( r ) ).ToList();
 		else
-			AllBankRows = AllBankRows.OrderBy( r => RowTypeKey( r ) ).ThenBy( r => RowName( r ) ).ToList();
+			AllBankRows = AllBankRows
+				.OrderBy( r => r.Id == ItemId.GoldCoin ? 0 : 1 )
+				.ThenBy( r => RowCategoryRank( r ) )
+				.ThenBy( r => RowTypeKey( r ) )
+				.ThenBy( r => RowResourceRank( r ) )
+				.ThenBy( r => RowTier( r ) > 0 ? 0 : 1 )
+				.ThenBy( r => RowTier( r ) )
+				.ThenBy( r => RowName( r ) )
+				.ToList();
 	}
 
 	string RowName( BankRow r )
@@ -298,6 +307,61 @@
 	{
 		var def = ItemDatabase.Get( r.Id );
 		return def != null ? (int)def.Type : 999;
+	}
+
+	int RowTier( BankRow r )
+	{
+		var def = ItemDatabase.Get( r.Id );
+		return def?.Tier ?? 0;
+	}
+
+	int RowCategoryRank( BankRow r )
+	{
+		var def = ItemDatabase.Get( r.Id );
+		return def != null ? CategoryRank( def.Type ) : 12;
+	}
+
+	int RowResourceRank( BankRow r )
+	{
+		var def = ItemDatabase.Get( r.Id );
+		if ( def == null || def.Type != ItemType.Resource )
+			return 0;
+
+		if ( def.Name.EndsWith( " Log", StringComparison.OrdinalIgnoreCase ) )
+			return 0;
+
+		if ( def.Name.EndsWith( " Ore", StringComparison.OrdinalIgnoreCase ) )
+			return 1;
+
+		if ( def.Name.Contains( "Gem", StringComparison.OrdinalIgnoreCase ) )
+			return 3;
+
+		return 2;
+	}
+
+	static int CategoryRank( ItemType type )
+	{
+		switch ( type )
+		{
+			case ItemType.Resource: return 0;
+			case ItemType.Herb: return 0;
+			case ItemType.Bar: return 1;
+			case ItemType.Potion: return 2;
+			case ItemType.Tool: return 3;
+			case ItemType.MeleeWeapon: return 4;
+			case ItemType.RangedWeapon: return 5;
+			case ItemType.MagicWeapon: return 6;
+			case ItemType.Shield: return 7;
+			case ItemType.HeavyArmor: return 7;
+			case ItemType.MediumArmor: return 7;
+			case ItemType.LightArmor: return 7;
+			case ItemType.Arrow: return 8;
+			case ItemType.Rune: return 9;
+			case ItemType.Ring: return 10;
+			case ItemType.Amulet: return 10;
+			case ItemType.Misc: return 11;
+			default: return 12;
+		}
 	}
 
 	List<InvView> GetInventoryViews()
@@ -350,19 +414,19 @@
 
 	int ComputeAmount( int max )
 	{
-		if ( QuantityIndex == 5 )
+		if ( QuantityIndex == 6 )
 			return max;
 
-		int mode = QuantityIndex == 0 ? 1 : QuantityIndex == 1 ? 10 : QuantityIndex == 2 ? 100 : QuantityIndex == 3 ? 1000 : 10000;
+		int mode = QuantityIndex == 0 ? 1 : QuantityIndex == 1 ? 10 : QuantityIndex == 2 ? 100 : QuantityIndex == 3 ? 1000 : QuantityIndex == 4 ? 10000 : 100000;
 		return Math.Min( mode, max );
 	}
 
 	string AmountLabel( int max )
 	{
-		if ( QuantityIndex == 5 )
+		if ( QuantityIndex == 6 )
 			return $"All ({FmtCount( max )})";
 
-		int mode = QuantityIndex == 0 ? 1 : QuantityIndex == 1 ? 10 : QuantityIndex == 2 ? 100 : QuantityIndex == 3 ? 1000 : 10000;
+		int mode = QuantityIndex == 0 ? 1 : QuantityIndex == 1 ? 10 : QuantityIndex == 2 ? 100 : QuantityIndex == 3 ? 1000 : QuantityIndex == 4 ? 10000 : 100000;
 		return FmtCount( Math.Min( mode, max ) );
 	}
 

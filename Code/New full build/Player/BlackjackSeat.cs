@@ -42,7 +42,10 @@ public sealed class BlackjackSeat : Component
 
 		if ( atSeatNow && !_wasAtSeat )
 		{
-			if ( !_localClaimed && !OccupantPlayer.IsValid() && LocalSeat == null )
+			var localPc = localPlayer.Components.Get<PlayerController>();
+			bool seatedElsewhere = localPc != null && SlimeChair.IsSeatedInAnyChair( localPc );
+
+			if ( !_localClaimed && !OccupantPlayer.IsValid() && LocalSeat == null && !seatedElsewhere )
 			{
 				if ( Table != null )
 				{

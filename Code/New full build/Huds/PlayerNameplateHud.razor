@@ -1,0 +1,112 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using System.Collections.Generic;
+@inherits PanelComponent
+
+<root>
+	@foreach ( var plate in GetVisiblePlates() )
+	{
+		<div class="nameplate-anchor" style="left: @(plate.ScreenX.ToString("0.##"))%; top: @(plate.ScreenY.ToString("0.##"))%;">
+			<div class="nameplate" style="transform: scale(@(plate.Scale.ToString("0.###"))); opacity: @(plate.Opacity.ToString("0.###"));">
+				@if ( plate.Level > 0 )
+				{
+					<span class="nameplate-level">@plate.Level</span>
+				}
+				<span class="nameplate-name">@plate.Name</span>
+			</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	const float FullSizeRange = 800f;
+	const float MaxRange = 2000f;
+	const float MinScale = 0.7f;
+
+	public class DrawPlate
+	{
+		public float ScreenX;
+		public float ScreenY;
+		public string Name;
+		public int Level;
+		public float Scale;
+		public float Opacity;
+	}
+
+	List<DrawPlate> GetVisiblePlates()
+	{
+		var list = new List<DrawPlate>();
+
+		var camera = Scene.Camera;
+		if ( camera == null )
+			return list;
+
+		var camPos = camera.WorldPosition;
+		var camForward = camera.WorldRotation.Forward;
+
+		foreach ( var pc in Scene.GetAllComponents<PlayerController>() )
+		{
+			if ( pc == null || !pc.IsValid() )
+				continue;
+
+			if ( PlayerHelper.IsLocalPlayer( pc.GameObject ) )
+				continue;
+
+			string name = pc.Network.Owner?.DisplayName ?? "";
+			if ( string.IsNullOrEmpty( name ) )
+				continue;
+
+			var anchor = GetAnchor( pc );
+			var toPlayer = anchor - camPos;
+			float dist = toPlayer.Length;
+
+			if ( dist > MaxRange )
+				continue;
+
+			if ( Vector3.Dot( camForward, toPlayer ) <= 0f )
+				continue;
+
+			var ( scale, opacity ) = HudDistanceTaper.Evaluate( dist, FullSizeRange, MaxRange, MinScale );
+			if ( opacity <= 0f )
+				continue;
+
+			var normal = camera.PointToScreenNormal( anchor );
+			int level = pc.Components.Get<Skills>()?.TotalLevel ?? 0;
+
+			list.Add( new DrawPlate
+			{
+				ScreenX = normal.x * 100f,
+				ScreenY = normal.y * 100f,
+				Name = name,
+				Level = level,
+				Scale = scale,
+				Opacity = opacity
+			} );
+		}
+
+		return list;
+	}
+
+	Vector3 GetAnchor( PlayerController pc )
+	{
+		var renderer = pc.Renderer;
+		if ( renderer != null && renderer.IsValid() && renderer.TryGetBoneTransform( "head", out var head ) )
+			return head.Position + Vector3.Up * 24f;
+
+		return pc.WorldPosition + Vector3.Up * 90f;
+	}
+
+	protected override void OnUpdate()
+	{
+		StateHasChanged();
+	}
+
+	protected override int BuildHash()
+	{
+		int hash = 0;
+		foreach ( var plate in GetVisiblePlates() )
+			hash = ( hash, plate.Name, plate.Level, (int)( plate.ScreenX * 10f ), (int)( plate.ScreenY * 10f ), (int)( plate.Scale * 100f ), (int)( plate.Opacity * 100f ) ).GetHashCode();
+		return hash;
+	}
+}

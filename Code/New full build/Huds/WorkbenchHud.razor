@@ -1,0 +1,713 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using System;
+@using System.Collections.Generic;
+@inherits PanelComponent
+
+<root>
+	@if ( IsOpen )
+	{
+		<div class="wb-backdrop" onclick="@(() => CloseStation())"></div>
+		<div class="wb-popup">
+			<div class="wb-header">
+				<div class="wb-title">🛠 @StationName</div>
+				<div class="wb-chips">
+					<div class="wb-chip level">Crafting Lvl @Level</div>
+				</div>
+				<div class="wb-close" onclick="@(() => CloseStation())">✕</div>
+			</div>
+
+			<div class="wb-body">
+				<div class="wb-nav">
+					<div class="wb-tabs">
+						@for ( int i = 0; i < CategoryNames.Length; i++ )
+						{
+							int catLocal = i;
+							<div class="wb-tab @(Category == catLocal ? "active" : "")" onclick="@(() => SelectCategory( catLocal ))">@CategoryNames[catLocal]</div>
+						}
+					</div>
+
+					@if ( ShowsRail )
+					{
+						<div class="wb-nav-label">MATERIAL</div>
+						<div class="wb-rail">
+							@for ( int i = 0; i < CurrentRail.Length; i++ )
+							{
+								int tierLocal = i;
+								var mat = CurrentRail[tierLocal];
+								bool preview = Level < mat.LevelRequired;
+								<div class="wb-chip-cell">
+									<div class="wb-mat-chip @(CurrentTier == tierLocal ? "selected" : "") @(preview ? "preview" : "")" style="background-color: @mat.ChipColor;" onclick="@(() => SelectTier( tierLocal ))">
+										<div class="wb-tip">
+											<div class="wb-tip-name">@mat.Name</div>
+											<div class="wb-tip-sub">Lv @mat.LevelRequired</div>
+										</div>
+									</div>
+									<div class="wb-mat-tier">@(tierLocal + 1)</div>
+								</div>
+							}
+						</div>
+
+						<div class="wb-mat-heading">
+							<div class="wb-mat-name">@CurrentRail[SafeCurrentTier].Name</div>
+							<div class="wb-mat-lv">· Lv @CurrentRail[SafeCurrentTier].LevelRequired</div>
+						</div>
+					}
+
+					<div class="wb-grid">
+						@foreach ( var cell in GetGridCells() )
+						{
+							var cellLocal = cell;
+							@if ( cellLocal.RecipeId == null )
+							{
+								<div class="wb-cell placeholder"></div>
+							}
+							else
+							{
+								<div class="wb-cell @(CurrentKind == cellLocal.Kind ? "selected" : "") @(cellLocal.Locked ? "locked" : "")" onclick="@(() => SelectKind( cellLocal.Kind ))">
+									<div class="wb-cell-iconwrap">
+										<div class="wb-icon-glyph">❖</div>
+										<img class="wb-cell-img" src="@IconPath( cellLocal.Output )" />
+									</div>
+									<div class="wb-cell-name">@cellLocal.Label</div>
+									<div class="wb-tip">
+										<div class="wb-tip-name">@cellLocal.FullName</div>
+										<div class="wb-tip-sub">Lv @cellLocal.LevelRequired</div>
+									</div>
+								</div>
+							}
+						}
+					</div>
+				</div>
+
+				<div class="wb-circle-col">
+					<div class="wb-ring-area">
+						<div class="wb-sheet"></div>
+						<div class="wb-gridline h1"></div>
+						<div class="wb-gridline h2"></div>
+						<div class="wb-gridline v1"></div>
+						<div class="wb-gridline v2"></div>
+						<div class="wb-corner tl"></div>
+						<div class="wb-corner tr"></div>
+						<div class="wb-corner bl"></div>
+						<div class="wb-corner br"></div>
+
+						@if ( Selected == null )
+						{
+							<div class="wb-ring-outer dim"></div>
+							<div class="wb-select-hint">Select an item</div>
+						}
+						else
+						{
+							<div class="wb-ring-outer"></div>
+
+							@foreach ( var line in GetLineVms() )
+							{
+								<div class="wb-line" style="@line.Style">
+									@for ( int d = 0; d < line.DashCount; d++ )
+									{
+										<div class="wb-line-dash" style="background-color: @line.Color;"></div>
+									}
+								</div>
+							}
+
+							@foreach ( var node in GetNodeVms() )
+							{
+								<div class="wb-node @(node.Have ? "have" : "missing")" style="left: @node.LeftPct%; top: @node.TopPct%;">
+									<div class="wb-pin"></div>
+									<div class="wb-icon-glyph">❖</div>
+									<img class="wb-node-img" src="@IconPath( node.Item )" />
+									<div class="wb-node-label @(node.LabelAbove ? "above" : "below")">
+										<div class="wb-node-name">@node.Name</div>
+										<div class="wb-node-count @(node.Have ? "ok" : "bad")">@node.OwnedCount/@node.NeededCount</div>
+									</div>
+								</div>
+							}
+
+							<div class="wb-center" style="@CenterStyle()">
+								<div class="wb-icon-glyph big">❖</div>
+								<img class="wb-center-img" src="@IconPath( Selected.OutputItem )" />
+							</div>
+						}
+					</div>
+				</div>
+
+				<div class="wb-info">
+					@if ( Selected == null )
+					{
+						<div class="wb-info-empty">Pick an item from the grid to see its blueprint.</div>
+					}
+					else
+					{
+						<div class="wb-info-name">@Selected.Name</div>
+						<div class="wb-info-stat">@StatText( Selected.OutputItem )</div>
+
+						<div class="wb-info-divider"></div>
+
+						<div class="wb-info-line">
+							<div class="wb-il-label">Requires</div>
+							<div class="wb-il-value @(MeetsLevel ? "" : "bad")">@Selected.SkillRequired Lv @Selected.LevelRequired</div>
+						</div>
+						@if ( Selected.OutputAmount > 1 )
+						{
+							<div class="wb-info-line">
+								<div class="wb-il-label">Produces</div>
+								<div class="wb-il-value">@Selected.OutputAmount</div>
+							</div>
+						}
+						<div class="wb-info-line">
+							<div class="wb-il-label">In bag</div>
+							<div class="wb-il-value">@OwnedOfSelected</div>
+						</div>
+						<div class="wb-info-line">
+							<div class="wb-il-label">Can craft</div>
+							<div class="wb-il-value">@MaxCrafts</div>
+						</div>
+						<div class="wb-info-line">
+							<div class="wb-il-label">Reward</div>
+							<div class="wb-il-value">+@Selected.XpReward XP</div>
+						</div>
+
+						@if ( !RecipeLearned )
+						{
+							<div class="wb-info-missing">Recipe not learned yet.</div>
+						}
+						else if ( MissingNames.Count > 0 )
+						{
+							<div class="wb-info-missing">Missing: @(string.Join( ", ", MissingNames ))</div>
+						}
+
+						<div class="wb-spacer"></div>
+
+						<div class="wb-craft @(CanCraft ? "" : "disabled")" onclick="@(() => OnCraft())">Craft</div>
+						<div class="wb-craft all @(CanCraft ? "" : "disabled")" onclick="@(() => OnCraftAll())">Craft all</div>
+					}
+				</div>
+			</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	CraftingStation Station
+	{
+		get
+		{
+			var s = CraftingStation.ActiveStation;
+			if ( s == null || s.Station != StationType.Workbench )
+				return null;
+			return s;
+		}
+	}
+
+	bool IsOpen => Station != null;
+	string StationName => Station?.StationName ?? "Workbench";
+
+	Inventory PlayerInventory => PlayerHelper.GetLocalInventory();
+	Skills PlayerSkills => PlayerHelper.GetSkills( PlayerHelper.GetLocalPlayer() );
+
+	int Level => PlayerSkills?.GetLevel( SkillType.Crafting ) ?? 1;
+
+	public class MaterialDef
+	{
+		public string Key;
+		public string Name;
+		public string ChipColor;
+		public int LevelRequired;
+	}
+
+	static readonly MaterialDef[] Metals =
+	{
+		new MaterialDef { Key = "coppite", Name = "Coppite", ChipColor = "#b87a4a", LevelRequired = 1 },
+		new MaterialDef { Key = "ashsteel", Name = "Ashsteel", ChipColor = "#8a8f8a", LevelRequired = 10 },
+		new MaterialDef { Key = "coldvein", Name = "Coldvein", ChipColor = "#8ab0c8", LevelRequired = 20 },
+		new MaterialDef { Key = "solarium", Name = "Solarium", ChipColor = "#e8d060", LevelRequired = 30 },
+		new MaterialDef { Key = "lunarite", Name = "Lunarite", ChipColor = "#8a6ab0", LevelRequired = 40 },
+		new MaterialDef { Key = "abyssium", Name = "Abyssium", ChipColor = "#3a4a5a", LevelRequired = 50 }
+	};
+
+	static readonly MaterialDef[] Woods =
+	{
+		new MaterialDef { Key = "ashwood", Name = "Ashwood", ChipColor = "#b09a72", LevelRequired = 1 },
+		new MaterialDef { Key = "elmheart", Name = "Elmheart", ChipColor = "#96684a", LevelRequired = 10 },
+		new MaterialDef { Key = "ironbark", Name = "Ironbark", ChipColor = "#7a7a6a", LevelRequired = 20 },
+		new MaterialDef { Key = "ghostwood", Name = "Ghostwood", ChipColor = "#c8ccd8", LevelRequired = 30 },
+		new MaterialDef { Key = "duskoak", Name = "Duskoak", ChipColor = "#64528a", LevelRequired = 40 },
+		new MaterialDef { Key = "worldroot", Name = "Worldroot", ChipColor = "#4a7a52", LevelRequired = 50 }
+	};
+
+	static readonly string[] CategoryNames = { "Medium Armor", "Light Armor", "Weapons", "Arrows" };
+
+	int Category { get; set; } = 0;
+	int MedTier { get; set; } = -1;
+	int LightTier { get; set; } = -1;
+	int WeapTier { get; set; } = -1;
+	string MedKind { get; set; } = "helm";
+	string LightKind { get; set; } = "helm";
+	string WeapKind { get; set; } = "bow";
+	string ArrowKind { get; set; }
+
+	bool ShowsRail => Category != 3;
+	MaterialDef[] CurrentRail => Category == 2 ? Woods : Metals;
+
+	int CurrentTier
+	{
+		get
+		{
+			if ( Category == 0 ) return MedTier;
+			if ( Category == 1 ) return LightTier;
+			return WeapTier;
+		}
+	}
+
+	int SafeCurrentTier
+	{
+		get
+		{
+			int tier = CurrentTier;
+			return tier >= 0 && tier < CurrentRail.Length ? tier : 0;
+		}
+	}
+
+	string CurrentKind
+	{
+		get
+		{
+			if ( Category == 0 ) return MedKind;
+			if ( Category == 1 ) return LightKind;
+			if ( Category == 2 ) return WeapKind;
+			return ArrowKind;
+		}
+	}
+
+	string SelectedRecipeId
+	{
+		get
+		{
+			if ( Category == 0 )
+				return $"{Metals[SafeCurrentTier].Key}_medium_{MedKind}";
+			if ( Category == 1 )
+				return $"{Metals[SafeCurrentTier].Key}_light_{LightKind}";
+			if ( Category == 2 )
+			{
+				if ( WeapKind != null && WeapKind.StartsWith( "prim:" ) )
+					return WeapKind.Substring( 5 );
+				return $"{Woods[SafeCurrentTier].Key}_{WeapKind}";
+			}
+			return ArrowKind != null ? $"{ArrowKind}_arrows" : null;
+		}
+	}
+
+	RecipeDefinition Selected => SelectedRecipeId != null ? RecipeDatabase.GetById( SelectedRecipeId ) : null;
+
+	const float FxDuration = 0.6f;
+	const float RingSize = 460f;
+	const float RingRadius = 170f;
+	const float NodeRadius = 35f;
+	const float CenterRadius = 50f;
+
+	RealTimeSince _fxSince = 999f;
+	bool FxActive => (float)_fxSince < FxDuration;
+	float FxPulse => FxActive ? MathF.Sin( MathF.PI * ( (float)_fxSince / FxDuration ) ) : 0f;
+
+	public class CellVm
+	{
+		public string Kind;
+		public string Label;
+		public string FullName;
+		public string RecipeId;
+		public ItemId Output;
+		public int LevelRequired;
+		public bool Locked;
+	}
+
+	public class NodeVm
+	{
+		public ItemId Item;
+		public string Name;
+		public int OwnedCount;
+		public int NeededCount;
+		public bool Have;
+		public bool LabelAbove;
+		public string LeftPct;
+		public string TopPct;
+	}
+
+	public class LineVm
+	{
+		public bool Have;
+		public string Color;
+		public string Style;
+		public int DashCount;
+	}
+
+	static string Num( float value )
+	{
+		return value.ToString( "0.##", System.Globalization.CultureInfo.InvariantCulture );
+	}
+
+	string IconPath( ItemId id )
+	{
+		return $"/ItemIcons/{id}.vtex";
+	}
+
+	void AddCell( List<CellVm> cells, string kind, string label, string recipeId )
+	{
+		var recipe = RecipeDatabase.GetById( recipeId );
+		if ( recipe == null )
+			return;
+
+		cells.Add( new CellVm
+		{
+			Kind = kind,
+			Label = label,
+			FullName = recipe.Name,
+			RecipeId = recipeId,
+			Output = recipe.OutputItem,
+			LevelRequired = recipe.LevelRequired,
+			Locked = !( PlayerSkills?.MeetsRequirement( recipe.SkillRequired, recipe.LevelRequired ) ?? false )
+				|| !( PlayerInventory?.IsRecipeUnlocked( recipeId ) ?? false )
+		} );
+	}
+
+	List<CellVm> GetGridCells()
+	{
+		var cells = new List<CellVm>();
+
+		if ( Category == 0 || Category == 1 )
+		{
+			string weight = Category == 0 ? "medium" : "light";
+			string key = Metals[SafeCurrentTier].Key;
+			AddCell( cells, "helm", "Helm", $"{key}_{weight}_helm" );
+			AddCell( cells, "chestplate", "Chestplate", $"{key}_{weight}_chestplate" );
+			AddCell( cells, "legs", "Legs", $"{key}_{weight}_legs" );
+
+			while ( cells.Count < 4 )
+				cells.Add( new CellVm { RecipeId = null } );
+		}
+		else if ( Category == 2 )
+		{
+			string key = Woods[SafeCurrentTier].Key;
+			AddCell( cells, "bow", "Bow", $"{key}_bow" );
+			AddCell( cells, "staff", "Staff", $"{key}_staff" );
+
+			if ( SafeCurrentTier == 0 )
+			{
+				AddCell( cells, "prim:primitive_sword", "Prim. Sword", "primitive_sword" );
+				AddCell( cells, "prim:primitive_hatchet", "Prim. Hatchet", "primitive_hatchet" );
+				AddCell( cells, "prim:primitive_pickaxe", "Prim. Pickaxe", "primitive_pickaxe" );
+			}
+
+			while ( cells.Count < 6 )
+				cells.Add( new CellVm { RecipeId = null } );
+		}
+		else
+		{
+			foreach ( var metal in Metals )
+				AddCell( cells, metal.Key, $"{metal.Name}", $"{metal.Key}_arrows" );
+		}
+
+		return cells;
+	}
+
+	static float SlotAngle( int index, int count )
+	{
+		float start = count == 3 ? MathF.PI / 2f : -MathF.PI / 2f;
+		return start + index * ( MathF.PI * 2f / count );
+	}
+
+	List<NodeVm> GetNodeVms()
+	{
+		var nodes = new List<NodeVm>();
+		var recipe = Selected;
+		if ( recipe == null )
+			return nodes;
+
+		var inventory = PlayerInventory;
+		int count = recipe.Ingredients.Length;
+
+		for ( int i = 0; i < count; i++ )
+		{
+			var ing = recipe.Ingredients[i];
+			var def = ItemDatabase.Get( ing.Item );
+
+			float angle = SlotAngle( i, count );
+			float ux = MathF.Cos( angle );
+			float uy = MathF.Sin( angle );
+			float x = RingSize / 2f + RingRadius * ux;
+			float y = RingSize / 2f + RingRadius * uy;
+
+			int have = inventory?.GetItemCount( ing.Item ) ?? 0;
+
+			nodes.Add( new NodeVm
+			{
+				Item = ing.Item,
+				Name = def != null ? def.Name : ing.Item.ToString(),
+				OwnedCount = have,
+				NeededCount = ing.Amount,
+				Have = have >= ing.Amount,
+				LabelAbove = uy < -0.01f,
+				LeftPct = Num( x / RingSize * 100f ),
+				TopPct = Num( y / RingSize * 100f )
+			} );
+		}
+
+		return nodes;
+	}
+
+	List<LineVm> GetLineVms()
+	{
+		var lines = new List<LineVm>();
+		var recipe = Selected;
+		if ( recipe == null )
+			return lines;
+
+		var inventory = PlayerInventory;
+		int count = recipe.Ingredients.Length;
+		float center = RingSize / 2f;
+
+		for ( int i = 0; i < count; i++ )
+		{
+			var ing = recipe.Ingredients[i];
+			int have = inventory?.GetItemCount( ing.Item ) ?? 0;
+			bool haveEnough = have >= ing.Amount;
+
+			float angle = SlotAngle( i, count );
+			float ux = MathF.Cos( angle );
+			float uy = MathF.Sin( angle );
+
+			float startDist = CenterRadius;
+			float endDist = RingRadius - NodeRadius;
+			float length = endDist - startDist;
+			float midDist = ( startDist + endDist ) / 2f;
+
+			float midX = center + ux * midDist;
+			float midY = center + uy * midDist;
+			float degrees = angle * 180f / MathF.PI;
+
+			float height = haveEnough ? ( FxActive ? 3f + FxPulse * 2f : 3f ) : 2f;
+
+			lines.Add( new LineVm
+			{
+				Have = haveEnough,
+				Color = haveEnough ? LerpLineColor( FxPulse ) : "#c86464",
+				DashCount = haveEnough ? 6 : 4,
+				Style = $"left: {Num( midX - length / 2f )}px; top: {Num( midY - height / 2f )}px; width: {Num( length )}px; height: {Num( height )}px; transform: rotate({Num( degrees )}deg);"
+			} );
+		}
+
+		return lines;
+	}
+
+	static string LerpLineColor( float pulse )
+	{
+		int r = (int)( 0x4c + ( 0x8f - 0x4c ) * pulse );
+		int g = (int)( 0xaf + ( 0xe8 - 0xaf ) * pulse );
+		int b = (int)( 0x78 + ( 0xb0 - 0x78 ) * pulse );
+		return $"#{r:x2}{g:x2}{b:x2}";
+	}
+
+	string CenterStyle()
+	{
+		if ( !FxActive )
+			return "";
+
+		return $"transform: scale({Num( 1f + 0.12f * FxPulse )});";
+	}
+
+	string StatText( ItemId id )
+	{
+		var def = ItemDatabase.Get( id );
+		if ( def == null )
+			return "";
+
+		switch ( def.Type )
+		{
+			case ItemType.MeleeWeapon:
+			case ItemType.RangedWeapon:
+			case ItemType.MagicWeapon:
+				return $"Weapon power {Num( def.WeaponPower )}";
+			case ItemType.Arrow:
+				return $"Ammo · power {Num( def.WeaponPower )}";
+			case ItemType.MediumArmor:
+			case ItemType.LightArmor:
+				return $"Armor {Num( def.ArmorValue )}";
+			case ItemType.Tool:
+				return $"Tool power {Num( def.ToolPower )}";
+			default:
+				return $"Tier {def.Tier}";
+		}
+	}
+
+	bool MeetsLevel => Selected != null && ( PlayerSkills?.MeetsRequirement( Selected.SkillRequired, Selected.LevelRequired ) ?? false );
+	bool RecipeLearned => Selected != null && ( PlayerInventory?.IsRecipeUnlocked( Selected.Id ) ?? false );
+	int OwnedOfSelected => Selected != null ? PlayerInventory?.GetItemCount( Selected.OutputItem ) ?? 0 : 0;
+
+	int MaxCrafts
+	{
+		get
+		{
+			var recipe = Selected;
+			var inventory = PlayerInventory;
+			if ( recipe == null || inventory == null )
+				return 0;
+
+			int min = int.MaxValue;
+			foreach ( var ing in recipe.Ingredients )
+			{
+				if ( ing.Amount <= 0 )
+					continue;
+
+				int possible = inventory.GetItemCount( ing.Item ) / ing.Amount;
+				if ( possible < min )
+					min = possible;
+			}
+
+			return min == int.MaxValue ? 0 : min;
+		}
+	}
+
+	List<string> MissingNames
+	{
+		get
+		{
+			var names = new List<string>();
+			var recipe = Selected;
+			var inventory = PlayerInventory;
+			if ( recipe == null || inventory == null )
+				return names;
+
+			foreach ( var ing in recipe.Ingredients )
+			{
+				if ( inventory.GetItemCount( ing.Item ) >= ing.Amount )
+					continue;
+
+				var def = ItemDatabase.Get( ing.Item );
+				names.Add( def != null ? def.Name : ing.Item.ToString() );
+			}
+
+			return names;
+		}
+	}
+
+	bool CanCraft => Selected != null && RecipeLearned && MeetsLevel && MissingNames.Count == 0;
+
+	void SelectCategory( int category )
+	{
+		Category = category;
+	}
+
+	void SelectTier( int tier )
+	{
+		if ( Category == 0 )
+			MedTier = tier;
+		else if ( Category == 1 )
+			LightTier = tier;
+		else if ( Category == 2 )
+		{
+			WeapTier = tier;
+			if ( tier != 0 && WeapKind != null && WeapKind.StartsWith( "prim:" ) )
+				WeapKind = "bow";
+		}
+	}
+
+	void SelectKind( string kind )
+	{
+		if ( Category == 0 )
+			MedKind = kind;
+		else if ( Category == 1 )
+			LightKind = kind;
+		else if ( Category == 2 )
+			WeapKind = kind;
+		else
+			ArrowKind = kind;
+	}
+
+	int HighestTierForLevel( MaterialDef[] rail )
+	{
+		int best = 0;
+		for ( int i = 0; i < rail.Length; i++ )
+		{
+			if ( Level >= rail[i].LevelRequired )
+				best = i;
+		}
+		return best;
+	}
+
+	void EnsureSelection()
+	{
+		if ( MedTier < 0 )
+			MedTier = HighestTierForLevel( Metals );
+		if ( LightTier < 0 )
+			LightTier = HighestTierForLevel( Metals );
+		if ( WeapTier < 0 )
+			WeapTier = HighestTierForLevel( Woods );
+		if ( ArrowKind == null )
+			ArrowKind = Metals[HighestTierForLevel( Metals )].Key;
+	}
+
+	void OnCraft()
+	{
+		var station = Station;
+		if ( station == null || Selected == null || !CanCraft )
+			return;
+
+		if ( station.TryCraft( Selected.Id ) )
+			PlayCraftFeedback();
+	}
+
+	void OnCraftAll()
+	{
+		var station = Station;
+		if ( station == null || Selected == null || !CanCraft )
+			return;
+
+		if ( station.TryCraftAll( Selected.Id ) > 0 )
+			PlayCraftFeedback();
+	}
+
+	void PlayCraftFeedback()
+	{
+		_fxSince = 0f;
+		SoundLibrary.PlayReceiveItem();
+
+		if ( Selected != null )
+			ItemPickupEffect.Trigger( Selected.OutputItem );
+	}
+
+	void CloseStation()
+	{
+		CraftingStation.Close();
+	}
+
+	protected override int BuildHash()
+	{
+		if ( !IsOpen )
+			return 0;
+
+		EnsureSelection();
+
+		var inventory = PlayerInventory;
+
+		int countsHash = 0;
+		var selected = Selected;
+		if ( selected != null && inventory != null )
+		{
+			countsHash = HashCode.Combine(
+				inventory.GetItemCount( selected.OutputItem ),
+				inventory.IsRecipeUnlocked( selected.Id ) );
+
+			foreach ( var ing in selected.Ingredients )
+				countsHash = HashCode.Combine( countsHash, inventory.GetItemCount( ing.Item ) );
+		}
+
+		int fxBucket = FxActive ? (int)( (float)_fxSince * 30f ) : -1;
+
+		return HashCode.Combine(
+			HashCode.Combine( IsOpen, Category, MedTier, LightTier, WeapTier ),
+			HashCode.Combine( MedKind ?? "", LightKind ?? "", WeapKind ?? "", ArrowKind ?? "" ),
+			HashCode.Combine( Level, countsHash, fxBucket )
+		);
+	}
+}

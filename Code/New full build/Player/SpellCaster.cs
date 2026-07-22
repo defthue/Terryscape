@@ -1142,6 +1142,24 @@ public sealed class SpellCaster : Component
 		Singularity.Spawn( Scene, position, GameObject, pullRadius, collapseRadius, pullDuration, 0, true );
 	}
 
+	[Rpc.Broadcast]
+	public void BroadcastAcidPool( Vector3 position, float radius, float visualDuration, Color color )
+	{
+		if ( !IsProxy )
+			return;
+
+		AcidSpitProjectile.SpawnPoolVisual( Scene, position, radius, visualDuration, color );
+	}
+
+	[Rpc.Broadcast]
+	public void BroadcastPoisonIndicator( GameObject target, float duration )
+	{
+		if ( !IsProxy )
+			return;
+
+		PoisonEffect.ApplyVisual( target, duration );
+	}
+
 	float ComputeCasterPower()
 	{
 		var inventory = GameObject.Components.Get<Inventory>();

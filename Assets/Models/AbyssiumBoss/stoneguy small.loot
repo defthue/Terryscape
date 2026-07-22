@@ -51,12 +51,6 @@
       "ChancePercent": 16.666668
     },
     {
-      "Item": "CoppiteOre",
-      "MinAmount": 1,
-      "MaxAmount": 9,
-      "ChancePercent": 38
-    },
-    {
       "Item": "Gem",
       "MinAmount": 1,
       "MaxAmount": 3,

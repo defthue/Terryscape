@@ -125,7 +125,15 @@
 
 @code
 {
-	bool IsOpen => CraftingStation.ActiveStation != null;
+	static bool HasDedicatedHud( StationType type )
+	{
+		return type == StationType.AlchemyTable
+			|| type == StationType.Furnace
+			|| type == StationType.Anvil
+			|| type == StationType.Workbench;
+	}
+
+	bool IsOpen => CraftingStation.ActiveStation != null && !HasDedicatedHud( CraftingStation.ActiveStation.Station );
 	string StationName => CraftingStation.ActiveStation?.StationName ?? "Crafting Station";
 
 	List<RecipeDefinition> Recipes { get; set; } = new();
@@ -301,6 +309,8 @@
 	protected override int BuildHash()
 	{
 		var station = CraftingStation.ActiveStation;
+		if ( station != null && HasDedicatedHud( station.Station ) )
+			station = null;
 
 		if ( station != null )
 		{

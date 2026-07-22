@@ -1,6 +1,6 @@
 @using Sandbox;
 @using Sandbox.UI;
-@using System.Linq;
+@using System;
 @using System.Collections.Generic;
 @inherits PanelComponent
 
@@ -8,270 +8,338 @@
 	@if ( IsOpen )
 	{
 		<div class="shop-backdrop" onclick="@(() => CloseShop())"></div>
-		<div class="crafting-overlay">
-			<div class="crafting-popup">
-				<div class="crafting-header">
-					<div class="crafting-title">@ShopName</div>
-					<div class="crafting-close" onclick="@(() => CloseShop())">✕</div>
+		<div class="shop-popup">
+			<div class="shop-header">
+				<div class="shop-title">@ShopName</div>
+				<div class="shop-header-right">
+					<div class="shop-gold">@($"⛃ {PlayerGold} gold")</div>
+					<div class="shop-close" onclick="@(() => CloseShop())">✕</div>
 				</div>
+			</div>
 
-				<div class="crafting-body">
-					<div class="recipe-list">
-						<div class="detail-section-label" style="padding: 8px 12px;">Shop</div>
-						@foreach ( var entry in BuyEntries )
+			<div class="shop-toolbar">
+				<div class="shop-tab @(IsBuyMode ? "active" : "")" onclick="@(() => SelectTab( true ))">Buy</div>
+				<div class="shop-tab @(!IsBuyMode ? "active" : "")" onclick="@(() => SelectTab( false ))">Sell</div>
+				<div class="shop-toolbar-spacer"></div>
+				<TextEntry class="shop-search" Value:bind="@Search" Placeholder="Search items"></TextEntry>
+			</div>
+
+			<div class="shop-body">
+				@if ( IsBuyMode )
+				{
+					<div class="shop-rail">
+						@foreach ( var cat in Categories )
 						{
-							var def = ItemDatabase.Get( entry.Item );
-							string name = def != null ? def.Name : entry.Item.ToString();
-
-							<div class="recipe-row @(SelectedItem == entry.Item && IsBuyMode && !SelectedIsUnique ? "selected" : "") @(CanBuy( entry ) ? "craftable" : "locked")"
-								 onclick="@(() => SelectBuy( entry ))">
-								<div class="recipe-icon" style="background: @GetItemColor( def );">
-									<img class="recipe-icon-img" src="@GetIconPath( entry.Item )" />
-								</div>
-								<div class="recipe-name">@name</div>
-								<div class="recipe-amount gold">@entry.Price g</div>
-							</div>
-						}
-
-						<div class="detail-section-label" style="padding: 8px 12px; margin-top: 8px;">Your Items</div>
-						@if ( SellEntries.Count == 0 && SellableUnique.Count == 0 )
-						{
-							<div class="no-recipes">Nothing to sell here.</div>
-						}
-						@foreach ( var entry in SellEntries )
-						{
-							var def = ItemDatabase.Get( entry.Item );
-							string name = def != null ? def.Name : entry.Item.ToString();
-							int count = PlayerInventory != null ? PlayerInventory.GetItemCount( entry.Item ) : 0;
-
-							<div class="recipe-row @(SelectedItem == entry.Item && !IsBuyMode && !SelectedIsUnique ? "selected" : "") @(count > 0 ? "craftable" : "locked")"
-								 onclick="@(() => SelectSell( entry ))">
-								<div class="recipe-icon" style="background: @GetItemColor( def );">
-									<img class="recipe-icon-img" src="@GetIconPath( entry.Item )" />
-								</div>
-								<div class="recipe-name">@name</div>
-								<div class="recipe-amount">@count</div>
-							</div>
-						}
-						@foreach ( var entry in SellableUnique )
-						{
-							var def = ItemDatabase.Get( entry.Instance.ItemId );
-							string color = GetItemColor( def );
-
-							<div class="recipe-row @(SelectedIsUnique && SelectedUniqueIndex == entry.OriginalIndex ? "selected" : "") craftable"
-								 onclick="@(() => SelectUnique( entry.OriginalIndex ))">
-								<div class="recipe-icon" style="background: @color;">
-									<img class="recipe-icon-img" src="@GetIconPath( entry.Instance.ItemId )" />
-								</div>
-								<div class="recipe-name" style="@(entry.Instance.HasCustomName ? "color: #a080d0;" : "")">@entry.Instance.GetDisplayName()</div>
-								<div class="recipe-amount">1</div>
+							var catLocal = cat;
+							<div class="shop-cat @(CurrentCategory == catLocal.Label ? "selected" : "")" onclick="@(() => SelectCategory( catLocal.Label ))">
+								<div class="shop-cat-name">@catLocal.Label</div>
+								<div class="shop-cat-count">@catLocal.Count</div>
 							</div>
 						}
 					</div>
 
-					<div class="recipe-detail">
-						@if ( SelectedIsUnique && SelectedUniqueIndex >= 0 )
-						{
-							var items = PlayerInventory?.GetUniqueItems();
-							@if ( items != null && SelectedUniqueIndex < items.Count )
+					<div class="shop-center">
+						<div class="shop-grid">
+							@for ( int row = 0; row < GridRows; row++ )
 							{
-								var instance = items[SelectedUniqueIndex];
-								var shop = ShopStation.ActiveShop;
-								int sellPrice = shop != null ? shop.GetBuyPriceFromPlayer( instance.ItemId ) : 0;
-
-								<div class="detail-header" style="@(instance.HasCustomName ? "color: #a080d0;" : "")">@instance.GetDisplayName()</div>
-
-								@if ( instance.HasCustomName )
-								{
-									<div style="color: #c9bc9c; font-size: 14px;">@instance.GetBaseName()</div>
-								}
-
-								@if ( instance.IsSocketable && instance.SocketsUsed > 0 )
-								{
-									@for ( int si = 0; si < instance.MaxSockets; si++ )
+								<div class="shop-grid-row">
+									@for ( int col = 0; col < GridColumns; col++ )
 									{
-										var rune = instance.GetSocket( si );
-										@if ( rune != null && rune.IsEnchanted )
+										var entryLocal = PageEntries[row * GridColumns + col];
+										@if ( entryLocal == null )
 										{
-											<div style="color: @EnchantmentTypes.GetColor( rune.Enchantment ); font-size: 14px;">@($"+{rune.EnchantmentPercent:F1}% {rune.Enchantment}")</div>
+											<div class="shop-cell placeholder"></div>
 										}
 										else
 										{
-											<div style="color: #8a7a5c; font-size: 14px;">Empty socket</div>
+											<div class="shop-cell @(IsSelected( entryLocal ) ? "selected" : "") @(SearchDim( entryLocal ) ? "searchdim" : "")" onclick="@(() => SelectEntry( entryLocal ))">
+												<div class="shop-cell-iconwrap">
+													<div class="shop-icon-glyph">❖</div>
+													<img class="shop-cell-img" src="@GetIconPath( entryLocal.Item )" />
+												</div>
+												<div class="shop-price-tag buy">@($"{entryLocal.Price}g")</div>
+												<div class="shop-tip">
+													<div class="shop-tip-name">@entryLocal.Name</div>
+													<div class="shop-tip-sub">@($"{entryLocal.Price} gold each")</div>
+												</div>
+											</div>
 										}
 									}
-								}
-
-								@if ( sellPrice > 0 )
-								{
-									<div class="detail-section-label">Sell Value</div>
-									<div class="ingredient-row have">
-										<div class="ingredient-name">You receive</div>
-										<div class="ingredient-count">@sellPrice gold</div>
-									</div>
-
-									<div class="craft-button-area">
-										<div class="craft-button" onclick="@(() => DoSellUnique())">Sell</div>
-									</div>
-								}
+								</div>
 							}
-						}
-						else if ( SelectedItem != ItemId.None )
+						</div>
+						<div class="shop-pager">
+							<div class="shop-pager-btn @(Page <= 0 ? "disabled" : "")" onclick="@(() => StepPage( -1 ))">◀</div>
+							<div class="shop-pager-label">Page @(Page + 1) / @PageCount</div>
+							<div class="shop-pager-btn @(Page >= PageCount - 1 ? "disabled" : "")" onclick="@(() => StepPage( 1 ))">▶</div>
+						</div>
+					</div>
+
+					<div class="shop-detail">
+						@if ( SelectedBuy == null )
 						{
-							var def = ItemDatabase.Get( SelectedItem );
-							string name = def != null ? def.Name : SelectedItem.ToString();
-
-							<div class="detail-header">@name</div>
-
-							@if ( def != null )
-							{
-								<div class="detail-section-label">Info</div>
-								<div class="requirement-row met">Type: @def.Type</div>
-								@if ( def.Tier > 0 )
-								{
-									<div class="requirement-row met">Tier: @def.Tier</div>
-								}
-							}
-
-							@if ( IsBuyMode && SelectedPrice > 0 )
-							{
-								int totalCost = SelectedPrice * BuyQuantity;
-								bool canAfford = HasEnoughGold( totalCost );
-
-								int invCount = PlayerInventory != null ? PlayerInventory.GetItemCount( SelectedItem ) : 0;
-
-								<div class="detail-section-label">Cost</div>
-								<div class="cost-row">
-									<div class="cost-amount">Have: <span class="cost-gold">@PlayerGold g</span></div>
-									<div class="cost-amount">Cost: <span class="@(canAfford ? "cost-gold" : "cost-low")">@totalCost g</span></div>
-								</div>
-								<div class="cost-row">
-									<div class="cost-amount">Inventory: <span class="cost-gold">@invCount</span></div>
-								</div>
-
-								<div class="quantity-selector">
-									<div class="quantity-button @(BuyQuantity == 1 ? "selected" : "")" onclick="@(() => SetBuyQuantity( 1 ))">1</div>
-									<div class="quantity-button @(BuyQuantity == 10 ? "selected" : "")" onclick="@(() => SetBuyQuantity( 10 ))">10</div>
-									<div class="quantity-button @(BuyQuantity == 100 ? "selected" : "")" onclick="@(() => SetBuyQuantity( 100 ))">100</div>
-								</div>
-
-								<div class="craft-button-area">
-									<div class="craft-button @(canAfford ? "" : "disabled")"
-										 onclick="@(() => DoBuyAction())">
-										Buy
-									</div>
-								</div>
-							}
-
-							@if ( !IsBuyMode && SelectedPrice > 0 )
-							{
-								var sellCount = PlayerInventory != null ? PlayerInventory.GetItemCount( SelectedItem ) : 0;
-
-								<div class="detail-section-label">Sell Value</div>
-								<div class="ingredient-row have">
-									<div class="ingredient-name">You receive</div>
-									<div class="ingredient-count">@SelectedPrice gold</div>
-								</div>
-								<div class="ingredient-row @(sellCount > 0 ? "have" : "need")">
-									<div class="ingredient-name">In inventory</div>
-									<div class="ingredient-count">@sellCount</div>
-								</div>
-
-								<div class="craft-button-area" style="gap: 10px;">
-									<div class="craft-button @(sellCount > 0 ? "" : "disabled")"
-										 onclick="@(() => DoSell())">
-										Sell
-									</div>
-									<div class="craft-button @(sellCount > 0 ? "" : "disabled")"
-										 onclick="@(() => DoSellAllRequest())">
-										Sell All
-									</div>
-								</div>
-							}
+							<div class="shop-detail-empty">Select an item to buy.</div>
 						}
 						else
 						{
-							<div class="detail-empty">Select an item to buy or sell.</div>
+							<div class="shop-detail-iconbox">
+								<div class="shop-icon-glyph big">❖</div>
+								<img class="shop-detail-img" src="@GetIconPath( SelectedBuy.Item )" />
+							</div>
+							<div class="shop-detail-name">@SelectedBuy.Name</div>
+							<div class="shop-detail-context">@ContextLine( SelectedBuy.Item )</div>
+
+							<div class="shop-detail-divider"></div>
+
+							<div class="shop-detail-line">@($"Price {SelectedBuy.Price}g each")</div>
+							<div class="shop-detail-line sub">@($"You own {OwnedCount( SelectedBuy.Item )}")</div>
+
+							<div class="shop-section-label">QUANTITY</div>
+							<div class="shop-qty-row">
+								@foreach ( var qty in QuantityOptions )
+								{
+									var qtyLocal = qty;
+									<div class="shop-qty @(BuyQuantity == qtyLocal ? "selected" : "")" onclick="@(() => SetBuyQuantity( qtyLocal ))">@qtyLocal</div>
+								}
+							</div>
+
+							<div class="shop-detail-line total">@($"Total: {SelectedBuy.Price * BuyQuantity}g")</div>
+
+							<div class="shop-spacer"></div>
+
+							<div class="shop-action @(CanAffordSelected ? "" : "disabled")" onclick="@(() => DoBuyAction())">Buy</div>
+							@if ( !CanAffordSelected )
+							{
+								<div class="shop-note">Not enough gold</div>
+							}
 						}
 					</div>
-				</div>
-			</div>
+				}
+				else
+				{
+					<div class="shop-rail">
+						@foreach ( var cat in Categories )
+						{
+							var catLocal = cat;
+							<div class="shop-cat @(CurrentCategory == catLocal.Label ? "selected" : "")" onclick="@(() => SelectCategory( catLocal.Label ))">
+								<div class="shop-cat-name">@catLocal.Label</div>
+								<div class="shop-cat-count">@catLocal.Count</div>
+							</div>
+						}
+					</div>
 
-				</div>
-			</div>
+					<div class="shop-detail">
+						@if ( SelectedSell == null )
+						{
+							<div class="shop-detail-empty">Select an item to sell.</div>
+						}
+						else
+						{
+							<div class="shop-detail-iconbox">
+								<div class="shop-icon-glyph big">❖</div>
+								<img class="shop-detail-img" src="@GetIconPath( SelectedSell.Item )" />
+							</div>
+							<div class="shop-detail-name @(SelectedSell.HasCustomName ? "named" : "")">@SelectedSell.Name</div>
+							<div class="shop-detail-context">@ContextLine( SelectedSell.Item )</div>
 
-			@if ( ShopStation.PendingSellAllItem != ItemId.None )
+							@if ( SelectedSell.IsUnique )
+							{
+								@foreach ( var line in UniqueStatusLines( SelectedSell ) )
+								{
+									<div class="shop-detail-socket" style="color: @line.Color;">@line.Text</div>
+								}
+							}
+
+							<div class="shop-detail-divider"></div>
+
+							@if ( SelectedSell.Unsellable )
+							{
+								<div class="shop-note">@SelectedSell.UnsellableReason</div>
+							}
+							else
+							{
+								<div class="shop-detail-line">@($"+{SelectedSell.Price}g each")</div>
+								<div class="shop-detail-line sub">@($"You have {SelectedSell.Owned}")</div>
+
+								<div class="shop-spacer"></div>
+
+								@if ( SelectedSell.IsUnique )
+								{
+									<div class="shop-action sell" onclick="@(() => DoSellUnique())">Sell</div>
+								}
+								else
+								{
+									<div class="shop-action sell @(SelectedSell.Owned > 0 ? "" : "disabled")" onclick="@(() => DoSell())">Sell</div>
+									<div class="shop-action sell all @(SelectedSell.Owned > 0 ? "" : "disabled")" onclick="@(() => DoSellAllRequest())">Sell All</div>
+								}
+							}
+						}
+					</div>
+
+					<div class="shop-center">
+						<div class="shop-grid">
+							@for ( int row = 0; row < GridRows; row++ )
+							{
+								<div class="shop-grid-row">
+									@for ( int col = 0; col < GridColumns; col++ )
+									{
+										var entryLocal = PageEntries[row * GridColumns + col];
+										@if ( entryLocal == null )
+										{
+											<div class="shop-cell placeholder"></div>
+										}
+										else
+										{
+											<div class="shop-cell @(IsSelected( entryLocal ) ? "selected" : "") @(entryLocal.Unsellable ? "unsellable" : "") @(SearchDim( entryLocal ) ? "searchdim" : "")" onclick="@(() => SelectEntry( entryLocal ))">
+												<div class="shop-cell-iconwrap">
+													<div class="shop-icon-glyph">❖</div>
+													<img class="shop-cell-img" src="@GetIconPath( entryLocal.Item )" />
+												</div>
+												@if ( !entryLocal.Unsellable )
+												{
+													<div class="shop-price-tag sell">@($"+{entryLocal.Price}g")</div>
+												}
+												<div class="shop-tip">
+													<div class="shop-tip-name">@entryLocal.Name</div>
+													@if ( entryLocal.Unsellable )
+													{
+														<div class="shop-tip-sub bad">@entryLocal.UnsellableReason</div>
+													}
+													else
+													{
+														<div class="shop-tip-sub">@($"+{entryLocal.Price} gold each · own {entryLocal.Owned}")</div>
+													}
+												</div>
+											</div>
+										}
+									}
+								</div>
+							}
+						</div>
+						<div class="shop-pager">
+							<div class="shop-pager-btn @(Page <= 0 ? "disabled" : "")" onclick="@(() => StepPage( -1 ))">◀</div>
+							<div class="shop-pager-label">Page @(Page + 1) / @PageCount</div>
+							<div class="shop-pager-btn @(Page >= PageCount - 1 ? "disabled" : "")" onclick="@(() => StepPage( 1 ))">▶</div>
+						</div>
+					</div>
+				}
+			</div>
+		</div>
+
+		@if ( ShopStation.PendingSellAllItem != ItemId.None )
 		{
-			var pendingDef = ItemDatabase.Get( ShopStation.PendingSellAllItem );
-
 			<div class="shop-backdrop confirm" onclick="@(() => CancelSellAll())"></div>
-			<div class="confirm-overlay">
-				<div class="confirm-popup">
-					<div class="confirm-title">Sell All?</div>
+			<div class="shop-confirm">
+				<div class="shop-confirm-title">Sell All?</div>
 
-					<div class="confirm-item-row">
-						<div class="confirm-icon" style="background: @GetItemColor( pendingDef );">
-							<img class="confirm-icon-img" src="@GetIconPath( ShopStation.PendingSellAllItem )" />
-						</div>
-						<div class="confirm-item-info">
-							<div class="confirm-item-name">@GetItemName( ShopStation.PendingSellAllItem )</div>
-							<div class="confirm-item-qty">x@(ShopStation.PendingSellAllAmount)</div>
-						</div>
+				<div class="shop-confirm-row">
+					<div class="shop-confirm-iconwrap">
+						<div class="shop-icon-glyph">❖</div>
+						<img class="shop-confirm-img" src="@GetIconPath( ShopStation.PendingSellAllItem )" />
 					</div>
+					<div class="shop-confirm-info">
+						<div class="shop-confirm-name">@GetItemName( ShopStation.PendingSellAllItem )</div>
+						<div class="shop-confirm-qty">x@(ShopStation.PendingSellAllAmount)</div>
+					</div>
+				</div>
 
-					<div class="confirm-receive-row">
-						<div class="confirm-receive-label">You receive</div>
-						<div class="confirm-receive-gold">@ShopStation.PendingSellAllTotalGold gold</div>
-					</div>
+				<div class="shop-confirm-receive">You receive <span class="shop-confirm-gold">@($"{ShopStation.PendingSellAllTotalGold} gold")</span></div>
 
-					<div class="confirm-buttons">
-						<div class="craft-button" onclick="@(() => CancelSellAll())">Cancel</div>
-						<div class="craft-button confirm-yes" onclick="@(() => ConfirmSellAll())">Sell All</div>
-					</div>
+				<div class="shop-confirm-buttons">
+					<div class="shop-action cancel" onclick="@(() => CancelSellAll())">Cancel</div>
+					<div class="shop-action sell" onclick="@(() => ConfirmSellAll())">Sell All</div>
 				</div>
 			</div>
 		}
-		}
-	</root>
+	}
+</root>
 
 @code
 {
 	bool IsOpen => ShopStation.ActiveShop != null;
 	string ShopName => ShopStation.ActiveShop?.DisplayName ?? "Shop";
 
-	ItemId SelectedItem { get; set; } = ItemId.None;
-	int SelectedPrice { get; set; }
-	bool IsBuyMode { get; set; }
+	Inventory PlayerInventory { get; set; }
+	int PlayerGold => PlayerInventory != null ? PlayerInventory.GetItemCount( ItemId.GoldCoin ) : 0;
+
+	PotionSystem Potions => PlayerHelper.GetLocalPlayer()?.Components.Get<PotionSystem>();
+
+	const int GridColumns = 6;
+	const int GridRows = 6;
+	const int PageSize = GridColumns * GridRows;
+
+	static readonly int[] QuantityOptions = { 1, 5, 10, 50 };
+
+	bool IsBuyMode { get; set; } = true;
+	string Search { get; set; } = "";
 	int BuyQuantity { get; set; } = 1;
 
-	bool SelectedIsUnique { get; set; }
-	int SelectedUniqueIndex { get; set; } = -1;
+	string BuyCategory { get; set; } = "All";
+	string SellCategory { get; set; } = "All";
+	int BuyPage { get; set; } = 0;
+	int SellPage { get; set; } = 0;
 
-	Inventory PlayerInventory { get; set; }
+	ItemId BuySelectedId { get; set; } = ItemId.None;
+	ItemId SellSelectedId { get; set; } = ItemId.None;
+	bool SellSelectedIsUnique { get; set; }
+	int SellSelectedUniqueIndex { get; set; } = -1;
 
-	public class BuyListEntry
+	string CurrentCategory => IsBuyMode ? BuyCategory : SellCategory;
+
+	int Page
+	{
+		get => IsBuyMode ? BuyPage : SellPage;
+		set
+		{
+			if ( IsBuyMode ) BuyPage = value;
+			else SellPage = value;
+		}
+	}
+
+	public class GridEntry
 	{
 		public ItemId Item;
+		public string Name;
 		public int Price;
+		public int Owned;
+		public bool IsUnique;
+		public int UniqueIndex;
+		public bool Unsellable;
+		public string UnsellableReason;
+		public bool HasCustomName;
+		public ItemType Type;
 	}
-	public class SellListEntry
+
+	public class CategoryVm
 	{
-		public ItemId Item;
-		public int Price;
+		public string Label;
+		public int Count;
 	}
 
-	List<BuyListEntry> BuyEntries { get; set; } = new();
-	List<SellListEntry> SellEntries { get; set; } = new();
-
-	public class SellableUniqueEntry
+	static readonly (string Label, ItemType[] Types)[] CategoryDefs =
 	{
-		public ItemInstance Instance;
-		public int OriginalIndex;
-	}
+		( "Potions", new[] { ItemType.Potion } ),
+		( "Herbs", new[] { ItemType.Herb } ),
+		( "Bars", new[] { ItemType.Bar } ),
+		( "Resources", new[] { ItemType.Resource } ),
+		( "Weapons", new[] { ItemType.MeleeWeapon, ItemType.RangedWeapon, ItemType.MagicWeapon } ),
+		( "Armor", new[] { ItemType.HeavyArmor, ItemType.MediumArmor, ItemType.LightArmor } ),
+		( "Shields", new[] { ItemType.Shield } ),
+		( "Tools", new[] { ItemType.Tool } ),
+		( "Ammo", new[] { ItemType.Arrow } ),
+		( "Accessories", new[] { ItemType.Ring, ItemType.Amulet } ),
+		( "Misc", new[] { ItemType.Misc, ItemType.Rune } )
+	};
 
-	List<SellableUniqueEntry> SellableUnique { get; set; } = new();
+	List<GridEntry> TabEntries { get; set; } = new();
+	List<CategoryVm> Categories { get; set; } = new();
+	List<GridEntry> PageEntries { get; set; } = new();
+	int PageCount { get; set; } = 1;
 
-	int PlayerGold => PlayerInventory != null ? PlayerInventory.GetItemCount( ItemId.GoldCoin ) : 0;
+	GridEntry SelectedBuy { get; set; }
+	GridEntry SelectedSell { get; set; }
+
+	bool CanAffordSelected => SelectedBuy != null && PlayerGold >= SelectedBuy.Price * BuyQuantity;
 
 	string GetIconPath( ItemId id )
 	{
@@ -291,45 +359,175 @@
 		return def != null ? def.Name : id.ToString();
 	}
 
-	bool HasEnoughGold( int price )
+	static string Num( float value )
 	{
-		return PlayerGold >= price;
+		return value.ToString( "0.##", System.Globalization.CultureInfo.InvariantCulture );
 	}
 
-	bool CanBuy( BuyListEntry entry )
+	static string CategoryLabelFor( ItemType type )
 	{
-		if ( entry == null || entry.Price <= 0 )
+		foreach ( var def in CategoryDefs )
+		{
+			foreach ( var t in def.Types )
+			{
+				if ( t == type )
+					return def.Label;
+			}
+		}
+		return "Misc";
+	}
+
+	string ContextLine( ItemId id )
+	{
+		var def = ItemDatabase.Get( id );
+		if ( def == null )
+			return "";
+
+		if ( def.Type == ItemType.Potion )
+			return PotionEffectText( id );
+
+		string label = CategoryLabelFor( def.Type );
+		return def.Tier > 0 ? $"{label} · Tier {def.Tier}" : label;
+	}
+
+	string PotionEffectText( ItemId id )
+	{
+		var potions = Potions;
+		float healTick = potions?.HealTickDuration ?? 2f;
+		float buffDur = potions?.BuffDuration ?? 60f;
+		float elixirDur = potions?.ElixirDuration ?? 60f;
+
+		switch ( id )
+		{
+			case ItemId.LesserHealingPotion:
+				return $"Heals {potions?.MinorHealAmount ?? 15} HP over {Num( healTick )}s";
+			case ItemId.HealingPotion:
+				return $"Heals {potions?.HealAmount ?? 30} HP over {Num( healTick )}s";
+			case ItemId.GreaterHealingPotion:
+				return $"Heals {potions?.GreaterHealAmount ?? 60} HP over {Num( healTick )}s";
+			case ItemId.LesserManaPotion:
+				return "Restores 25 mana";
+			case ItemId.ManaPotion:
+				return "Restores 60 mana";
+			case ItemId.GreaterManaPotion:
+				return "Restores 120 mana";
+			case ItemId.AttackPotion:
+				return $"+{Num( potions?.AttackBuffPercent ?? 15f )}% melee damage for {Num( buffDur )}s";
+			case ItemId.DefencePotion:
+				return $"+{Num( potions?.DefenceBuffPercent ?? 15f )}% armor for {Num( buffDur )}s";
+			case ItemId.ArcheryPotion:
+				return $"+{Num( potions?.ArcheryBuffPercent ?? 15f )}% ranged damage for {Num( buffDur )}s";
+			case ItemId.MagicPotion:
+				return $"+{Num( potions?.MagicBuffPercent ?? 15f )}% magic damage for {Num( buffDur )}s";
+			case ItemId.ElixirOfPower:
+				return $"+{Num( potions?.ElixirBuffPercent ?? 20f )}% all damage for {Num( elixirDur )}s";
+			default:
+				return "Potion";
+		}
+	}
+
+	public class StatusLine
+	{
+		public string Text;
+		public string Color;
+	}
+
+	List<StatusLine> UniqueStatusLines( GridEntry entry )
+	{
+		var lines = new List<StatusLine>();
+		var items = PlayerInventory?.GetUniqueItems();
+		if ( items == null || entry.UniqueIndex < 0 || entry.UniqueIndex >= items.Count )
+			return lines;
+
+		var instance = items[entry.UniqueIndex];
+
+		if ( instance.HasCustomName )
+			lines.Add( new StatusLine { Text = instance.GetBaseName(), Color = "#c9bc9c" } );
+
+		if ( instance.IsEnchanted )
+			lines.Add( new StatusLine { Text = $"+{instance.EnchantmentPercent:F1}% {instance.Enchantment}", Color = EnchantmentTypes.GetColor( instance.Enchantment ) } );
+
+		if ( instance.IsSocketable )
+		{
+			for ( int si = 0; si < instance.MaxSockets; si++ )
+			{
+				var rune = instance.GetSocket( si );
+				if ( rune != null && rune.IsEnchanted )
+					lines.Add( new StatusLine { Text = $"+{rune.EnchantmentPercent:F1}% {rune.Enchantment}", Color = EnchantmentTypes.GetColor( rune.Enchantment ) } );
+			}
+		}
+
+		return lines;
+	}
+
+	int OwnedCount( ItemId id )
+	{
+		return PlayerInventory?.GetItemCount( id ) ?? 0;
+	}
+
+	bool SearchDim( GridEntry entry )
+	{
+		if ( string.IsNullOrWhiteSpace( Search ) )
 			return false;
 
-		return HasEnoughGold( entry.Price );
+		return !entry.Name.ToLower().Contains( Search.ToLower() );
 	}
 
-	void SelectBuy( BuyListEntry entry )
+	bool IsSelected( GridEntry entry )
 	{
-		SelectedItem = entry.Item;
-		SelectedPrice = entry.Price;
-		IsBuyMode = true;
-		BuyQuantity = 1;
-		SelectedIsUnique = false;
-		SelectedUniqueIndex = -1;
+		if ( IsBuyMode )
+			return BuySelectedId == entry.Item && !entry.IsUnique;
+
+		if ( entry.IsUnique )
+			return SellSelectedIsUnique && SellSelectedUniqueIndex == entry.UniqueIndex;
+
+		return !SellSelectedIsUnique && SellSelectedId == entry.Item;
 	}
 
-	void SelectSell( SellListEntry entry )
+	void SelectTab( bool buy )
 	{
-		SelectedItem = entry.Item;
-		SelectedPrice = entry.Price;
-		IsBuyMode = false;
-		SelectedIsUnique = false;
-		SelectedUniqueIndex = -1;
+		IsBuyMode = buy;
 	}
 
-	void SelectUnique( int index )
+	void SelectCategory( string label )
 	{
-		SelectedItem = ItemId.None;
-		SelectedPrice = 0;
-		IsBuyMode = false;
-		SelectedIsUnique = true;
-		SelectedUniqueIndex = index;
+		if ( IsBuyMode )
+			BuyCategory = label;
+		else
+			SellCategory = label;
+
+		Page = 0;
+	}
+
+	void StepPage( int delta )
+	{
+		int next = Page + delta;
+		if ( next < 0 ) next = 0;
+		if ( next > PageCount - 1 ) next = PageCount - 1;
+		Page = next;
+	}
+
+	void SelectEntry( GridEntry entry )
+	{
+		if ( IsBuyMode )
+		{
+			BuySelectedId = entry.Item;
+			BuyQuantity = 1;
+			return;
+		}
+
+		if ( entry.IsUnique )
+		{
+			SellSelectedIsUnique = true;
+			SellSelectedUniqueIndex = entry.UniqueIndex;
+			SellSelectedId = ItemId.None;
+		}
+		else
+		{
+			SellSelectedIsUnique = false;
+			SellSelectedUniqueIndex = -1;
+			SellSelectedId = entry.Item;
+		}
 	}
 
 	void SetBuyQuantity( int qty )
@@ -339,37 +537,34 @@
 
 	void DoBuyAction()
 	{
-		if ( ShopStation.ActiveShop == null || SelectedItem == ItemId.None )
+		if ( ShopStation.ActiveShop == null || SelectedBuy == null || !CanAffordSelected )
 			return;
 
 		if ( BuyQuantity <= 1 )
-			ShopStation.ActiveShop.TryBuy( SelectedItem );
+			ShopStation.ActiveShop.TryBuy( SelectedBuy.Item );
 		else
-			ShopStation.ActiveShop.TryBuyMany( SelectedItem, BuyQuantity );
+			ShopStation.ActiveShop.TryBuyMany( SelectedBuy.Item, BuyQuantity );
 	}
 
 	void DoSell()
 	{
-		if ( ShopStation.ActiveShop == null || SelectedItem == ItemId.None )
+		if ( ShopStation.ActiveShop == null || SelectedSell == null || SelectedSell.IsUnique )
 			return;
 
-		ShopStation.ActiveShop.TrySell( SelectedItem );
+		ShopStation.ActiveShop.TrySell( SelectedSell.Item );
 	}
 
 	void DoSellAllRequest()
 	{
-		if ( ShopStation.ActiveShop == null || SelectedItem == ItemId.None )
+		if ( ShopStation.ActiveShop == null || SelectedSell == null || SelectedSell.IsUnique )
 			return;
 
-		ShopStation.ActiveShop.RequestSellAll( SelectedItem );
+		ShopStation.ActiveShop.RequestSellAll( SelectedSell.Item );
 	}
 
 	void ConfirmSellAll()
 	{
-		if ( ShopStation.ActiveShop == null )
-			return;
-
-		ShopStation.ActiveShop.ConfirmSellAll();
+		ShopStation.ActiveShop?.ConfirmSellAll();
 	}
 
 	void CancelSellAll()
@@ -379,168 +574,215 @@
 
 	void DoSellUnique()
 	{
-		if ( ShopStation.ActiveShop == null || SelectedUniqueIndex < 0 )
+		if ( ShopStation.ActiveShop == null || SelectedSell == null || !SelectedSell.IsUnique )
 			return;
 
-		ShopStation.ActiveShop.TrySellUnique( SelectedUniqueIndex );
-		SelectedIsUnique = false;
-		SelectedUniqueIndex = -1;
+		ShopStation.ActiveShop.TrySellUnique( SelectedSell.UniqueIndex );
+		SellSelectedIsUnique = false;
+		SellSelectedUniqueIndex = -1;
 	}
 
 	void CloseShop()
 	{
-		SelectedItem = ItemId.None;
-		SelectedPrice = 0;
-		SelectedIsUnique = false;
-		SelectedUniqueIndex = -1;
+		BuySelectedId = ItemId.None;
+		SellSelectedId = ItemId.None;
+		SellSelectedIsUnique = false;
+		SellSelectedUniqueIndex = -1;
+		BuyCategory = "All";
+		SellCategory = "All";
+		BuyPage = 0;
+		SellPage = 0;
+		Search = "";
+		BuyQuantity = 1;
+		IsBuyMode = true;
 		ShopStation.CloseShop();
 	}
 
-	string GetItemColor( ItemDefinition def )
+	List<GridEntry> BuildTabEntries()
 	{
-		if ( def == null ) return "#888";
-
-		switch ( def.Type )
-		{
-			case ItemType.Tool: return "#8B6914";
-			case ItemType.MeleeWeapon: return "#c0c0c0";
-			case ItemType.RangedWeapon: return "#7a5230";
-			case ItemType.MagicWeapon: return "#7a5aaa";
-			case ItemType.Arrow: return "#9a7a5a";
-			case ItemType.Shield: return "#6a7a8a";
-			case ItemType.HeavyArmor: return "#8a8a9a";
-			case ItemType.MediumArmor: return "#7a8a6a";
-			case ItemType.LightArmor: return "#6a6a8a";
-			case ItemType.Bar: return "#d4a030";
-			case ItemType.Herb: return "#4a8a4a";
-			case ItemType.Potion: return "#d44a4a";
-			case ItemType.Resource: return "#6a8a6a";
-			case ItemType.Ring: return "#d4aa40";
-			case ItemType.Amulet: return "#40aad4";
-			case ItemType.Misc: return "#8a8a6a";
-			default: return "#888";
-		}
-	}
-
-	protected override void OnUpdate()
-	{
-		StateHasChanged();
-	}
-
-	protected override int BuildHash()
-	{
+		var entries = new List<GridEntry>();
 		var shop = ShopStation.ActiveShop;
+		if ( shop == null )
+			return entries;
 
-		if ( shop != null )
+		if ( IsBuyMode )
 		{
-			PlayerInventory = PlayerHelper.GetLocalInventory();
-
-			BuyEntries.Clear();
-			SellEntries.Clear();
-			SellableUnique.Clear();
-
-			// Buy list = what the shop sells to the player
 			foreach ( var (item, price) in shop.GetEffectiveItemsForSale() )
 			{
 				if ( price <= 0 )
 					continue;
 
-				BuyEntries.Add( new BuyListEntry { Item = item, Price = price } );
+				var def = ItemDatabase.Get( item );
+				entries.Add( new GridEntry
+				{
+					Item = item,
+					Name = def != null ? def.Name : item.ToString(),
+					Price = price,
+					Owned = OwnedCount( item ),
+					Type = def != null ? def.Type : ItemType.Misc
+				} );
 			}
 
-			// Sell list = items in player's stackable inventory that have a sell price.
-			// Pulls prices from ShopPricing.GetSellPrice directly — no dependency on
-			// ItemDefinition.BaseSellPrice or shop config.
-			if ( PlayerInventory != null )
-			{
-				var seen = new HashSet<ItemId>();
-				foreach ( var kv in PlayerInventory.GetAllItems() )
-				{
-					if ( kv.Value <= 0 )
-						continue;
-					if ( seen.Contains( kv.Key ) )
-						continue;
-
-					int price = ShopPricing.GetSellPrice( kv.Key );
-					if ( price <= 0 )
-						continue;
-
-					SellEntries.Add( new SellListEntry { Item = kv.Key, Price = price } );
-					seen.Add( kv.Key );
-				}
-			}
-
-			// Sellable unique items: any non-enchanted unique with a sell price
-			if ( PlayerInventory != null )
-			{
-				var uniqueItems = PlayerInventory.GetUniqueItems();
-				for ( int i = 0; i < uniqueItems.Count; i++ )
-				{
-					var instance = uniqueItems[i];
-					if ( instance.IsEnchanted )
-						continue;
-					if ( instance.IsSocketable && instance.SocketsUsed > 0 )
-						continue;
-
-					int price = ShopPricing.GetSellPrice( instance.ItemId );
-					if ( price <= 0 )
-						continue;
-
-					SellableUnique.Add( new SellableUniqueEntry { Instance = instance, OriginalIndex = i } );
-				}
-			}
-
-			if ( SelectedItem != ItemId.None && !SelectedIsUnique )
-			{
-				if ( IsBuyMode )
-				{
-					SelectedPrice = shop.GetSellPriceForPlayer( SelectedItem );
-					if ( SelectedPrice <= 0 )
-						SelectedItem = ItemId.None;
-				}
-				else
-				{
-					SelectedPrice = ShopPricing.GetSellPrice( SelectedItem );
-					if ( SelectedPrice <= 0 )
-						SelectedItem = ItemId.None;
-				}
-			}
+			return entries;
 		}
-		else
+
+		if ( PlayerInventory == null )
+			return entries;
+
+		var seen = new HashSet<ItemId>();
+		foreach ( var kv in PlayerInventory.GetAllItems() )
 		{
-			BuyEntries.Clear();
-			SellEntries.Clear();
-			SellableUnique.Clear();
-			SelectedItem = ItemId.None;
-			SelectedPrice = 0;
-			SelectedIsUnique = false;
-			SelectedUniqueIndex = -1;
+			if ( kv.Value <= 0 || seen.Contains( kv.Key ) )
+				continue;
+
+			int price = ShopPricing.GetSellPrice( kv.Key );
+			if ( price <= 0 )
+				continue;
+
+			var def = ItemDatabase.Get( kv.Key );
+			entries.Add( new GridEntry
+			{
+				Item = kv.Key,
+				Name = def != null ? def.Name : kv.Key.ToString(),
+				Price = price,
+				Owned = kv.Value,
+				Type = def != null ? def.Type : ItemType.Misc
+			} );
+			seen.Add( kv.Key );
 		}
 
-		int invHash = 0;
-		if ( PlayerInventory != null )
+		var uniqueItems = PlayerInventory.GetUniqueItems();
+		for ( int i = 0; i < uniqueItems.Count; i++ )
 		{
-			invHash = PlayerGold;
-			if ( SelectedItem != ItemId.None )
-				invHash += PlayerInventory.GetItemCount( SelectedItem ) * 1000;
-			invHash += PlayerInventory.GetUniqueItemCount() * 10000;
+			var instance = uniqueItems[i];
+			int price = ShopPricing.GetSellPrice( instance.ItemId );
+			var def = ItemDatabase.Get( instance.ItemId );
+
+			string reason = null;
+			if ( instance.IsEnchanted )
+				reason = "Enchanted — the shop won't buy this";
+			else if ( instance.IsSocketable && instance.SocketsUsed > 0 )
+				reason = "Socketed — the shop won't buy this";
+			else if ( price <= 0 )
+				reason = "The shop won't buy this";
+
+			entries.Add( new GridEntry
+			{
+				Item = instance.ItemId,
+				Name = instance.GetDisplayName(),
+				Price = price,
+				Owned = 1,
+				IsUnique = true,
+				UniqueIndex = i,
+				Unsellable = reason != null,
+				UnsellableReason = reason,
+				HasCustomName = instance.HasCustomName,
+				Type = def != null ? def.Type : ItemType.Misc
+			} );
 		}
 
-		return (
-			IsOpen,
-			ShopName,
-			BuyEntries.Count,
-			SellEntries.Count,
-			SellableUnique.Count,
-			SelectedItem,
-			SelectedPrice,
-			IsBuyMode,
-			BuyQuantity,
-			SelectedIsUnique,
-			SelectedUniqueIndex,
-			invHash,
-			ShopStation.PendingSellAllItem,
-			ShopStation.PendingSellAllAmount
-		).GetHashCode();
+		return entries;
+	}
+
+	void RebuildLists()
+	{
+		TabEntries = BuildTabEntries();
+
+		Categories = new List<CategoryVm> { new CategoryVm { Label = "All", Count = TabEntries.Count } };
+		foreach ( var def in CategoryDefs )
+		{
+			int count = 0;
+			foreach ( var entry in TabEntries )
+			{
+				if ( CategoryLabelFor( entry.Type ) == def.Label )
+					count++;
+			}
+			if ( count > 0 )
+				Categories.Add( new CategoryVm { Label = def.Label, Count = count } );
+		}
+
+		bool categoryExists = CurrentCategory == "All";
+		foreach ( var cat in Categories )
+		{
+			if ( cat.Label == CurrentCategory )
+				categoryExists = true;
+		}
+		if ( !categoryExists )
+			SelectCategory( "All" );
+
+		var filtered = new List<GridEntry>();
+		foreach ( var entry in TabEntries )
+		{
+			if ( CurrentCategory != "All" && CategoryLabelFor( entry.Type ) != CurrentCategory )
+				continue;
+			filtered.Add( entry );
+		}
+
+		PageCount = Math.Max( 1, ( filtered.Count + PageSize - 1 ) / PageSize );
+		if ( Page > PageCount - 1 )
+			Page = PageCount - 1;
+		if ( Page < 0 )
+			Page = 0;
+
+		PageEntries = new List<GridEntry>();
+		int start = Page * PageSize;
+		for ( int i = 0; i < PageSize; i++ )
+		{
+			int idx = start + i;
+			PageEntries.Add( idx < filtered.Count ? filtered[idx] : null );
+		}
+
+		SelectedBuy = null;
+		SelectedSell = null;
+
+		foreach ( var entry in TabEntries )
+		{
+			if ( IsBuyMode && !entry.IsUnique && entry.Item == BuySelectedId )
+				SelectedBuy = entry;
+
+			if ( !IsBuyMode )
+			{
+				if ( SellSelectedIsUnique && entry.IsUnique && entry.UniqueIndex == SellSelectedUniqueIndex )
+					SelectedSell = entry;
+				else if ( !SellSelectedIsUnique && !entry.IsUnique && entry.Item == SellSelectedId )
+					SelectedSell = entry;
+			}
+		}
+
+		if ( IsBuyMode && SelectedBuy == null )
+			BuySelectedId = ItemId.None;
+
+		if ( !IsBuyMode && SelectedSell == null )
+		{
+			SellSelectedId = ItemId.None;
+			SellSelectedIsUnique = false;
+			SellSelectedUniqueIndex = -1;
+		}
+	}
+
+	protected override int BuildHash()
+	{
+		if ( !IsOpen )
+		{
+			TabEntries.Clear();
+			PageEntries.Clear();
+			SelectedBuy = null;
+			SelectedSell = null;
+			return 0;
+		}
+
+		PlayerInventory = PlayerHelper.GetLocalInventory();
+		RebuildLists();
+
+		int entriesHash = 0;
+		foreach ( var entry in TabEntries )
+			entriesHash = HashCode.Combine( entriesHash, entry.Item, entry.Owned, entry.Price, entry.Unsellable );
+
+		return HashCode.Combine(
+			HashCode.Combine( IsOpen, ShopName, IsBuyMode, CurrentCategory, Page, Search ?? "" ),
+			HashCode.Combine( BuySelectedId, SellSelectedId, SellSelectedIsUnique, SellSelectedUniqueIndex, BuyQuantity ),
+			HashCode.Combine( PlayerGold, entriesHash ),
+			HashCode.Combine( ShopStation.PendingSellAllItem, ShopStation.PendingSellAllAmount )
+		);
 	}
 }

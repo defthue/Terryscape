@@ -42,13 +42,13 @@
       "Item": "ColdveinHeavyHelm",
       "MinAmount": 1,
       "MaxAmount": 1,
-      "ChancePercent": 2
+      "ChancePercent": 1
     },
     {
       "Item": "ColdveinHeavyChestplate",
       "MinAmount": 1,
       "MaxAmount": 1,
-      "ChancePercent": 2
+      "ChancePercent": 1
     },
     {
       "Item": "ColdveinOre",
@@ -78,13 +78,13 @@
       "Item": "SolariumHeavyChestplate",
       "MinAmount": 1,
       "MaxAmount": 1,
-      "ChancePercent": 7.692308
+      "ChancePercent": 1
     },
     {
       "Item": "SolariumShield",
       "MinAmount": 1,
       "MaxAmount": 1,
-      "ChancePercent": 13.846154
+      "ChancePercent": 1
     }
   ],
   "__references": [],

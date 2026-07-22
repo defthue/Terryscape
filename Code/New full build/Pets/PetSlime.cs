@@ -1,5 +1,6 @@
 using Sandbox;
 using System;
+using System.Collections.Generic;
 
 public sealed class PetSlime : Component
 {
@@ -112,7 +113,7 @@ public sealed class PetSlime : Component
 		bool wasLocalMounted = _localMounted;
 
 		var chair = GetChair();
-		bool occupied = chair != null && chair.IsOccupied;
+		bool occupied = chair is SlimeChair slimeChair ? slimeChair.HasRider : ( chair != null && chair.IsOccupied );
 		var def = PetDatabase.Get( Kind );
 
 		if ( occupied )
@@ -213,12 +214,20 @@ public sealed class PetSlime : Component
 		return _chair;
 	}
 
-	public bool MountAvailableFor( ulong steamId )
+	public bool MountAvailableFor( ulong steamId, PlayerController player )
 	{
 		if ( OwnerSteamId != steamId )
 			return false;
+
 		var chair = GetChair();
-		return chair != null && !chair.IsOccupied;
+		if ( chair == null )
+			return false;
+
+		bool taken = chair is SlimeChair sc ? sc.HasRider : chair.IsOccupied;
+		if ( taken )
+			return false;
+
+		return SlimeChair.RiderCanMount( player );
 	}
 
 	public Vector3 MountAimCenter()
@@ -259,9 +268,13 @@ public sealed class PetSlime : Component
 		if ( cam == null )
 			return;
 
+		var pc = owner.Components.Get<PlayerController>();
+		if ( pc == null )
+			return;
+
 		var conn = owner.Network.Owner;
 		ulong steamId = conn != null ? (ulong)conn.SteamId : 0ul;
-		if ( !MountAvailableFor( steamId ) )
+		if ( !MountAvailableFor( steamId, pc ) )
 			return;
 
 		if ( !MountProximityTest( this, owner.WorldPosition, cam.WorldRotation.Forward ) )
@@ -270,11 +283,13 @@ public sealed class PetSlime : Component
 		if ( InteractPriority.StationWantsUse() )
 			return;
 
-		var pc = owner.Components.Get<PlayerController>();
-		if ( pc == null )
-			return;
-
 		var chair = GetChair();
+		if ( chair is SlimeChair slimeChair )
+		{
+			slimeChair.TryMountLocal( pc );
+			return;
+		}
+
 		if ( chair == null || !chair.CanEnter( pc ) )
 			return;
 
@@ -290,8 +305,15 @@ public sealed class PetSlime : Component
 
 	bool OccupantIsLocal( BaseChair chair )
 	{
-		var occ = chair.GetOccupant();
+		var occ = ResolveRiderController( chair );
 		return occ.IsValid() && !occ.IsProxy;
+	}
+
+	PlayerController ResolveRiderController( BaseChair chair )
+	{
+		if ( chair is SlimeChair sc )
+			return sc.ResolveRider();
+		return chair?.GetOccupant();
 	}
 
 	GameObject ResolveOwner()
@@ -347,7 +369,7 @@ public sealed class PetSlime : Component
 			{
 				var ang = cam.WorldRotation.Angles();
 				_mountYaw = ang.yaw;
-				var occ = GetChair()?.GetOccupant();
+				var occ = ResolveRiderController( GetChair() );
 				if ( occ.IsValid() )
 					occ.EyeAngles = new Angles( ang.pitch, ang.yaw, occ.EyeAngles.roll );
 			}
@@ -445,6 +467,43 @@ public sealed class PetSlime : Component
 		_wasGroundedMounted = nowGrounded;
 
 		UpdateSeat();
+
+		if ( MountedInWater() )
+		{
+			var slimeChair = GetChair() as SlimeChair;
+			slimeChair?.RequestDismount();
+		}
+	}
+
+	List<Collider> _waterColliders;
+	float _waterListAge;
+
+	bool MountedInWater()
+	{
+		_waterListAge -= Time.Delta;
+		if ( _waterColliders == null || _waterListAge <= 0f )
+		{
+			_waterColliders = new List<Collider>();
+			foreach ( var col in Scene.GetAllComponents<Collider>() )
+			{
+				if ( col.IsValid() && col.GameObject.Tags.Has( "water" ) )
+					_waterColliders.Add( col );
+			}
+			_waterListAge = 5f;
+		}
+
+		var probe = WorldPosition + Vector3.Up * ( _modelHalf * _curScale );
+
+		foreach ( var col in _waterColliders )
+		{
+			if ( col == null || !col.IsValid() )
+				continue;
+
+			if ( Vector3.DistanceBetween( col.FindClosestPoint( probe ), probe ) < 1f )
+				return true;
+		}
+
+		return false;
 	}
 
 	void UpdateSeat()

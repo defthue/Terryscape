@@ -7,93 +7,122 @@
 <root>
 	@if ( IsOpen )
 	{
-		<div class="crafting-overlay">
-			<div class="crafting-popup" style="width: 720px; height: 520px;">
-				<div class="crafting-header">
-					<div class="crafting-title">Pets</div>
-					<div class="crafting-close" onclick="@(() => Close())">✕</div>
-				</div>
+		<div class="menag-backdrop" onclick="@(() => Close())"></div>
+		<div class="menag-popup">
+			<div class="menag-header">
+				<div class="menag-title">Menagerie</div>
+				<div class="menag-close" onclick="@(() => Close())">✕</div>
+			</div>
 
-				@if ( ShowColorPicker )
-				{
-					<div class="pet-body">
-						<div class="color-picker-section">
-							<div class="pet-section-label">Slime Color</div>
-							<div class="color-picker-row">
-								<div class="color-wheel-wrap" @ref="WheelPanel" onclick="@(() => OnWheelClick())">
-									<img class="color-wheel-img" src="/UI/PetColorWheel.vtex" />
-									<div class="color-wheel-cursor" style="left: @(CursorXPct.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%; top: @(CursorYPct.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%;"></div>
-								</div>
-								<div class="color-value-bar" @ref="ValuePanel" onclick="@(() => OnValueClick())">
-									<div class="color-value-marker" style="top: @(((1f - Val) * 100f).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%;"></div>
-									@for ( int i = 0; i < 24; i++ )
-									{
-										<div class="color-value-band" style="background-color: @(BandColor( i ));"></div>
-									}
-								</div>
-							</div>
-							<div class="color-preview-row">
-								<div class="color-preview" style="background-color: @(ToHex( ComposedColor ));"></div>
-								<div class="color-buttons">
-									<div class="color-btn" onclick="@(() => ApplyColor())">Apply</div>
-									<div class="color-btn" onclick="@(() => ApplyRandom())">Random</div>
-									<div class="color-btn" onclick="@(() => ShowColorPicker = false)">Back</div>
-								</div>
-							</div>
+			@if ( ShowColorPicker )
+			{
+				<div class="menag-picker">
+					<div class="menag-picker-label">Slime Color</div>
+					<div class="color-picker-row">
+						<div class="color-wheel-wrap" @ref="WheelPanel" onclick="@(() => OnWheelClick())">
+							<img class="color-wheel-img" src="/UI/PetColorWheel.vtex" />
+							<div class="color-wheel-cursor" style="left: @(CursorXPct.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%; top: @(CursorYPct.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%;"></div>
+						</div>
+						<div class="color-value-bar" @ref="ValuePanel" onclick="@(() => OnValueClick())">
+							<div class="color-value-marker" style="top: @(((1f - Val) * 100f).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%;"></div>
+							@for ( int i = 0; i < 24; i++ )
+							{
+								<div class="color-value-band" style="background-color: @(BandColor( i ));"></div>
+							}
 						</div>
 					</div>
-				}
-				else
-				{
-					<div class="pet-body">
-						<div class="pet-slot-section">
-							<div class="pet-section-label">Active Pet</div>
-							@if ( ActivePet != PetKind.None )
-							{
-								var adef = PetDatabase.Get( ActivePet );
-								<div class="pet-slot filled" onclick="@(() => Unsummon())">
-									<div class="pet-disc" style="background-color: @adef.IconColor;"></div>
-									<div class="pet-slot-name">@adef.Name</div>
-									<div class="pet-slot-hint">Click to dismiss</div>
+					<div class="color-preview-row">
+						<div class="color-preview" style="background-color: @(ToHex( ComposedColor ));"></div>
+						<div class="color-buttons">
+							<div class="color-btn" onclick="@(() => ApplyColor())">Apply</div>
+							<div class="color-btn" onclick="@(() => ApplyRandom())">Random</div>
+							<div class="color-btn" onclick="@(() => ShowColorPicker = false)">Back</div>
+						</div>
+					</div>
+				</div>
+			}
+			else
+			{
+				<div class="menag-book">
+					<div class="menag-page left">
+						@if ( SelectedPet != PetKind.None )
+						{
+							var def = PetDatabase.Get( SelectedPet );
+							var tint = ResolvedPetColor();
+							string bodyHex = ToHex( tint );
+							string domeHex = ToHex( Color.Lerp( tint, Color.White, 0.35f ) );
+
+							<div class="menag-name-row">
+								<div class="menag-pet-name">@def.Name</div>
+							</div>
+
+							<div class="menag-portrait">
+								<div class="menag-blob">
+									<div class="menag-blob-body" style="background-color: @bodyHex;"></div>
+									<div class="menag-blob-dome" style="background-color: @domeHex;"></div>
+									<div class="menag-blob-shine"></div>
+									<div class="menag-blob-eye l"></div>
+									<div class="menag-blob-eye r"></div>
 								</div>
+							</div>
+
+							<div class="menag-lore">"@def.Lore"</div>
+
+							<div class="menag-detail"><div class="menag-dl">Trait</div><div class="menag-dv">Rideable mount</div></div>
+							<div class="menag-detail"><div class="menag-dl">Found</div><div class="menag-dv">@def.FoundText</div></div>
+							<div class="menag-detail"><div class="menag-dl">Riding</div><div class="menag-dv">Press E to mount</div></div>
+
+							@if ( PetColorState.IsUnlocked() )
+							{
+								<div class="menag-detail"><div class="menag-dl">Color</div>
+									<div class="menag-color-cell">
+										<div class="menag-swatch" style="background-color: @bodyHex;"></div>
+										<div class="menag-color-btn" onclick="@(() => ShowColorPicker = true)">Change color</div>
+									</div>
+								</div>
+							}
+
+							<div class="menag-spacer"></div>
+
+							@if ( ActivePet == SelectedPet )
+							{
+								<div class="menag-action dismiss" onclick="@(() => Unsummon())">Dismiss</div>
 							}
 							else
 							{
-								<div class="pet-slot empty">
-									<div class="pet-slot-name">No pet active</div>
-									<div class="pet-slot-hint">Pick one from your library</div>
-								</div>
+								<div class="menag-action summon" onclick="@(() => Summon( SelectedPet ))">Summon</div>
 							}
-
-							<div class="pet-ride-hint">Walk up to your pet and press E to ride it.</div>
-
-							@if ( ActivePet == PetKind.Slime && PetColorState.IsUnlocked() )
-							{
-								<div class="pet-color-btn" onclick="@(() => ShowColorPicker = true)">Change Color</div>
-							}
-						</div>
-
-						<div class="pet-library-section">
-							<div class="pet-section-label">Library</div>
-							<div class="pet-grid">
-								@foreach ( var kind in OwnedPets )
-								{
-									var def = PetDatabase.Get( kind );
-									bool active = ActivePet == kind;
-									<div class="pet-card @(active ? "active" : "")" onclick="@(() => Summon( kind ))">
-										<div class="pet-disc" style="background-color: @def.IconColor;"></div>
-										<div class="pet-card-name">@def.Name</div>
-										@if ( active )
-										{
-											<div class="pet-card-badge">Active</div>
-										}
-									</div>
-								}
-							</div>
-						</div>
+						}
 					</div>
-				}
-			</div>
+
+					<div class="menag-gutter"></div>
+
+					<div class="menag-page right">
+						<div class="menag-list-label">COMPANIONS</div>
+
+						@foreach ( var kind in OwnedPets )
+						{
+							var kindLocal = kind;
+							var rdef = PetDatabase.Get( kindLocal );
+							bool isActive = ActivePet == kindLocal;
+							bool isSelected = SelectedPet == kindLocal;
+							string glyphHex = kindLocal == PetKind.Slime ? ToHex( ResolvedPetColor() ) : rdef.IconColor;
+
+							<div class="menag-row @(isSelected ? "selected" : "")" onclick="@(() => SelectPet( kindLocal ))">
+								<div class="menag-row-blob" style="background-color: @glyphHex;"></div>
+								<div class="menag-row-info">
+									<div class="menag-row-name">@rdef.Name</div>
+									<div class="menag-row-status @(isActive ? "active" : "")">@(isActive ? "Active companion" : "Resting")</div>
+								</div>
+							</div>
+						}
+
+						<div class="menag-spacer"></div>
+
+						<div class="menag-footer">@OwnedPets.Count of @PetDatabase.AllPets.Length companions discovered</div>
+					</div>
+				</div>
+			}
 		</div>
 	}
 </root>
@@ -105,6 +134,8 @@
 	PetKind ActivePet => PetManager.Local != null ? PetManager.Local.ActiveSlot : PetKind.None;
 
 	List<PetKind> OwnedPets => PetManager.Local != null ? PetManager.Local.Library : new List<PetKind>();
+
+	PetKind SelectedPet { get; set; } = PetKind.None;
 
 	bool ShowColorPicker { get; set; }
 	float Hue { get; set; } = 120f;
@@ -118,6 +149,24 @@
 
 	float CursorXPct => 50f + MathF.Cos( Hue * MathF.PI / 180f ) * Sat * 50f;
 	float CursorYPct => 50f + MathF.Sin( Hue * MathF.PI / 180f ) * Sat * 50f;
+
+	Color ResolvedPetColor()
+	{
+		var overrideColor = PetColorState.GetColor();
+		if ( overrideColor != null )
+			return overrideColor.Value;
+
+		var slime = PetManager.Local?.ActiveSlime?.Components.Get<PetSlime>();
+		if ( slime != null )
+			return PetDatabase.SlimeColorByIndex( slime.ColorIndex, 1f );
+
+		return new Color( 0.22f, 0.85f, 0.29f );
+	}
+
+	void SelectPet( PetKind kind )
+	{
+		SelectedPet = kind;
+	}
 
 	void OnWheelClick()
 	{
@@ -214,6 +263,14 @@
 
 	protected override int BuildHash()
 	{
-		return ( PetsStation.IsOpen, ActivePet, OwnedPets.Count, ShowColorPicker, (int)( Hue * 10f ), (int)( Sat * 1000f ), (int)( Val * 1000f ), PetColorState.IsUnlocked() ).GetHashCode();
+		var owned = OwnedPets;
+		if ( SelectedPet == PetKind.None || !owned.Contains( SelectedPet ) )
+			SelectedPet = ActivePet != PetKind.None ? ActivePet : ( owned.Count > 0 ? owned[0] : PetKind.None );
+
+		return HashCode.Combine(
+			HashCode.Combine( PetsStation.IsOpen, SelectedPet, ActivePet, owned.Count ),
+			HashCode.Combine( PetColorState.IsUnlocked(), ToHex( ResolvedPetColor() ) ),
+			HashCode.Combine( ShowColorPicker, (int)( Hue * 10f ), (int)( Sat * 1000f ), (int)( Val * 1000f ) )
+		);
 	}
 }

@@ -15,6 +15,8 @@ public sealed class PoisonEffect : Component
 	[Property] public float IndicatorParticleSize { get; set; } = 25f;
 	[Property] public Color IndicatorColor { get; set; } = new Color( 0.5f, 0.95f, 0.2f, 0.85f );
 
+	public bool VisualOnly { get; set; }
+
 	GameObject _source;
 	float _remaining;
 	float _tickTimer;
@@ -37,6 +39,7 @@ public sealed class PoisonEffect : Component
 		var existing = target.Components.Get<PoisonEffect>();
 		if ( existing != null )
 		{
+			existing.VisualOnly = false;
 			existing.DamagePerTick = damagePerTick;
 			existing.TickInterval = tickInterval;
 			existing.Duration = duration;
@@ -51,6 +54,25 @@ public sealed class PoisonEffect : Component
 		effect.Duration = duration;
 		effect._remaining = duration;
 		effect._source = source;
+	}
+
+	public static void ApplyVisual( GameObject target, float duration )
+	{
+		if ( target == null || !target.IsValid() )
+			return;
+
+		var existing = target.Components.Get<PoisonEffect>();
+		if ( existing != null )
+		{
+			if ( existing._remaining < duration )
+				existing._remaining = duration;
+			return;
+		}
+
+		var effect = target.Components.Create<PoisonEffect>();
+		effect.VisualOnly = true;
+		effect.Duration = duration;
+		effect._remaining = duration;
 	}
 
 	protected override void OnStart()
@@ -74,7 +96,7 @@ public sealed class PoisonEffect : Component
 
 		UpdateIndicator();
 
-		if ( _tickTimer <= 0f )
+		if ( !VisualOnly && _tickTimer <= 0f )
 		{
 			_tickTimer = TickInterval;
 			ApplyTick();
@@ -134,7 +156,7 @@ public sealed class PoisonEffect : Component
 			int dmg = (int)DamagePerTick;
 			if ( dmg < 1 ) dmg = 1;
 			monster.TakeDamage( dmg, _source );
-			DamagePopupBroadcaster.BroadcastPoison( monster.WorldPosition + Vector3.Up * 60f, dmg );
+			DamagePopupBroadcaster.BroadcastPoison( monster.WorldPosition + Vector3.Up * 60f, dmg, DamagePopupBroadcaster.SteamIdOf( _source ), 0 );
 			return;
 		}
 
@@ -144,7 +166,7 @@ public sealed class PoisonEffect : Component
 			int dmg = (int)DamagePerTick;
 			if ( dmg < 1 ) dmg = 1;
 			boss.TakeDamage( dmg, _source );
-			DamagePopupBroadcaster.BroadcastPoison( boss.WorldPosition + Vector3.Up * 60f, dmg );
+			DamagePopupBroadcaster.BroadcastPoison( boss.WorldPosition + Vector3.Up * 60f, dmg, DamagePopupBroadcaster.SteamIdOf( _source ), 0 );
 			return;
 		}
 
@@ -154,7 +176,7 @@ public sealed class PoisonEffect : Component
 			int dmg = (int)DamagePerTick;
 			if ( dmg < 1 ) dmg = 1;
 			slimeKing.TakeDamage( dmg, _source );
-			DamagePopupBroadcaster.BroadcastPoison( slimeKing.WorldPosition + Vector3.Up * 60f, dmg );
+			DamagePopupBroadcaster.BroadcastPoison( slimeKing.WorldPosition + Vector3.Up * 60f, dmg, DamagePopupBroadcaster.SteamIdOf( _source ), 0 );
 		}
 	}
 }

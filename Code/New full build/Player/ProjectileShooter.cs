@@ -186,7 +186,7 @@ public sealed class ProjectileShooter : Component
 		float piercingBonus = inventory.GetEnchantmentBonus( EnchantmentType.Piercing );
 		float enchantMult = 1f + piercingBonus / 100f;
 
-		float totalPower = ( bowDef.WeaponPower + arrowPower ) * skillBonus * buffMult * enchantMult;
+		float totalPower = ( bowDef.WeaponPower * 1.1f + arrowPower ) * skillBonus * buffMult * enchantMult;
 		int damage = (int)totalPower;
 		if ( damage < 1 ) damage = 1;
 

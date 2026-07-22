@@ -360,15 +360,15 @@ public static class RecipeDatabase
 			ItemId.WorldrootStaff, 1, SkillType.Crafting, 50, SkillType.Crafting, 220 ) );
 
 		Add( Define( "lesser_healing_potion", "Lesser Healing Potion", StationType.AlchemyTable,
-   			new[] { new RecipeIngredient( ItemId.SageLeaf, 1 ), new RecipeIngredient( ItemId.GlassVial, 1 ) },
-    		ItemId.LesserHealingPotion, 1, SkillType.Crafting, 1, SkillType.Crafting, 10 ) );
+			new[] { new RecipeIngredient( ItemId.SageLeaf, 1 ), new RecipeIngredient( ItemId.GlassVial, 1 ) },
+			ItemId.LesserHealingPotion, 1, SkillType.Crafting, 1, SkillType.Crafting, 10 ) );
 
 		Add( Define( "healing_potion", "Healing Potion", StationType.AlchemyTable,
-			new[] { new RecipeIngredient( ItemId.Thornroot, 1 ), new RecipeIngredient( ItemId.BlueMoss, 1 ), new RecipeIngredient( ItemId.GlassVial, 1 ) },
+			new[] { new RecipeIngredient( ItemId.SageLeaf, 1 ), new RecipeIngredient( ItemId.Goldpetal, 1 ), new RecipeIngredient( ItemId.GlassVial, 1 ) },
 			ItemId.HealingPotion, 1, SkillType.Crafting, 15, SkillType.Crafting, 30 ) );
 
 		Add( Define( "greater_healing_potion", "Greater Healing Potion", StationType.AlchemyTable,
-			new[] { new RecipeIngredient( ItemId.VoidcapMushroom, 1 ), new RecipeIngredient( ItemId.Liferoot, 1 ), new RecipeIngredient( ItemId.CrystalVial, 1 ) },
+			new[] { new RecipeIngredient( ItemId.SageLeaf, 1 ), new RecipeIngredient( ItemId.VoidcapMushroom, 1 ), new RecipeIngredient( ItemId.Liferoot, 1 ), new RecipeIngredient( ItemId.CrystalVial, 1 ) },
 			ItemId.GreaterHealingPotion, 1, SkillType.Crafting, 35, SkillType.Crafting, 100 ) );
 
 		Add( Define( "lesser_mana_potion", "Lesser Mana Potion", StationType.AlchemyTable,
@@ -376,31 +376,31 @@ public static class RecipeDatabase
 			ItemId.LesserManaPotion, 1, SkillType.Crafting, 5, SkillType.Crafting, 15 ) );
 
 		Add( Define( "mana_potion", "Mana Potion", StationType.AlchemyTable,
-			new[] { new RecipeIngredient( ItemId.BlueMoss, 1 ), new RecipeIngredient( ItemId.Whisperfern, 1 ), new RecipeIngredient( ItemId.GlassVial, 1 ) },
+			new[] { new RecipeIngredient( ItemId.BlueMoss, 1 ), new RecipeIngredient( ItemId.CaveLichen, 1 ), new RecipeIngredient( ItemId.GlassVial, 1 ) },
 			ItemId.ManaPotion, 1, SkillType.Crafting, 20, SkillType.Crafting, 50 ) );
 
 		Add( Define( "greater_mana_potion", "Greater Mana Potion", StationType.AlchemyTable,
-			new[] { new RecipeIngredient( ItemId.Moonbloom, 1 ), new RecipeIngredient( ItemId.Whisperfern, 1 ), new RecipeIngredient( ItemId.BlueMoss, 1 ), new RecipeIngredient( ItemId.CrystalVial, 1 ) },
+			new[] { new RecipeIngredient( ItemId.BlueMoss, 1 ), new RecipeIngredient( ItemId.CaveLichen, 1 ), new RecipeIngredient( ItemId.NightshadeStem, 1 ), new RecipeIngredient( ItemId.CrystalVial, 1 ) },
 			ItemId.GreaterManaPotion, 1, SkillType.Crafting, 35, SkillType.Crafting, 100 ) );
 
 		Add( Define( "attack_potion", "Attack Potion", StationType.AlchemyTable,
-			new[] { new RecipeIngredient( ItemId.Spiralvine, 1 ), new RecipeIngredient( ItemId.NightshadeStem, 1 ), new RecipeIngredient( ItemId.GlassVial, 1 ) },
+			new[] { new RecipeIngredient( ItemId.Goldpetal, 1 ), new RecipeIngredient( ItemId.Thornroot, 1 ), new RecipeIngredient( ItemId.Spiralvine, 1 ), new RecipeIngredient( ItemId.GlassVial, 1 ) },
 			ItemId.AttackPotion, 1, SkillType.Crafting, 20, SkillType.Crafting, 50 ) );
 
 		Add( Define( "defence_potion", "Defence Potion", StationType.AlchemyTable,
-			new[] { new RecipeIngredient( ItemId.Goldpetal, 1 ), new RecipeIngredient( ItemId.CaveLichen, 1 ), new RecipeIngredient( ItemId.GlassVial, 1 ) },
+			new[] { new RecipeIngredient( ItemId.WildBerries, 1 ), new RecipeIngredient( ItemId.Goldpetal, 1 ), new RecipeIngredient( ItemId.Thornroot, 1 ), new RecipeIngredient( ItemId.GlassVial, 1 ) },
 			ItemId.DefencePotion, 1, SkillType.Crafting, 20, SkillType.Crafting, 50 ) );
 
 		Add( Define( "archery_potion", "Archery Potion", StationType.AlchemyTable,
-			new[] { new RecipeIngredient( ItemId.Moonbloom, 1 ), new RecipeIngredient( ItemId.Whisperfern, 1 ), new RecipeIngredient( ItemId.GlassVial, 1 ) },
+			new[] { new RecipeIngredient( ItemId.Thornroot, 1 ), new RecipeIngredient( ItemId.Moonbloom, 1 ), new RecipeIngredient( ItemId.Starbloom, 1 ), new RecipeIngredient( ItemId.GlassVial, 1 ) },
 			ItemId.ArcheryPotion, 1, SkillType.Crafting, 25, SkillType.Crafting, 65 ) );
 
 		Add( Define( "magic_potion", "Magic Potion", StationType.AlchemyTable,
-			new[] { new RecipeIngredient( ItemId.Whisperfern, 1 ), new RecipeIngredient( ItemId.ArcaneDust, 1 ), new RecipeIngredient( ItemId.GlassVial, 1 ) },
+			new[] { new RecipeIngredient( ItemId.Moonbloom, 1 ), new RecipeIngredient( ItemId.Whisperfern, 1 ), new RecipeIngredient( ItemId.ArcaneDust, 1 ), new RecipeIngredient( ItemId.GlassVial, 1 ) },
 			ItemId.MagicPotion, 1, SkillType.Crafting, 25, SkillType.Crafting, 65 ) );
 
 		Add( Define( "elixir_of_power", "Elixir of Power", StationType.AlchemyTable,
-			new[] { new RecipeIngredient( ItemId.Starbloom, 1 ), new RecipeIngredient( ItemId.Liferoot, 1 ), new RecipeIngredient( ItemId.NightshadeStem, 1 ), new RecipeIngredient( ItemId.CrystalVial, 1 ) },
+			new[] { new RecipeIngredient( ItemId.Liferoot, 1 ), new RecipeIngredient( ItemId.Spiralvine, 1 ), new RecipeIngredient( ItemId.Starbloom, 1 ), new RecipeIngredient( ItemId.Whisperfern, 1 ), new RecipeIngredient( ItemId.NightshadeStem, 1 ), new RecipeIngredient( ItemId.CrystalVial, 1 ) },
 			ItemId.ElixirOfPower, 1, SkillType.Crafting, 45, SkillType.Crafting, 200 ) );
 	}
 

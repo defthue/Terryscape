@@ -22,7 +22,7 @@
     },
     {
       "Item": "IronbarkLog",
-      "MinAmount": 9,
+      "MinAmount": 4,
       "MaxAmount": 10,
       "ChancePercent": 18.666666
     },
@@ -42,13 +42,13 @@
       "Item": "ColdveinHeavyHelm",
       "MinAmount": 1,
       "MaxAmount": 1,
-      "ChancePercent": 2
+      "ChancePercent": 1
     },
     {
       "Item": "ColdveinHeavyChestplate",
       "MinAmount": 1,
       "MaxAmount": 1,
-      "ChancePercent": 2
+      "ChancePercent": 1
     },
     {
       "Item": "ColdveinOre",

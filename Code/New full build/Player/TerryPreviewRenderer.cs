@@ -1,4 +1,5 @@
 using Sandbox;
+using System;
 
 public sealed class TerryPreviewRenderer : Component
 {
@@ -30,6 +31,7 @@ public sealed class TerryPreviewRenderer : Component
 	[Property, Group( "Placement" )] public Vector3 VoidOrigin { get; set; } = new Vector3( 0f, 0f, 100000f );
 
 	const string PreviewTag = "terry_preview";
+	const float BuildRetryInterval = 1f;
 
 	GameObject _rig;
 	GameObject _cameraGo;
@@ -47,9 +49,15 @@ public sealed class TerryPreviewRenderer : Component
 	Vector3 _weaponOffsetPos = Vector3.Zero;
 	Angles _weaponOffsetRot = Angles.Zero;
 	ItemId _shownWeapon = ItemId.None;
+
 	bool _built;
 	bool _active;
 	bool _loggedRender;
+
+	TimeSince _sinceBuildAttempt;
+	bool _hasAttemptedBuild;
+	bool _buildFailedLogged;
+	bool _loggedRenderError;
 
 	protected override void OnEnabled()
 	{
@@ -71,18 +79,28 @@ public sealed class TerryPreviewRenderer : Component
 		{
 			_sinceTrigger = 0f;
 			_pendingSingle = true;
+			_hasAttemptedBuild = false;
 		}
 
 		_active = on;
-
-		if ( on && !_built )
-			Build();
 	}
 
 	protected override void OnUpdate()
 	{
-		if ( !_active || !_built )
+		if ( !_active )
 			return;
+
+		if ( !_built )
+		{
+			if ( _hasAttemptedBuild && _sinceBuildAttempt < BuildRetryInterval )
+				return;
+
+			_hasAttemptedBuild = true;
+			_sinceBuildAttempt = 0f;
+
+			if ( !TryBuild() )
+				return;
+		}
 
 		UpdateWeapon();
 		FollowWeaponBone();
@@ -105,12 +123,43 @@ public sealed class TerryPreviewRenderer : Component
 		}
 	}
 
+	bool TryBuild()
+	{
+		try
+		{
+			Build();
+
+			if ( _built )
+				_buildFailedLogged = false;
+
+			return _built;
+		}
+		catch ( Exception ex )
+		{
+			DestroyRig();
+
+			if ( !_buildFailedLogged )
+			{
+				_buildFailedLogged = true;
+				Log.Warning( $"[TerryPreview] preview build failed, will retry: {ex}" );
+			}
+
+			return false;
+		}
+	}
+
 	void Build()
 	{
+		DestroyRig();
+
 		var bodyModel = ResolveBodyModel();
 		if ( bodyModel == null )
 		{
-			Log.Warning( "[TerryPreview] Build aborted — no body model. Assign Source Body or Fallback Body Model in the inspector." );
+			if ( !_buildFailedLogged )
+			{
+				_buildFailedLogged = true;
+				Log.Warning( "[TerryPreview] Build waiting — no local body model yet." );
+			}
 			return;
 		}
 
@@ -171,10 +220,9 @@ public sealed class TerryPreviewRenderer : Component
 		light.Radius = LightRadius;
 	}
 
-	void Teardown()
+	void DestroyRig()
 	{
 		_built = false;
-		_active = false;
 
 		_rig?.Destroy();
 		_rig = null;
@@ -187,6 +235,14 @@ public sealed class TerryPreviewRenderer : Component
 		_weapon = null;
 		_texture = null;
 		_bitmap = null;
+	}
+
+	void Teardown()
+	{
+		_active = false;
+		_hasAttemptedBuild = false;
+
+		DestroyRig();
 	}
 
 	void PositionCamera()
@@ -211,10 +267,22 @@ public sealed class TerryPreviewRenderer : Component
 		if ( _camera == null || _bitmap == null )
 			return;
 
-		PositionCamera();
+		try
+		{
+			PositionCamera();
 
-		_camera.RenderToBitmap( _bitmap, RenderWithAlpha );
-		_texture = _bitmap.ToTexture();
+			_camera.RenderToBitmap( _bitmap, RenderWithAlpha );
+			_texture = _bitmap.ToTexture();
+		}
+		catch ( Exception ex )
+		{
+			if ( !_loggedRenderError )
+			{
+				_loggedRenderError = true;
+				Log.Warning( $"[TerryPreview] render failed: {ex.Message}" );
+			}
+			return;
+		}
 
 		if ( !_loggedRender )
 		{

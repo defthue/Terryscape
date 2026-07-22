@@ -42,7 +42,7 @@ public sealed class PetManager : Component
 		if ( IsProxy )
 			return;
 
-		if ( !_spawned && Networking.IsActive )
+		if ( !_spawned && Networking.IsActive && IsPersistenceReady() )
 		{
 			_spawned = true;
 			RefreshSlime();
@@ -50,6 +50,12 @@ public sealed class PetManager : Component
 
 		UpdateArenaState();
 		UpdatePendingDespawn();
+	}
+
+	static bool IsPersistenceReady()
+	{
+		var persistence = PlayerPersistence.Local;
+		return persistence == null || persistence.IsLoadFinished;
 	}
 
 	void UpdateArenaState()
@@ -84,7 +90,8 @@ public sealed class PetManager : Component
 		}
 
 		var chair = _slime.Components.Get<BaseChair>();
-		if ( chair == null || !chair.IsOccupied )
+		bool occupied = chair is SlimeChair sc ? sc.HasRider : ( chair != null && chair.IsOccupied );
+		if ( !occupied )
 		{
 			_slime.Destroy();
 			_slime = null;
@@ -177,6 +184,13 @@ public sealed class PetManager : Component
 		}
 
 		var chair = _slime.Components.Get<BaseChair>();
+		if ( chair is SlimeChair sc && sc.HasRider )
+		{
+			sc.RequestDismount();
+			_pendingDespawn = true;
+			return;
+		}
+
 		if ( chair != null && chair.IsOccupied )
 		{
 			var occ = chair.GetOccupant();

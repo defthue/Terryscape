@@ -10,6 +10,8 @@ public struct PetDef
 {
 	public string Name;
 	public string Description;
+	public string Lore;
+	public string FoundText;
 	public float FollowScale;
 	public float MountedScale;
 	public float MoveSpeed;
@@ -42,6 +44,8 @@ public static class PetDatabase
 			{
 				Name = "Slime",
 				Description = "A wobbly companion. Walk up to it and press E to ride.",
+				Lore = "Found at the pond's edge and never left. Squishy and loyal",
+				FoundText = "Starting companion",
 				FollowScale = 0.55f,
 				MountedScale = 1.0f,
 				MoveSpeed = 500f,

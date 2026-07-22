@@ -12,7 +12,7 @@
       "Item": "LunaritePickaxe",
       "MinAmount": 1,
       "MaxAmount": 1,
-      "ChancePercent": 1.5384616
+      "ChancePercent": 1
     },
     {
       "Item": "Coal",
@@ -49,12 +49,6 @@
       "MinAmount": 1,
       "MaxAmount": 15,
       "ChancePercent": 34.666668
-    },
-    {
-      "Item": "CoppiteOre",
-      "MinAmount": 1,
-      "MaxAmount": 24,
-      "ChancePercent": 66.66667
     },
     {
       "Item": "Gem",

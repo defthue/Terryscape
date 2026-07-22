@@ -39,16 +39,10 @@
       "ChancePercent": 10
     },
     {
-      "Item": "AshsteelHeavyHelm",
-      "MinAmount": 1,
-      "MaxAmount": 1,
-      "ChancePercent": 1.3333334
-    },
-    {
       "Item": "AshsteelHatchet",
       "MinAmount": 1,
       "MaxAmount": 1,
-      "ChancePercent": 1.3333334
+      "ChancePercent": 1
     },
     {
       "Item": "AshsteelOre",

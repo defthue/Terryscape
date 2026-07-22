@@ -9,9 +9,12 @@
         @if ( IsInFrontOfCamera( monster ) )
         {
             var screenPos = GetScreenPosition( monster );
+            var taper = GetTaper( monster );
             <div class="health-bar-container" style="left: @(screenPos.x.ToString("0.##"))%; top: @(screenPos.y.ToString("0.##"))%;">
-                <div class="health-bar-bg">
-                    <div class="health-bar-fill @( monster.IsEvading ? "evading" : "" )" style="width: @(GetHealthPercent( monster ))%;"></div>
+                <div class="health-bar-taper" style="transform: scale(@(taper.Scale.ToString("0.###"))); opacity: @(taper.Opacity.ToString("0.###"));">
+                    <div class="health-bar-bg">
+                        <div class="health-bar-fill @( monster.IsEvading ? "evading" : "" )" style="width: @(GetHealthPercent( monster ))%;"></div>
+                    </div>
                 </div>
             </div>
         }
@@ -31,8 +34,23 @@
 
         return monsters.FindAll( m =>
             !m.IsDead &&
-            Vector3.DistanceBetween( m.GameObject.WorldPosition, playerPos ) <= 1000f
+            Vector3.DistanceBetween( m.GameObject.WorldPosition, playerPos ) <= GetMaxRange( m )
         );
+    }
+
+    float GetMaxRange( Monster monster )
+    {
+        return monster.IsAggro ? 2000f : 1500f;
+    }
+
+    (float Scale, float Opacity) GetTaper( Monster monster )
+    {
+        var camera = Scene.Camera;
+        if ( camera == null )
+            return ( 1f, 1f );
+
+        float dist = Vector3.DistanceBetween( camera.WorldPosition, monster.GameObject.WorldPosition );
+        return HudDistanceTaper.Evaluate( dist, 800f, GetMaxRange( monster ), 0.7f );
     }
 
     Vector2 GetScreenPosition( Monster monster )
@@ -66,7 +84,8 @@
         foreach ( var m in monsters )
         {
             var pos = GetScreenPosition( m );
-            hash = ( hash, m.CurrentHealth, m.IsDead, m.IsEvading, (int)pos.x, (int)pos.y ).GetHashCode();
+            var taper = GetTaper( m );
+            hash = ( hash, m.CurrentHealth, m.IsDead, m.IsEvading, (int)pos.x, (int)pos.y, (int)( taper.Scale * 100f ), (int)( taper.Opacity * 100f ) ).GetHashCode();
         }
         return hash;
     }

@@ -1,6 +1,6 @@
 {
-  "GoldMin": 45,
-  "GoldMax": 90,
+  "GoldMin": 69,
+  "GoldMax": 169,
   "Entries": [
     {
       "Item": "MonsterBone",
@@ -10,21 +10,15 @@
     },
     {
       "Item": "SolariumLightHelm",
-      "MinAmount": 3,
-      "MaxAmount": 10,
-      "ChancePercent": 3.3333335
+      "MinAmount": 1,
+      "MaxAmount": 1,
+      "ChancePercent": 1
     },
     {
       "Item": "Coal",
       "MinAmount": 1,
       "MaxAmount": 20,
       "ChancePercent": 34.666668
-    },
-    {
-      "Item": "GhostwoodLog",
-      "MinAmount": 2,
-      "MaxAmount": 10,
-      "ChancePercent": 18.666666
     },
     {
       "Item": "ColdveinBar",
@@ -66,13 +60,13 @@
       "Item": "IronbarkStaff",
       "MinAmount": 1,
       "MaxAmount": 1,
-      "ChancePercent": 4.6666665
+      "ChancePercent": 1
     },
     {
       "Item": "GhostwoodStaff",
       "MinAmount": 1,
       "MaxAmount": 1,
-      "ChancePercent": 2
+      "ChancePercent": 1
     }
   ],
   "__references": [],

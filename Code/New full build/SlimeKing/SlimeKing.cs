@@ -129,7 +129,18 @@ public sealed class SlimeKing : Component
 	bool _respawnRequested;
 
 	SlimeKing _familyRoot;
-	Dictionary<ulong, SkillType> _familyContributors = new();
+
+	const float ContributorMinDamagePercent = 0.03f;
+	const float ContributorRecencySeconds = 30f;
+
+	struct ContributorInfo
+	{
+		public SkillType Skill;
+		public int Damage;
+		public float LastHitTime;
+	}
+
+	Dictionary<ulong, ContributorInfo> _familyContributors = new();
 	int _familyAlive;
 
 	GameObject _visual;
@@ -575,7 +586,7 @@ public sealed class SlimeKing : Component
 			finalDamage = 1;
 
 		playerHealth.TakeDamage( finalDamage );
-		DamagePopupBroadcaster.Broadcast( playerObj.WorldPosition + Vector3.Up * 60f, finalDamage, playerHealth.MaxHealth, false );
+		DamagePopupBroadcaster.Broadcast( playerObj.WorldPosition + Vector3.Up * 60f, finalDamage, playerHealth.MaxHealth, false, 0, DamagePopupBroadcaster.SteamIdOf( playerObj ) );
 	}
 
 	void DismountRider( GameObject playerObj )
@@ -607,7 +618,12 @@ public sealed class SlimeKing : Component
 				continue;
 
 			if ( chair.GetOccupant() == pc )
-				chair.AskToLeave( pc );
+			{
+				if ( chair is SlimeChair sc )
+					sc.RequestDismount();
+				else
+					chair.AskToLeave( pc );
+			}
 		}
 	}
 
@@ -657,7 +673,15 @@ public sealed class SlimeKing : Component
 		{
 			var ownerConnection = attacker.Network.Owner;
 			if ( ownerConnection != null && ownerConnection.SteamId != 0L )
-				Root._familyContributors[ownerConnection.SteamId] = GetAttackerSkill( attacker );
+			{
+				ulong steamId = ownerConnection.SteamId;
+				var contributors = Root._familyContributors;
+				contributors.TryGetValue( steamId, out var info );
+				info.Skill = GetAttackerSkill( attacker );
+				info.Damage += damage;
+				info.LastHitTime = Time.Now;
+				contributors[steamId] = info;
+			}
 		}
 
 		CurrentHealth -= damage;
@@ -952,9 +976,16 @@ public sealed class SlimeKing : Component
 			return;
 		}
 
+		var qualified = FilterContributors();
+		if ( qualified.Count == 0 )
+		{
+			_familyContributors.Clear();
+			return;
+		}
+
 		var rng = new Random();
 
-		int contributorCount = _familyContributors.Count;
+		int contributorCount = qualified.Count;
 
 		int goldPool = LootTable.RollGoldPool( rng );
 		int goldPerPlayer = contributorCount > 0
@@ -965,10 +996,10 @@ public sealed class SlimeKing : Component
 
 		var entries = LootTable.Entries ?? new List<LootEntry>();
 
-		foreach ( var contributor in _familyContributors )
+		foreach ( var contributor in qualified )
 		{
 			ulong steamId = contributor.Key;
-			SkillType skill = contributor.Value;
+			SkillType skill = contributor.Value.Skill;
 
 			var rolledItems = new List<ItemId>();
 			var rolledAmounts = new List<int>();
@@ -990,10 +1021,69 @@ public sealed class SlimeKing : Component
 				rolledAmounts.Add( amount );
 			}
 
+			AnnounceRareDrop( steamId, rolledItems );
+
 			BroadcastSlimeLoot( steamId, goldPerPlayer, rolledItems.ToArray(), rolledAmounts.ToArray(), skill, CombatXpReward );
 		}
 
 		_familyContributors.Clear();
+	}
+
+	Dictionary<ulong, ContributorInfo> FilterContributors()
+	{
+		float minDamage = MaxHealth * ContributorMinDamagePercent;
+		float cutoff = Time.Now - ContributorRecencySeconds;
+
+		var qualified = new Dictionary<ulong, ContributorInfo>();
+		foreach ( var kv in _familyContributors )
+		{
+			if ( kv.Value.Damage >= minDamage && kv.Value.LastHitTime >= cutoff )
+				qualified[kv.Key] = kv.Value;
+		}
+
+		if ( qualified.Count == 0 )
+		{
+			ulong bestId = 0ul;
+			ContributorInfo best = default;
+			foreach ( var kv in _familyContributors )
+			{
+				if ( bestId == 0ul || kv.Value.Damage > best.Damage )
+				{
+					bestId = kv.Key;
+					best = kv.Value;
+				}
+			}
+
+			if ( bestId != 0ul )
+				qualified[bestId] = best;
+		}
+
+		return qualified;
+	}
+
+	void AnnounceRareDrop( ulong steamId, List<ItemId> rolledItems )
+	{
+		if ( !rolledItems.Contains( ItemId.SlimerootStaff ) )
+			return;
+
+		if ( GameManager.Instance == null )
+			return;
+
+		var def = ItemDatabase.Get( ItemId.SlimerootStaff );
+		string itemName = def != null ? def.Name : ItemId.SlimerootStaff.ToString();
+
+		GameManager.Instance.BroadcastServerNotice( $"{ResolveContributorName( steamId )} has received a rare drop: {itemName} from The Slime King!" );
+	}
+
+	string ResolveContributorName( ulong steamId )
+	{
+		foreach ( var pc in Scene.GetAllComponents<PlayerController>() )
+		{
+			var owner = pc.Network.Owner;
+			if ( owner != null && owner.SteamId == steamId )
+				return owner.DisplayName;
+		}
+		return "A player";
 	}
 
 	[Rpc.Broadcast]

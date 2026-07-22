@@ -9,15 +9,17 @@ public static class PlayerHelper
 		if ( go == null )
 			return false;
 
-		var root = go;
-		while ( root.Parent != null && root.Parent != Game.ActiveScene )
-			root = root.Parent;
+		var current = go;
+		while ( current != null && current is not Scene )
+		{
+			var pc = current.Components.Get<PlayerController>();
+			if ( pc != null )
+				return !pc.IsProxy;
 
-		var pc = root.Components.Get<PlayerController>();
-		if ( pc != null )
-			return !pc.IsProxy;
+			current = current.Parent;
+		}
 
-		return !root.IsProxy;
+		return !go.IsProxy;
 	}
 
 	public static GameObject GetLocalPlayer()

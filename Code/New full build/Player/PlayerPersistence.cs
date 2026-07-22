@@ -10,6 +10,8 @@ public sealed class PlayerPersistence : Component
 
 	public static PlayerPersistence Local { get; private set; }
 
+	public bool IsLoadFinished { get; private set; }
+
 	bool _loadAttempted;
 	bool _loadComplete;
 	bool _savesBlocked;
@@ -118,6 +120,18 @@ public sealed class PlayerPersistence : Component
 
 		_loadAttempted = true;
 
+		try
+		{
+			await LoadOnStartInternalAsync();
+		}
+		finally
+		{
+			IsLoadFinished = true;
+		}
+	}
+
+	async Task LoadOnStartInternalAsync()
+	{
 		var result = await TerryScapeBackend.LoadAsync();
 
 		if ( !result.Success )

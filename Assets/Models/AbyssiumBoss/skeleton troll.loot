@@ -1,6 +1,6 @@
 {
-  "GoldMin": 90,
-  "GoldMax": 150,
+  "GoldMin": 169,
+  "GoldMax": 269,
   "Entries": [
     {
       "Item": "MonsterBone",

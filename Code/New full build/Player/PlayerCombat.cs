@@ -149,7 +149,7 @@ public sealed class PlayerCombat : Component
 			SoundLibrary.PlayPvpHitLocal( target.WorldPosition );
 
 		int maxHp = target.Components.Get<PlayerHealth>()?.MaxHealth ?? 0;
-		DamagePopupBroadcaster.ShowLocal( target.WorldPosition + Vector3.Up * 60f, dealt, maxHp, isCrit );
+		DamagePopupBroadcaster.ShowLocal( target.WorldPosition + Vector3.Up * 60f, dealt, maxHp, isCrit, DamagePopupBroadcaster.SteamIdOf( GameObject ), targetSteamId );
 	}
 
 	public void DoMonsterHit( Monster monster, Inventory inventory, Skills skills )
@@ -194,7 +194,7 @@ public sealed class PlayerCombat : Component
 
 		monster.TakeDamage( damage, GameObject );
 
-		DamagePopupBroadcaster.Broadcast( monster.WorldPosition + Vector3.Up * 50f, damage, monster.MaxHealth, isCrit );
+		DamagePopupBroadcaster.Broadcast( monster.WorldPosition + Vector3.Up * 50f, damage, monster.MaxHealth, isCrit, DamagePopupBroadcaster.SteamIdOf( GameObject ), 0 );
 	}
 
 	public void DoBossHit( Boss boss, Inventory inventory, Skills skills )
@@ -239,7 +239,7 @@ public sealed class PlayerCombat : Component
 
 		boss.TakeDamage( damage, GameObject );
 
-		DamagePopupBroadcaster.Broadcast( boss.WorldPosition + Vector3.Up * 50f, damage, boss.MaxHealth, isCrit );
+		DamagePopupBroadcaster.Broadcast( boss.WorldPosition + Vector3.Up * 50f, damage, boss.MaxHealth, isCrit, DamagePopupBroadcaster.SteamIdOf( GameObject ), 0 );
 	}
 
 	public void DoSlimeKingHit( SlimeKing slimeKing, Inventory inventory, Skills skills )
@@ -284,6 +284,6 @@ public sealed class PlayerCombat : Component
 
 		slimeKing.TakeDamage( damage, GameObject );
 
-		DamagePopupBroadcaster.Broadcast( slimeKing.WorldPosition + Vector3.Up * 50f, damage, slimeKing.MaxHealth, isCrit );
+		DamagePopupBroadcaster.Broadcast( slimeKing.WorldPosition + Vector3.Up * 50f, damage, slimeKing.MaxHealth, isCrit, DamagePopupBroadcaster.SteamIdOf( GameObject ), 0 );
 	}
 }

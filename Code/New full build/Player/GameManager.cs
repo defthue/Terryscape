@@ -23,6 +23,8 @@ public sealed class GameManager : Component, Component.INetworkListener
 		public string Text { get; set; }
 		public RealTimeSince Created { get; set; }
 		public long Sequence { get; set; }
+		public ulong SteamId { get; set; }
+		public bool Prestige { get; set; }
 	}
 
 	public List<ChatMessage> ChatMessages { get; private set; } = new();
@@ -99,6 +101,7 @@ public sealed class GameManager : Component, Component.INetworkListener
 		var player = PlayerHelper.GetLocalPlayer();
 		string name = "Player";
 		ulong steamId = 0;
+		bool prestige = false;
 
 		if ( player != null )
 		{
@@ -108,21 +111,50 @@ public sealed class GameManager : Component, Component.INetworkListener
 				name = pc.Network.Owner?.DisplayName ?? "Player";
 				steamId = pc.Network.Owner?.SteamId ?? 0ul;
 			}
+
+			var skills = player.Components.Get<Skills>();
+			prestige = skills != null && HasPrestige( skills );
 		}
 
-		BroadcastChat( name, trimmed, steamId );
+		BroadcastChat( name, trimmed, steamId, prestige );
+		return true;
+	}
+
+	static readonly SkillType[] PrestigeSkills =
+	{
+		SkillType.Woodcutting,
+		SkillType.Mining,
+		SkillType.Enchanting,
+		SkillType.Smithing,
+		SkillType.Crafting,
+		SkillType.Attack,
+		SkillType.Defence,
+		SkillType.Archery,
+		SkillType.Magic
+	};
+
+	static bool HasPrestige( Skills skills )
+	{
+		foreach ( var skill in PrestigeSkills )
+		{
+			if ( skills.GetLevel( skill ) < 50 )
+				return false;
+		}
+
 		return true;
 	}
 
 	[Rpc.Broadcast]
-	void BroadcastChat( string sender, string text, ulong speakerSteamId )
+	void BroadcastChat( string sender, string text, ulong speakerSteamId, bool prestige )
 	{
 		ChatMessages.Add( new ChatMessage
 		{
 			Sender = sender,
 			Text = text,
 			Created = 0,
-			Sequence = _nextChatSequence++
+			Sequence = _nextChatSequence++,
+			SteamId = speakerSteamId,
+			Prestige = prestige
 		} );
 
 		if ( ChatMessages.Count > MaxChatMessages )
@@ -150,7 +182,9 @@ public sealed class GameManager : Component, Component.INetworkListener
 			Sender = "Server",
 			Text = text,
 			Created = 0,
-			Sequence = _nextChatSequence++
+			Sequence = _nextChatSequence++,
+			SteamId = 0,
+			Prestige = false
 		} );
 
 		if ( ChatMessages.Count > MaxChatMessages )
@@ -173,11 +207,24 @@ public sealed class GameManager : Component, Component.INetworkListener
 			Sender = "Server",
 			Text = text,
 			Created = 0,
-			Sequence = _nextChatSequence++
+			Sequence = _nextChatSequence++,
+			SteamId = 0,
+			Prestige = false
 		} );
 
 		if ( ChatMessages.Count > MaxChatMessages )
 			ChatMessages.RemoveAt( 0 );
+	}
+
+	public void BroadcastDamagePopup( Vector3 worldPos, int damage, int tier, bool isCrit, ulong attackerSteamId, ulong targetSteamId )
+	{
+		RpcSpawnDamagePopup( worldPos, damage, tier, isCrit, attackerSteamId, targetSteamId );
+	}
+
+	[Rpc.Broadcast]
+	void RpcSpawnDamagePopup( Vector3 worldPos, int damage, int tier, bool isCrit, ulong attackerSteamId, ulong targetSteamId )
+	{
+		DamagePopupBroadcaster.AddLocal( worldPos, damage, tier, isCrit, attackerSteamId, targetSteamId );
 	}
 
 	PlayerSpeechBubble FindBubbleForSteamId( ulong steamId )
@@ -212,14 +259,14 @@ public sealed class GameManager : Component, Component.INetworkListener
 
 		Log.Info( $"Player spawned: {connection.DisplayName}" );
 
-		BroadcastChat( "Server", $"{connection.DisplayName} has joined.", 0 );
+		BroadcastChat( "Server", $"{connection.DisplayName} has joined.", 0, false );
 	}
 
 	public void OnDisconnected( Connection connection )
 	{
 		Log.Info( $"Player disconnected: {connection.DisplayName}" );
 
-		BroadcastChat( "Server", $"{connection.DisplayName} has left.", 0 );
+		BroadcastChat( "Server", $"{connection.DisplayName} has left.", 0, false );
 	}
 
 	public void OnBecameHost( Connection previousHost )

@@ -36,13 +36,7 @@
       "Item": "AshsteelMediumChestplate",
       "MinAmount": 1,
       "MaxAmount": 1,
-      "ChancePercent": 1.3333334
-    },
-    {
-      "Item": "AshsteelMediumChestplate",
-      "MinAmount": 1,
-      "MaxAmount": 1,
-      "ChancePercent": 1.3333334
+      "ChancePercent": 1
     },
     {
       "Item": "AshsteelOre",
@@ -54,7 +48,7 @@
       "Item": "ElmheartBow",
       "MinAmount": 1,
       "MaxAmount": 1,
-      "ChancePercent": 1.5384616
+      "ChancePercent": 1
     }
   ],
   "__references": [],

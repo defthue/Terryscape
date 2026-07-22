@@ -42,13 +42,13 @@
       "Item": "AshsteelLightChestplate",
       "MinAmount": 1,
       "MaxAmount": 1,
-      "ChancePercent": 2
+      "ChancePercent": 1
     },
     {
       "Item": "AshsteelLightHelm",
       "MinAmount": 1,
       "MaxAmount": 1,
-      "ChancePercent": 2
+      "ChancePercent": 1
     },
     {
       "Item": "AshsteelOre",
