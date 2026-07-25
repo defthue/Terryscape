@@ -2,7 +2,7 @@
   "Maps": {
     "$blob": "e76b28db-676c-45e4-9141-4204a5ce7e48"
   },
-  "Resolution": 1024,
+  "Resolution": 4096,
   "TerrainSize": 39936,
   "TerrainHeight": 10000,
   "Materials": [
