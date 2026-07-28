@@ -14,7 +14,8 @@
       "Mounts": null,
       "IsStandaloneOnly": false,
       "Metadata": {
-        "SingleAssetSource": "models/castle _kit/fbx format/colormap.vmat"
+        "SingleAssetSource": "models/castle _kit/fbx format/colormap.vmat",
+        "ParentPackage": "defthue.terrysquest1"
       }
     }
   }

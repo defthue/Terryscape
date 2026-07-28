@@ -10,13 +10,12 @@
       "IncludeSourceFiles": false,
       "Resources": null,
       "PackageReferences": null,
-      "EditorReferences": [
-        "chase.cylinder#57472"
-      ],
+      "EditorReferences": [],
       "Mounts": null,
       "IsStandaloneOnly": false,
       "Metadata": {
-        "SingleAssetSource": "models/castle _kit/fbx format/metal-gate.vmdl"
+        "SingleAssetSource": "models/castle _kit/fbx format/metal-gate.vmdl",
+        "ParentPackage": "defthue.terrysquest1"
       }
     }
   }
